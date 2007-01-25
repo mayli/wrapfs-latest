@@ -18,12 +18,6 @@
 
 #include "union.h"
 
-/* declarations added for "sparse" */
-extern int unionfs_d_revalidate_wrap(struct dentry *dentry,
-				     struct nameidata *nd);
-extern void unionfs_d_release(struct dentry *dentry);
-extern void unionfs_d_iput(struct dentry *dentry, struct inode *inode);
-
 /*
  * returns 1 if valid, 0 otherwise.
  */
@@ -180,7 +174,8 @@ out:
 	return valid;
 }
 
-int unionfs_d_revalidate_wrap(struct dentry *dentry, struct nameidata *nd)
+static int unionfs_d_revalidate_wrap(struct dentry *dentry,
+				     struct nameidata *nd)
 {
 	int err;
 
@@ -191,7 +186,7 @@ int unionfs_d_revalidate_wrap(struct dentry *dentry, struct nameidata *nd)
 	return err;
 }
 
-void unionfs_d_release(struct dentry *dentry)
+static void unionfs_d_release(struct dentry *dentry)
 {
 	int bindex, bstart, bend;
 

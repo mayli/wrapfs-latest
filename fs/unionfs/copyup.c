@@ -18,6 +18,14 @@
 
 #include "union.h"
 
+static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
+			       int bstart, int new_bindex, const char *name,
+			       int namelen, struct file **copyup_file,
+			       loff_t len);
+static struct dentry *create_parents_named(struct inode *dir,
+					   struct dentry *dentry,
+					   const char *name, int bindex);
+
 #ifdef CONFIG_UNION_FS_XATTR
 /* copyup all extended attrs for a given dentry */
 static int copyup_xattrs(struct dentry *old_hidden_dentry,
@@ -129,10 +137,10 @@ int copyup_dentry(struct inode *dir, struct dentry *dentry,
  * if the object being copied up is a regular file, the file is only created,
  * the contents have to be copied up separately
  */
-static inline int __copyup_ndentry(struct dentry *old_hidden_dentry,
-				   struct dentry *new_hidden_dentry,
-				   struct dentry *new_hidden_parent_dentry,
-				   char *symbuf)
+static int __copyup_ndentry(struct dentry *old_hidden_dentry,
+			    struct dentry *new_hidden_dentry,
+			    struct dentry *new_hidden_parent_dentry,
+			    char *symbuf)
 {
 	int err = 0;
 	umode_t old_mode = old_hidden_dentry->d_inode->i_mode;
@@ -179,13 +187,10 @@ static inline int __copyup_ndentry(struct dentry *old_hidden_dentry,
 	return err;
 }
 
-static inline int __copyup_reg_data(struct dentry *dentry,
-				    struct dentry *new_hidden_dentry,
-				    int new_bindex,
-				    struct dentry *old_hidden_dentry,
-				    int old_bindex,
-				    struct file **copyup_file,
-				    loff_t len)
+static int __copyup_reg_data(struct dentry *dentry,
+			     struct dentry *new_hidden_dentry, int new_bindex,
+			     struct dentry *old_hidden_dentry, int old_bindex,
+			     struct file **copyup_file, loff_t len)
 {
 	struct super_block *sb = dentry->d_sb;
 	struct file *input_file;
@@ -300,11 +305,9 @@ out:
 /* dput the lower references for old and new dentry & clear a lower dentry
  * pointer
  */
-static inline void __clear(struct dentry *dentry,
-			   struct dentry *old_hidden_dentry,
-			   int old_bstart, int old_bend,
-			   struct dentry *new_hidden_dentry,
-			   int new_bindex)
+static void __clear(struct dentry *dentry, struct dentry *old_hidden_dentry,
+		    int old_bstart, int old_bend,
+		    struct dentry *new_hidden_dentry, int new_bindex)
 {
 	/* get rid of the hidden dentry and all its traces */
 	unionfs_set_lower_dentry_idx(dentry, new_bindex, NULL);
@@ -316,9 +319,10 @@ static inline void __clear(struct dentry *dentry,
 }
 
 /* copy up a dentry to a file of specified name */
-int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
-			int bstart, int new_bindex, const char *name,
-			int namelen, struct file **copyup_file, loff_t len)
+static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
+			       int bstart, int new_bindex, const char *name,
+			       int namelen, struct file **copyup_file,
+			       loff_t len)
 {
 	struct dentry *new_hidden_dentry;
 	struct dentry *old_hidden_dentry = NULL;
@@ -510,8 +514,8 @@ struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 	return create_parents_named(dir, dentry, dentry->d_name.name, bindex);
 }
 
-static inline void __cleanup_dentry(struct dentry * dentry, int bindex,
-					int old_bstart, int old_bend)
+static void __cleanup_dentry(struct dentry * dentry, int bindex,
+			     int old_bstart, int old_bend)
 {
 	int loop_start;
 	int loop_end;
@@ -557,8 +561,8 @@ static inline void __cleanup_dentry(struct dentry * dentry, int bindex,
 }
 
 /* set lower inode ptr and update bstart & bend if necessary */
-static inline void __set_inode(struct dentry * upper, struct dentry * lower,
-				int bindex)
+static void __set_inode(struct dentry * upper, struct dentry * lower,
+			int bindex)
 {
 	unionfs_set_lower_inode_idx(upper->d_inode, bindex,
 			igrab(lower->d_inode));
@@ -570,8 +574,8 @@ static inline void __set_inode(struct dentry * upper, struct dentry * lower,
 }
 
 /* set lower dentry ptr and update bstart & bend if necessary */
-static inline void __set_dentry(struct dentry * upper, struct dentry * lower,
-				int bindex)
+static void __set_dentry(struct dentry * upper, struct dentry * lower,
+			 int bindex)
 {
 	unionfs_set_lower_dentry_idx(upper, bindex, lower);
 	if (likely(dbstart(upper) > bindex))
@@ -583,8 +587,9 @@ static inline void __set_dentry(struct dentry * upper, struct dentry * lower,
 /* This function replicates the directory structure upto given dentry
  * in the bindex branch.
  */
-struct dentry *create_parents_named(struct inode *dir, struct dentry *dentry,
-				    const char *name, int bindex)
+static struct dentry *create_parents_named(struct inode *dir,
+					   struct dentry *dentry,
+					   const char *name, int bindex)
 {
 	int err;
 	struct dentry *child_dentry;

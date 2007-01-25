@@ -18,11 +18,6 @@
 
 #include "union.h"
 
-/* declarations for sparse */
-extern ssize_t unionfs_read(struct file *, char __user *, size_t, loff_t *);
-extern ssize_t unionfs_write(struct file *, const char __user *, size_t,
-			     loff_t *);
-
 /*******************
  * File Operations *
  *******************/
@@ -56,8 +51,8 @@ out:
 	return err;
 }
 
-ssize_t unionfs_read(struct file * file, char __user * buf, size_t count,
-		     loff_t * ppos)
+static ssize_t unionfs_read(struct file * file, char __user * buf,
+			    size_t count, loff_t * ppos)
 {
 	struct file *hidden_file;
 	loff_t pos = *ppos;
@@ -78,8 +73,8 @@ out:
 	return err;
 }
 
-ssize_t __unionfs_write(struct file * file, const char __user * buf,
-			size_t count, loff_t * ppos)
+static ssize_t __unionfs_write(struct file * file, const char __user * buf,
+			       size_t count, loff_t * ppos)
 {
 	int err = -EINVAL;
 	struct file *hidden_file = NULL;
@@ -123,8 +118,8 @@ out:
 	return err;
 }
 
-ssize_t unionfs_write(struct file * file, const char __user * buf, size_t count,
-		      loff_t * ppos)
+static ssize_t unionfs_write(struct file * file, const char __user * buf,
+			     size_t count, loff_t * ppos)
 {
 	int err = 0;
 

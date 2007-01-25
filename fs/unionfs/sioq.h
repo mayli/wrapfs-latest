@@ -61,7 +61,6 @@ struct sioq_args {
 	};
 };
 
-extern struct workqueue_struct *sioq;
 extern int __init init_sioq(void);
 extern __exit void stop_sioq(void);
 extern void run_sioq(work_func_t func, struct sioq_args *args);

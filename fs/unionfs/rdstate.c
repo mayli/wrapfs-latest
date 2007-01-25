@@ -232,7 +232,7 @@ struct filldir_node *find_filldir_node(struct unionfs_dir_state *rdstate,
 	return cursor;
 }
 
-inline struct filldir_node *alloc_filldir_node(const char *name, int namelen,
+static struct filldir_node *alloc_filldir_node(const char *name, int namelen,
 					       unsigned int hash, int bindex)
 {
 	return kmem_cache_alloc(unionfs_filldir_cachep, GFP_KERNEL);

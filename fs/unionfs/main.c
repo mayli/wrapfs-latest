@@ -188,7 +188,7 @@ void unionfs_reinterpose(struct dentry *dentry)
  * 2) it exists
  * 3) is a directory
  */
-int check_branch(struct nameidata *nd)
+static int check_branch(struct nameidata *nd)
 {
 	if (!strcmp(nd->dentry->d_sb->s_type->name, "unionfs"))
 		return -EINVAL;
@@ -200,7 +200,7 @@ int check_branch(struct nameidata *nd)
 }
 
 /* checks if two hidden_dentries have overlapping branches */
-int is_branch_overlap(struct dentry *dent1, struct dentry *dent2)
+static int is_branch_overlap(struct dentry *dent1, struct dentry *dent2)
 {
 	struct dentry *dent = NULL;
 

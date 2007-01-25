@@ -18,14 +18,6 @@
 
 #include "union.h"
 
-/* declarations added for "sparse" */
-extern struct dentry *unionfs_lookup(struct inode *, struct dentry *,
-				     struct nameidata *);
-extern int unionfs_readlink(struct dentry *dentry, char __user * buf,
-			    int bufsiz);
-extern void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
-			     void *cookie);
-
 static int unionfs_create(struct inode *parent, struct dentry *dentry,
 			  int mode, struct nameidata *nd)
 {
@@ -195,8 +187,9 @@ out:
 	return err;
 }
 
-struct dentry *unionfs_lookup(struct inode *parent, struct dentry *dentry,
-			      struct nameidata *nd)
+static struct dentry *unionfs_lookup(struct inode *parent,
+				     struct dentry *dentry,
+				     struct nameidata *nd)
 {
 	struct nameidata lowernd; /* TODO: be gentler to the stack */
 
@@ -688,7 +681,8 @@ out:
 	return err;
 }
 
-int unionfs_readlink(struct dentry *dentry, char __user * buf, int bufsiz)
+static int unionfs_readlink(struct dentry *dentry, char __user * buf,
+			    int bufsiz)
 {
 	int err;
 	struct dentry *hidden_dentry;
@@ -743,7 +737,8 @@ out:
 	return ERR_PTR(err);
 }
 
-void unionfs_put_link(struct dentry *dentry, struct nameidata *nd, void *cookie)
+static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
+			     void *cookie)
 {
 	kfree(nd_get_link(nd));
 }

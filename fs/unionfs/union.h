@@ -241,11 +241,6 @@ void update_bstart(struct dentry *dentry);
 /* replicates the directory structure upto given dentry in given branch */
 extern struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 				     int bindex);
-struct dentry *create_parents_named(struct inode *dir, struct dentry *dentry,
-				    const char *name, int bindex);
-
-/* check if two branches overlap */
-extern int is_branch_overlap(struct dentry *dent1, struct dentry *dent2);
 
 /* partial lookup */
 extern int unionfs_partial_lookup(struct dentry *dentry);
@@ -265,10 +260,6 @@ extern int copyup_named_file(struct inode *dir, struct file *file,
 /* copies a dentry from dbstart to newbindex branch */
 extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 			 int new_bindex, struct file **copyup_file, loff_t len);
-extern int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
-			       int bstart, int new_bindex, const char *name,
-			       int namelen, struct file **copyup_file,
-			       loff_t len);
 
 extern int remove_whiteouts(struct dentry *dentry, struct dentry *hidden_dentry,
 			    int bindex);
@@ -324,9 +315,6 @@ int unionfs_ioctl_incgen(struct file *file, unsigned int cmd,
 			 unsigned long arg);
 int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 			    unsigned long arg);
-
-/* Verify that a branch is valid. */
-int check_branch(struct nameidata *nd);
 
 #ifdef CONFIG_UNION_FS_XATTR
 /* Extended attribute functions. */
@@ -395,7 +383,6 @@ static inline int unionfs_get_nlinks(struct inode *inode)
 }
 
 struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd, int lookupmode);
-int is_stale_inode(struct inode *inode);
 
 #define IS_SET(sb, check_flag) ((check_flag) & MOUNT_FLAG(sb))
 

@@ -24,7 +24,7 @@
  * whiteouts).
  */
 
-struct workqueue_struct *sioq;
+static struct workqueue_struct *sioq;
 
 int __init init_sioq(void)
 {

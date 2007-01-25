@@ -292,7 +292,7 @@ out:
 }
 
 /* unionfs_open helper function: open a directory */
-static inline int __open_dir(struct inode *inode, struct file *file)
+static int __open_dir(struct inode *inode, struct file *file)
 {
 	struct dentry *hidden_dentry;
 	struct file *hidden_file;
@@ -326,7 +326,7 @@ static inline int __open_dir(struct inode *inode, struct file *file)
 }
 
 /* unionfs_open helper function: open a file */
-static inline int __open_file(struct inode *inode, struct file *file)
+static int __open_file(struct inode *inode, struct file *file)
 {
 	struct dentry *hidden_dentry;
 	struct file *hidden_file;
@@ -493,7 +493,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 }
 
 /* pass the ioctl to the lower fs */
-static inline long do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct file *hidden_file;
 	int err;
