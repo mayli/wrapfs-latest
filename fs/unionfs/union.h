@@ -111,7 +111,7 @@ struct unionfs_dentry_info {
 	 * unionfs function from the VFS.  Our lock ordering is that children
 	 * go before their parents.
 	 */
-	struct semaphore sem;
+	struct mutex lock;
 	int bstart;
 	int bend;
 	int bopaque;
@@ -226,8 +226,8 @@ static inline void double_lock_dentry(struct dentry *d1, struct dentry *d2)
 		d1 = d2;
 		d2 = tmp;
 	}
-	lock_dentry(d1);
-	lock_dentry(d2);
+	unionfs_lock_dentry(d1);
+	unionfs_lock_dentry(d2);
 }
 
 extern int new_dentry_private_data(struct dentry *dentry);
@@ -266,6 +266,8 @@ extern int remove_whiteouts(struct dentry *dentry, struct dentry *hidden_dentry,
 
 extern int do_delete_whiteouts(struct dentry *dentry, int bindex,
 		     struct unionfs_dir_state *namelist);
+
+extern int unionfs_get_nlinks(struct inode *inode);
 
 /* Is this directory empty: 0 if it is empty, -ENOTEMPTY if not. */
 extern int check_empty(struct dentry *dentry,
@@ -336,52 +338,6 @@ static inline int d_deleted(struct dentry *d)
 	return d_unhashed(d) && (d != d->d_sb->s_root);
 }
 
-/* returns the sum of the n_link values of all the underlying inodes of the
- * passed inode
- */
-static inline int unionfs_get_nlinks(struct inode *inode)
-{
-	int sum_nlinks = 0;
-	int dirs = 0;
-	int bindex;
-	struct inode *hidden_inode;
-
-	/* don't bother to do all the work since we're unlinked */
-	if (inode->i_nlink == 0)
-		return 0;
-
-	if (!S_ISDIR(inode->i_mode))
-		return unionfs_lower_inode(inode)->i_nlink;
-
-	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
-		hidden_inode = unionfs_lower_inode_idx(inode, bindex);
-
-		/* ignore files */
-		if (!hidden_inode || !S_ISDIR(hidden_inode->i_mode))
-			continue;
-
-		BUG_ON(hidden_inode->i_nlink < 0);
-
-		/* A deleted directory. */
-		if (hidden_inode->i_nlink == 0)
-			continue;
-		dirs++;
-
-		/*
-		 * A broken directory...
-		 *
-		 * Some filesystems don't properly set the number of links
-		 * on empty directories
-		 */
-		if (hidden_inode->i_nlink == 1)
-			sum_nlinks += 2;
-		else
-			sum_nlinks += (hidden_inode->i_nlink - 2);
-	}
-
-	return (!dirs ? 0 : sum_nlinks + 2);
-}
-
 struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd, int lookupmode);
 
 #define IS_SET(sb, check_flag) ((check_flag) & MOUNT_FLAG(sb))
@@ -448,21 +404,6 @@ static inline int is_robranch(const struct dentry *dentry)
 #define UNIONFS_DIR_OPAQUE_NAME "__dir_opaque"
 #define UNIONFS_DIR_OPAQUE UNIONFS_WHPFX UNIONFS_DIR_OPAQUE_NAME
 
-/* construct whiteout filename */
-static inline char *alloc_whname(const char *name, int len)
-{
-	char *buf;
-
-	buf = kmalloc(len + UNIONFS_WHLEN + 1, GFP_KERNEL);
-	if (!buf)
-		return ERR_PTR(-ENOMEM);
-
-	strcpy(buf, UNIONFS_WHPFX);
-	strlcat(buf, name, len + UNIONFS_WHLEN + 1);
-
-	return buf;
-}
-
 #define VALID_MOUNT_FLAGS (0)
 
 #ifndef DEFAULT_POLLMASK
@@ -472,6 +413,7 @@ static inline char *alloc_whname(const char *name, int len)
 /*
  * EXTERNALS:
  */
+extern char *alloc_whname(const char *name, int len);
 
 /* These two functions are here because it is kind of daft to copy and paste the
  * contents of the two functions to 32+ places in unionfs

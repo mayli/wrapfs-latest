@@ -130,12 +130,35 @@ static inline struct unionfs_dentry_info *UNIONFS_D(const struct dentry *dent)
 	return dent->d_fsdata;
 }
 
-#define dbstart(dent) (UNIONFS_D(dent)->bstart)
-#define set_dbstart(dent, val) do { UNIONFS_D(dent)->bstart = val; } while(0)
-#define dbend(dent) (UNIONFS_D(dent)->bend)
-#define set_dbend(dent, val) do { UNIONFS_D(dent)->bend = val; } while(0)
-#define dbopaque(dent) (UNIONFS_D(dent)->bopaque)
-#define set_dbopaque(dent, val) do { UNIONFS_D(dent)->bopaque = val; } while (0)
+static inline int dbstart(const struct dentry *dent)
+{
+	return UNIONFS_D(dent)->bstart;
+}
+
+static inline void set_dbstart(struct dentry *dent, int val)
+{
+	UNIONFS_D(dent)->bstart = val;
+}
+
+static inline int dbend(const struct dentry *dent)
+{
+	return UNIONFS_D(dent)->bend;
+}
+
+static inline void set_dbend(struct dentry *dent, int val)
+{
+	UNIONFS_D(dent)->bend = val;
+}
+
+static inline int dbopaque(const struct dentry *dent)
+{
+	return UNIONFS_D(dent)->bopaque;
+}
+
+static inline void set_dbopaque(struct dentry *dent, int val)
+{
+	UNIONFS_D(dent)->bopaque = val;
+}
 
 static inline void unionfs_set_lower_dentry_idx(struct dentry *dent, int index,
 				   struct dentry *val)
@@ -170,8 +193,18 @@ static inline struct vfsmount *unionfs_lower_mnt(const struct dentry *dent)
 }
 
 /* Macros for locking a dentry. */
-#define lock_dentry(d)		down(&UNIONFS_D(d)->sem)
-#define unlock_dentry(d)	up(&UNIONFS_D(d)->sem)
-#define verify_locked(d)
+static inline void unionfs_lock_dentry(struct dentry *d)
+{
+	mutex_lock(&UNIONFS_D(d)->lock);
+}
+
+static inline void unionfs_unlock_dentry(struct dentry *d)
+{
+	mutex_unlock(&UNIONFS_D(d)->lock);
+}
+
+static inline void verify_locked(struct dentry *d)
+{
+}
 
 #endif	/* _FANOUT_H */

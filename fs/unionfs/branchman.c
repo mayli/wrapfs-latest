@@ -54,7 +54,7 @@ int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	struct dentry *dentry, *hidden_dentry;
 
 	dentry = file->f_dentry;
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	if ((err = unionfs_partial_lookup(dentry)))
 		goto out;
 	bstart = dbstart(dentry);
@@ -75,7 +75,7 @@ int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 		err = -EFAULT;
 
 out:
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err < 0 ? err : bend;
 }
 

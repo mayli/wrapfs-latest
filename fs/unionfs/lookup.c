@@ -18,8 +18,56 @@
 
 #include "union.h"
 
-static int is_opaque_dir(struct dentry *dentry, int bindex);
-static int is_validname(const char *name);
+/* is the filename valid == !(whiteout for a file or opaque dir marker) */
+static int is_validname(const char *name)
+{
+	if (!strncmp(name, UNIONFS_WHPFX, UNIONFS_WHLEN))
+		return 0;
+	if (!strncmp(name, UNIONFS_DIR_OPAQUE_NAME,
+		     sizeof(UNIONFS_DIR_OPAQUE_NAME) - 1))
+		return 0;
+	return 1;
+}
+
+/* The rest of these are utility functions for lookup. */
+static int is_opaque_dir(struct dentry *dentry, int bindex)
+{
+	int err = 0;
+	struct dentry *hidden_dentry;
+	struct dentry *wh_hidden_dentry;
+	struct inode *hidden_inode;
+	struct sioq_args args;
+
+	hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+	hidden_inode = hidden_dentry->d_inode;
+
+	BUG_ON(!S_ISDIR(hidden_inode->i_mode));
+
+	mutex_lock(&hidden_inode->i_mutex);
+
+	if (!permission(hidden_inode, MAY_EXEC, NULL))
+		wh_hidden_dentry = lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
+					sizeof(UNIONFS_DIR_OPAQUE) - 1);
+	else {
+		args.is_opaque.dentry = hidden_dentry;
+		run_sioq(__is_opaque_dir, &args);
+		wh_hidden_dentry = args.ret;
+	}
+
+	mutex_unlock(&hidden_inode->i_mutex);
+
+	if (IS_ERR(wh_hidden_dentry)) {
+		err = PTR_ERR(wh_hidden_dentry);
+		goto out;
+	}
+
+	/* This is an opaque dir iff wh_hidden_dentry is positive */
+	err = !!wh_hidden_dentry->d_inode;
+
+	dput(wh_hidden_dentry);
+out:
+	return err;
+}
 
 struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd,
 				      int lookupmode)
@@ -62,7 +110,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *n
 	parent_dentry = dget_parent(dentry);
 	/* We never partial lookup the root directory. */
 	if (parent_dentry != dentry) {
-		lock_dentry(parent_dentry);
+		unionfs_lock_dentry(parent_dentry);
 		locked_parent = 1;
 	} else {
 		dput(parent_dentry);
@@ -330,10 +378,10 @@ out:
 	}
 	kfree(whname);
 	if (locked_parent)
-		unlock_dentry(parent_dentry);
+		unionfs_unlock_dentry(parent_dentry);
 	dput(parent_dentry);
 	if (locked_child)
-		unlock_dentry(dentry);
+		unionfs_unlock_dentry(dentry);
 	return ERR_PTR(err);
 }
 
@@ -351,57 +399,6 @@ int unionfs_partial_lookup(struct dentry *dentry)
 	/* need to change the interface */
 	BUG_ON(tmp != dentry);
 	return -ENOSYS;
-}
-
-/* The rest of these are utility functions for lookup. */
-static int is_opaque_dir(struct dentry *dentry, int bindex)
-{
-	int err = 0;
-	struct dentry *hidden_dentry;
-	struct dentry *wh_hidden_dentry;
-	struct inode *hidden_inode;
-	struct sioq_args args;
-
-	hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-	hidden_inode = hidden_dentry->d_inode;
-
-	BUG_ON(!S_ISDIR(hidden_inode->i_mode));
-
-	mutex_lock(&hidden_inode->i_mutex);
-
-	if (!permission(hidden_inode, MAY_EXEC, NULL))
-		wh_hidden_dentry = lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
-					sizeof(UNIONFS_DIR_OPAQUE) - 1);
-	else {
-		args.is_opaque.dentry = hidden_dentry;
-		run_sioq(__is_opaque_dir, &args);
-		wh_hidden_dentry = args.ret;
-	}
-
-	mutex_unlock(&hidden_inode->i_mutex);
-
-	if (IS_ERR(wh_hidden_dentry)) {
-		err = PTR_ERR(wh_hidden_dentry);
-		goto out;
-	}
-
-	/* This is an opaque dir iff wh_hidden_dentry is positive */
-	err = !!wh_hidden_dentry->d_inode;
-
-	dput(wh_hidden_dentry);
-out:
-	return err;
-}
-
-/* is the filename valid == !(whiteout for a file or opaque dir marker) */
-static int is_validname(const char *name)
-{
-	if (!strncmp(name, UNIONFS_WHPFX, UNIONFS_WHLEN))
-		return 0;
-	if (!strncmp(name, UNIONFS_DIR_OPAQUE_NAME,
-		     sizeof(UNIONFS_DIR_OPAQUE_NAME) - 1))
-		return 0;
-	return 1;
 }
 
 /* The dentry cache is just so we have properly sized dentries. */
@@ -443,7 +440,9 @@ int new_dentry_private_data(struct dentry *dentry)
 
 		if (!info)
 			goto out;
-		init_MUTEX_LOCKED(&info->sem);
+
+		mutex_init(&info->lock);
+		mutex_lock(&info->lock);
 
 		info->lower_paths = NULL;
 	} else

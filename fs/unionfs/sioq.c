@@ -24,26 +24,26 @@
  * whiteouts).
  */
 
-static struct workqueue_struct *sioq;
+static struct workqueue_struct *superio_workqueue;
 
 int __init init_sioq(void)
 {
 	int err;
 
-	sioq = create_workqueue("unionfs_siod");
-	if (!IS_ERR(sioq))
+	superio_workqueue = create_workqueue("unionfs_siod");
+	if (!IS_ERR(superio_workqueue))
 		return 0;
 
-	err = PTR_ERR(sioq);
+	err = PTR_ERR(superio_workqueue);
 	printk(KERN_ERR "create_workqueue failed %d\n", err);
-	sioq = NULL;
+	superio_workqueue = NULL;
 	return err;
 }
 
 void __exit stop_sioq(void)
 {
-	if (sioq)
-		destroy_workqueue(sioq);
+	if (superio_workqueue)
+		destroy_workqueue(superio_workqueue);
 }
 
 void run_sioq(work_func_t func, struct sioq_args *args)
@@ -51,7 +51,7 @@ void run_sioq(work_func_t func, struct sioq_args *args)
 	INIT_WORK(&args->work, func);
 
 	init_completion(&args->comp);
-	while (!queue_work(sioq, &args->work)) {
+	while (!queue_work(superio_workqueue, &args->work)) {
 		/* TODO: do accounting if needed */
 		schedule();
 	}
@@ -103,7 +103,8 @@ void __unionfs_unlink(struct work_struct *work)
 	complete(&args->comp);
 }
 
-void __delete_whiteouts(struct work_struct *work) {
+void __delete_whiteouts(struct work_struct *work)
+{
 	struct sioq_args *args = container_of(work, struct sioq_args, work);
 	struct deletewh_args *d = &args->deletewh;
 

@@ -29,7 +29,7 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	int bindex = 0, bstart;
 	char *name = NULL;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	/* We start out in the leftmost branch. */
 	bstart = dbstart(dentry);
@@ -183,7 +183,7 @@ out:
 	dput(wh_dentry);
 	kfree(name);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -319,8 +319,8 @@ out:
 
 	kfree(name);
 
-	unlock_dentry(new_dentry);
-	unlock_dentry(old_dentry);
+	unionfs_unlock_dentry(new_dentry);
+	unionfs_unlock_dentry(old_dentry);
 
 	return err;
 }
@@ -336,7 +336,7 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 	int bindex = 0, bstart;
 	char *name = NULL;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	/* We start out in the leftmost branch. */
 	bstart = dbstart(dentry);
@@ -444,7 +444,7 @@ out:
 		d_drop(dentry);
 
 	kfree(name);
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -458,7 +458,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 	int whiteout_unlinked = 0;
 	struct sioq_args args;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -571,7 +571,7 @@ out:
 
 	kfree(name);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -585,7 +585,7 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	char *name = NULL;
 	int whiteout_unlinked = 0;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -677,7 +677,7 @@ out:
 
 	kfree(name);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -687,7 +687,7 @@ static int unionfs_readlink(struct dentry *dentry, char __user * buf,
 	int err;
 	struct dentry *hidden_dentry;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	if (!hidden_dentry->d_inode->i_op ||
@@ -701,7 +701,7 @@ static int unionfs_readlink(struct dentry *dentry, char __user * buf,
 		fsstack_copy_attr_atime(dentry->d_inode, hidden_dentry->d_inode);
 
 out:
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -853,7 +853,7 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	int i;
 	int copyup = 0;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);
 	bend = dbend(dentry);
 	inode = dentry->d_inode;
@@ -901,7 +901,7 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	fsstack_copy_inode_size(inode, hidden_inode);
 
 out:
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 

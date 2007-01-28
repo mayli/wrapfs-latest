@@ -132,19 +132,19 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 skip:
 	/* only (our) lookup wants to do a d_add */
 	switch (flag) {
-		case INTERPOSE_DEFAULT:
-		case INTERPOSE_REVAL_NEG:
-			d_instantiate(dentry, inode);
-			break;
-		case INTERPOSE_LOOKUP:
-			err = PTR_ERR(d_splice_alias(inode, dentry));
-			break;
-		case INTERPOSE_REVAL:
-			/* Do nothing. */
-			break;
-		default:
-			printk(KERN_ERR "Invalid interpose flag passed!");
-			BUG();
+	case INTERPOSE_DEFAULT:
+	case INTERPOSE_REVAL_NEG:
+		d_instantiate(dentry, inode);
+		break;
+	case INTERPOSE_LOOKUP:
+		err = PTR_ERR(d_splice_alias(inode, dentry));
+		break;
+	case INTERPOSE_REVAL:
+		/* Do nothing. */
+		break;
+	default:
+		printk(KERN_ERR "Invalid interpose flag passed!");
+		BUG();
 	}
 
 	mutex_unlock(&inode->i_mutex);
@@ -586,7 +586,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	/* call interpose to create the upper level inode */
 	if ((err = unionfs_interpose(sb->s_root, sb, 0)))
 		goto out_freedpd;
-	unlock_dentry(sb->s_root);
+	unionfs_unlock_dentry(sb->s_root);
 	goto out;
 
 out_freedpd:

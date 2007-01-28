@@ -179,9 +179,9 @@ static int unionfs_d_revalidate_wrap(struct dentry *dentry,
 {
 	int err;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	err = unionfs_d_revalidate(dentry, nd);
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 
 	return err;
 }
@@ -194,7 +194,7 @@ static void unionfs_d_release(struct dentry *dentry)
 	 * reference, but the printing functions verify that we have a lock
 	 * on the dentry before calling dbstart, etc.
 	 */
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	/* this could be a negative dentry, so check first */
 	if (!UNIONFS_D(dentry)) {

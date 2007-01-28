@@ -295,7 +295,7 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	int bindex, bstart, bend;
 	int perms;
 
-	lock_dentry(sb->s_root);
+	unionfs_lock_dentry(sb->s_root);
 
 	tmp_page = (char*) __get_free_page(GFP_KERNEL);
 	if (!tmp_page) {
@@ -321,10 +321,9 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	}
 
 out:
-	if (tmp_page)
-		free_page((unsigned long) tmp_page);
+	free_page((unsigned long) tmp_page);
 
-	unlock_dentry(sb->s_root);
+	unionfs_unlock_dentry(sb->s_root);
 
 	return ret;
 }

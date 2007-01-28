@@ -56,13 +56,13 @@ ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_getxattr(hidden_dentry, (char*) name, value, size);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -75,12 +75,12 @@ int unionfs_setxattr(struct dentry *dentry, const char *name, const void *value,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_setxattr(hidden_dentry, (char*) name, (void*) value, size, flags);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -92,12 +92,12 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_removexattr(hidden_dentry, (char*) name);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -110,14 +110,14 @@ ssize_t unionfs_listxattr(struct dentry * dentry, char *list, size_t size)
 	int err = -EOPNOTSUPP;
 	char *encoded_list = NULL;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	encoded_list = list;
 	err = vfs_listxattr(hidden_dentry, encoded_list, size);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 

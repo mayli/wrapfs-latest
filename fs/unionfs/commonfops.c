@@ -33,7 +33,7 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 
 	int err;
 	struct dentry *tmp_dentry = NULL;
-	struct dentry *hidden_dentry = NULL;
+	struct dentry *hidden_dentry;
 	struct dentry *hidden_dir_dentry = NULL;
 
 	hidden_dentry = unionfs_lower_dentry_idx(dentry, bstart);
@@ -225,7 +225,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	int err = 0;
 
 	dentry = file->f_dentry;
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	sb = dentry->d_sb;
 	unionfs_read_lock(sb);
 	if (!unionfs_d_revalidate(dentry, NULL) && !d_deleted(dentry)) {
@@ -286,7 +286,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	}
 
 out:
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
@@ -406,7 +406,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 	}
 
 	dentry = file->f_dentry;
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 	unionfs_read_lock(inode->i_sb);
 
 	bstart = fbstart(file) = dbstart(dentry);
@@ -436,7 +436,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 		}
 	}
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	unionfs_read_unlock(inode->i_sb);
 
 out:
@@ -529,23 +529,23 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	/* check if asked for local commands */
 	switch (cmd) {
-		case UNIONFS_IOCTL_INCGEN:
-			/* Increment the superblock generation count */
-			err = -EACCES;
-			if (!capable(CAP_SYS_ADMIN))
-				goto out;
-			err = unionfs_ioctl_incgen(file, cmd, arg);
-			break;
+	case UNIONFS_IOCTL_INCGEN:
+		/* Increment the superblock generation count */
+		err = -EACCES;
+		if (!capable(CAP_SYS_ADMIN))
+			goto out;
+		err = unionfs_ioctl_incgen(file, cmd, arg);
+		break;
 
-		case UNIONFS_IOCTL_QUERYFILE:
-			/* Return list of branches containing the given file */
-			err = unionfs_ioctl_queryfile(file, cmd, arg);
-			break;
+	case UNIONFS_IOCTL_QUERYFILE:
+		/* Return list of branches containing the given file */
+		err = unionfs_ioctl_queryfile(file, cmd, arg);
+		break;
 
-		default:
-			/* pass the ioctl down */
-			err = do_ioctl(file, cmd, arg);
-			break;
+	default:
+		/* pass the ioctl down */
+		err = do_ioctl(file, cmd, arg);
+		break;
 	}
 
 out:
@@ -564,7 +564,7 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	if (!atomic_dec_and_test(&UNIONFS_I(dentry->d_inode)->totalopens))
 		goto out;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	bstart = fbstart(file);
 	bend = fbend(file);
@@ -586,7 +586,7 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	}
 
 out_lock:
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 out:
 	return err;
 }

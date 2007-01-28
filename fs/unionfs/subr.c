@@ -109,9 +109,9 @@ int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
 
 	verify_locked(dentry);
 
-	lock_dentry(dentry->d_parent);
+	unionfs_lock_dentry(dentry->d_parent);
 	hidden_parent = unionfs_lower_dentry_idx(dentry->d_parent, bindex);
-	unlock_dentry(dentry->d_parent);
+	unionfs_unlock_dentry(dentry->d_parent);
 
 	BUG_ON(!S_ISDIR(hidden_parent->d_inode->i_mode));
 
@@ -168,5 +168,66 @@ int make_dir_opaque(struct dentry *dentry, int bindex)
 out:
 	mutex_unlock(&hidden_dir->i_mutex);
 	return err;
+}
+
+/* returns the sum of the n_link values of all the underlying inodes of the
+ * passed inode
+ */
+int unionfs_get_nlinks(struct inode *inode)
+{
+	int sum_nlinks = 0;
+	int dirs = 0;
+	int bindex;
+	struct inode *hidden_inode;
+
+	/* don't bother to do all the work since we're unlinked */
+	if (inode->i_nlink == 0)
+		return 0;
+
+	if (!S_ISDIR(inode->i_mode))
+		return unionfs_lower_inode(inode)->i_nlink;
+
+	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
+		hidden_inode = unionfs_lower_inode_idx(inode, bindex);
+
+		/* ignore files */
+		if (!hidden_inode || !S_ISDIR(hidden_inode->i_mode))
+			continue;
+
+		BUG_ON(hidden_inode->i_nlink < 0);
+
+		/* A deleted directory. */
+		if (hidden_inode->i_nlink == 0)
+			continue;
+		dirs++;
+
+		/*
+		 * A broken directory...
+		 *
+		 * Some filesystems don't properly set the number of links
+		 * on empty directories
+		 */
+		if (hidden_inode->i_nlink == 1)
+			sum_nlinks += 2;
+		else
+			sum_nlinks += (hidden_inode->i_nlink - 2);
+	}
+
+	return (!dirs ? 0 : sum_nlinks + 2);
+}
+
+/* construct whiteout filename */
+char *alloc_whname(const char *name, int len)
+{
+	char *buf;
+
+	buf = kmalloc(len + UNIONFS_WHLEN + 1, GFP_KERNEL);
+	if (!buf)
+		return ERR_PTR(-ENOMEM);
+
+	strcpy(buf, UNIONFS_WHPFX);
+	strlcat(buf, name, len + UNIONFS_WHLEN + 1);
+
+	return buf;
 }
 

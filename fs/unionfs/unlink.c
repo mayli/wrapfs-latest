@@ -74,14 +74,14 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	err = unionfs_unlink_whiteout(dir, dentry);
 	/* call d_drop so the system "forgets" about us */
 	if (!err)
 		d_drop(dentry);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 
@@ -122,7 +122,7 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int err = 0;
 	struct unionfs_dir_state *namelist = NULL;
 
-	lock_dentry(dentry);
+	unionfs_lock_dentry(dentry);
 
 	/* check if this unionfs directory is empty or not */
 	err = check_empty(dentry, &namelist);
@@ -156,7 +156,7 @@ out:
 	if (namelist)
 		free_rdstate(namelist);
 
-	unlock_dentry(dentry);
+	unionfs_unlock_dentry(dentry);
 	return err;
 }
 

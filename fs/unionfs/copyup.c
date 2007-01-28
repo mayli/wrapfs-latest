@@ -26,6 +26,10 @@ static struct dentry *create_parents_named(struct inode *dir,
 					   struct dentry *dentry,
 					   const char *name, int bindex);
 
+/* For detailed explanation of copyup see:
+ * Documentation/filesystems/unionfs/concepts.txt
+ */
+
 #ifdef CONFIG_UNION_FS_XATTR
 /* copyup all extended attrs for a given dentry */
 static int copyup_xattrs(struct dentry *old_hidden_dentry,
@@ -646,7 +650,7 @@ static struct dentry *create_parents_named(struct inode *dir,
 
 		/* find the parent directory dentry in unionfs */
 		parent_dentry = child_dentry->d_parent;
-		lock_dentry(parent_dentry);
+		unionfs_lock_dentry(parent_dentry);
 
 		/* find out the hidden_parent_dentry in the given branch */
 		hidden_parent_dentry = unionfs_lower_dentry_idx(parent_dentry, bindex);
@@ -682,7 +686,7 @@ static struct dentry *create_parents_named(struct inode *dir,
 	while (1) {
 		/* get hidden parent dir in the current branch */
 		hidden_parent_dentry = unionfs_lower_dentry_idx(parent_dentry, bindex);
-		unlock_dentry(parent_dentry);
+		unionfs_unlock_dentry(parent_dentry);
 
 		/* init the values to lookup */
 		childname = child_dentry->d_name.name;

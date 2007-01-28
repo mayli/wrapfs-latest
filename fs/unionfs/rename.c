@@ -322,7 +322,7 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 		return (void *)whname;
 
 	parent = dget_parent(dentry);
-	lock_dentry(parent);
+	unionfs_lock_dentry(parent);
 	bstart = dbstart(parent);
 	bend = dbend(parent);
 	wh_dentry = ERR_PTR(-ENOENT);
@@ -339,7 +339,7 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 		dput(wh_dentry);
 		wh_dentry = ERR_PTR(-ENOENT);
 	}
-	unlock_dentry(parent);
+	unionfs_unlock_dentry(parent);
 	dput(parent);
 	kfree(whname);
 	return wh_dentry;
@@ -438,8 +438,8 @@ out:
 		if (S_ISDIR(old_dentry->d_inode->i_mode))
 			atomic_dec(&UNIONFS_D(old_dentry)->generation);
 
-	unlock_dentry(new_dentry);
-	unlock_dentry(old_dentry);
+	unionfs_unlock_dentry(new_dentry);
+	unionfs_unlock_dentry(old_dentry);
 	return err;
 }
 
