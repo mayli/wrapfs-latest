@@ -141,7 +141,7 @@ restart:
 		}
 
 		if (positive && UNIONFS_I(dentry->d_inode)->stale) {
-			make_stale_inode(dentry->d_inode);
+			make_bad_inode(dentry->d_inode);
 			d_drop(dentry);
 			valid = 0;
 			goto out;

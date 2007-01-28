@@ -396,7 +396,6 @@ static inline int unionfs_get_nlinks(struct inode *inode)
 
 struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd, int lookupmode);
 int is_stale_inode(struct inode *inode);
-void make_stale_inode(struct inode *inode);
 
 #define IS_SET(sb, check_flag) ((check_flag) & MOUNT_FLAG(sb))
 
