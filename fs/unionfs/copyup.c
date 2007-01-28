@@ -18,6 +18,75 @@
 
 #include "union.h"
 
+#ifdef CONFIG_UNION_FS_XATTR
+/* copyup all extended attrs for a given dentry */
+static int copyup_xattrs(struct dentry *old_hidden_dentry,
+			 struct dentry *new_hidden_dentry)
+{
+	int err = 0;
+	ssize_t list_size = -1;
+	char *name_list = NULL;
+	char *attr_value = NULL;
+	char *name_list_orig = NULL;
+
+	list_size = vfs_listxattr(old_hidden_dentry, NULL, 0);
+
+	if (list_size <= 0) {
+		err = list_size;
+		goto out;
+	}
+
+	name_list = unionfs_xattr_alloc(list_size + 1, XATTR_LIST_MAX);
+	if (!name_list || IS_ERR(name_list)) {
+		err = PTR_ERR(name_list);
+		goto out;
+	}
+	list_size = vfs_listxattr(old_hidden_dentry, name_list, list_size);
+	attr_value = unionfs_xattr_alloc(XATTR_SIZE_MAX, XATTR_SIZE_MAX);
+	if (!attr_value || IS_ERR(attr_value)) {
+		err = PTR_ERR(name_list);
+		goto out;
+	}
+	name_list_orig = name_list;
+	while (*name_list) {
+		ssize_t size;
+
+		/* Lock here since vfs_getxattr doesn't lock for us */
+		mutex_lock(&old_hidden_dentry->d_inode->i_mutex);
+		size = vfs_getxattr(old_hidden_dentry, name_list,
+				    attr_value, XATTR_SIZE_MAX);
+		mutex_unlock(&old_hidden_dentry->d_inode->i_mutex);
+		if (size < 0) {
+			err = size;
+			goto out;
+		}
+
+		if (size > XATTR_SIZE_MAX) {
+			err = -E2BIG;
+			goto out;
+		}
+		/* Don't lock here since vfs_setxattr does it for us. */
+		err = vfs_setxattr(new_hidden_dentry, name_list, attr_value,
+				   size, 0);
+
+		if (err < 0)
+			goto out;
+		name_list += strlen(name_list) + 1;
+	}
+      out:
+	name_list = name_list_orig;
+
+	if (name_list)
+		unionfs_xattr_free(name_list, list_size + 1);
+	if (attr_value)
+		unionfs_xattr_free(attr_value, XATTR_SIZE_MAX);
+	/* It is no big deal if this fails, we just roll with the punches. */
+	if (err == -ENOTSUPP || err == -EOPNOTSUPP)
+		err = 0;
+	return err;
+}
+#endif /* CONFIG_UNION_FS_XATTR */
+
 /* Determine the mode based on the copyup flags, and the existing dentry. */
 static int copyup_permissions(struct super_block *sb,
 			      struct dentry *old_hidden_dentry,
@@ -343,6 +412,12 @@ int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 	/* Set permissions. */
 	if ((err = copyup_permissions(sb, old_hidden_dentry, new_hidden_dentry)))
 		goto out_unlink;
+
+#ifdef CONFIG_UNION_FS_XATTR
+	/* Selinux uses extended attributes for permissions. */
+	if ((err = copyup_xattrs(old_hidden_dentry, new_hidden_dentry)))
+		goto out_unlink;
+#endif
 
 	/* do not allow files getting deleted to be reinterposed */
 	if (!d_deleted(dentry))

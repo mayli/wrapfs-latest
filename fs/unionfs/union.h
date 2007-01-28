@@ -38,6 +38,7 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/writeback.h>
+#include <linux/xattr.h>
 #include <linux/fs_stack.h>
 #include <linux/magic.h>
 
@@ -326,6 +327,20 @@ int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 
 /* Verify that a branch is valid. */
 int check_branch(struct nameidata *nd);
+
+#ifdef CONFIG_UNION_FS_XATTR
+/* Extended attribute functions. */
+extern void *unionfs_xattr_alloc(size_t size, size_t limit);
+extern void unionfs_xattr_free(void *ptr, size_t size);
+
+extern ssize_t unionfs_getxattr(struct dentry *dentry, const char *name,
+		void *value, size_t size);
+extern int unionfs_removexattr(struct dentry *dentry, const char *name);
+extern ssize_t unionfs_listxattr(struct dentry *dentry, char *list,
+		size_t size);
+extern int unionfs_setxattr(struct dentry *dentry, const char *name,
+		const void *value, size_t size, int flags);
+#endif /* CONFIG_UNION_FS_XATTR */
 
 /* The root directory is unhashed, but isn't deleted. */
 static inline int d_deleted(struct dentry *d)

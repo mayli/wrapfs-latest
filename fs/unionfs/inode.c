@@ -930,10 +930,22 @@ struct inode_operations unionfs_dir_iops = {
 	.rename		= unionfs_rename,
 	.permission	= unionfs_permission,
 	.setattr	= unionfs_setattr,
+#ifdef CONFIG_UNION_FS_XATTR
+	.setxattr	= unionfs_setxattr,
+	.getxattr	= unionfs_getxattr,
+	.removexattr	= unionfs_removexattr,
+	.listxattr	= unionfs_listxattr,
+#endif
 };
 
 struct inode_operations unionfs_main_iops = {
 	.permission	= unionfs_permission,
 	.setattr	= unionfs_setattr,
+#ifdef CONFIG_UNION_FS_XATTR
+	.setxattr	= unionfs_setxattr,
+	.getxattr	= unionfs_getxattr,
+	.removexattr	= unionfs_removexattr,
+	.listxattr	= unionfs_listxattr,
+#endif
 };
 
