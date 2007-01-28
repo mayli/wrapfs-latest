@@ -191,15 +191,25 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 				     struct dentry *dentry,
 				     struct nameidata *nd)
 {
-	struct nameidata lowernd; /* TODO: be gentler to the stack */
+	struct path path_save;
+	struct dentry *ret;
 
-	if (nd)
-		memcpy(&lowernd, nd, sizeof(struct nameidata));
-	else
-		memset(&lowernd, 0, sizeof(struct nameidata));
+	/* save the dentry & vfsmnt from namei */
+	if (nd) {
+		path_save.dentry = nd->dentry;
+		path_save.mnt = nd->mnt;
+	}
 
 	/* The locking is done by unionfs_lookup_backend. */
-	return unionfs_lookup_backend(dentry, &lowernd, INTERPOSE_LOOKUP);
+	ret = unionfs_lookup_backend(dentry, nd, INTERPOSE_LOOKUP);
+
+	/* restore the dentry & vfsmnt in namei */
+	if (nd) {
+		nd->dentry = path_save.dentry;
+		nd->mnt = path_save.mnt;
+	}
+
+	return ret;
 }
 
 static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
