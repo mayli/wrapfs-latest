@@ -115,19 +115,12 @@ struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex)
 {
 	int i = 0;
 	int hashsize;
-	int mallocsize = sizeof(struct unionfs_dir_state);
+	unsigned long mallocsize = sizeof(struct unionfs_dir_state);
 	struct unionfs_dir_state *rdstate;
 
 	hashsize = guesstimate_hash_size(inode);
 	mallocsize += hashsize * sizeof(struct list_head);
-	/* Round it up to the next highest power of two. */
-	mallocsize--;
-	mallocsize |= mallocsize >> 1;
-	mallocsize |= mallocsize >> 2;
-	mallocsize |= mallocsize >> 4;
-	mallocsize |= mallocsize >> 8;
-	mallocsize |= mallocsize >> 16;
-	mallocsize++;
+	mallocsize = __roundup_pow_of_two(mallocsize);
 
 	/* This should give us about 500 entries anyway. */
 	if (mallocsize > PAGE_SIZE)
