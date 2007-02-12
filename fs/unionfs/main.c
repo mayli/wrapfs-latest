@@ -679,7 +679,7 @@ static void __exit exit_unionfs_fs(void)
 MODULE_AUTHOR("Erez Zadok, Filesystems and Storage Lab, Stony Brook University"
 		" (http://www.fsl.cs.sunysb.edu)");
 MODULE_DESCRIPTION("Unionfs " UNIONFS_VERSION
-		" (http://www.unionfs.org)");
+		" (http://unionfs.filesystems.org)");
 MODULE_LICENSE("GPL");
 
 module_init(init_unionfs_fs);

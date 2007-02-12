@@ -1052,7 +1052,7 @@ config UNION_FS
 	  merge the contents of several directories (branches), while keeping
 	  their physical content separate.
 
-	  See <http://www.unionfs.org> for details
+	  See <http://unionfs.filesystems.org> for details
 
 config UNION_FS_XATTR
 	bool "Unionfs extended attributes"

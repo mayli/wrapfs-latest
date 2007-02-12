@@ -1,17 +1,18 @@
 Unionfs is a stackable unification file system, which can appear to merge
 the contents of several directories (branches), while keeping their physical
-content separate. Unionfs is useful for unified source tree management,
+content separate.  Unionfs is useful for unified source tree management,
 merged contents of split CD-ROM, merged separate software package
-directories, data grids, and more. Unionfs allows any mix of read-only and
+directories, data grids, and more.  Unionfs allows any mix of read-only and
 read-write branches, as well as insertion and deletion of branches anywhere
-in the fan-out. To maintain unix semantics, Unionfs handles elimination of
+in the fan-out.  To maintain Unix semantics, Unionfs handles elimination of
 duplicates, partial-error conditions, and more.
 
-mount -t unionfs -o branch-option[,union-options[,...]] none MOUNTPOINT
+# mount -t unionfs -o branch-option[,union-options[,...]] none MOUNTPOINT
 
 The available branch-option for the mount command is:
 
-dirs=branch[=ro|=rw][:...]
+	dirs=branch[=ro|=rw][:...]
+
 specifies a separated list of which directories compose the union.
 Directories that come earlier in the list have a higher precedence than
 those which come later. Additionally, read-only or read-write permissions of
@@ -19,24 +20,12 @@ the branch can be specified by appending =ro or =rw (default) to each
 directory.
 
 Syntax:
-dirs=/branch1[=ro|=rw]:/branch2[=ro|=rw]:...:/branchN[=ro|=rw]
+
+	dirs=/branch1[=ro|=rw]:/branch2[=ro|=rw]:...:/branchN[=ro|=rw]
 
 Example:
-dirs=/writable_branch=rw:/read-only_branch=ro
+
+	dirs=/writable_branch=rw:/read-only_branch=ro
 
 
-KNOWN ISSUES:
-=============
-
-The NFS server returns -EACCES for read-only exports, instead of -EROFS.
-This means we can't reliably detect a read-only NFS export.
-
-Modifying a Unionfs branch directly, while the union is mounted, is
-currently unsupported.  Any such change can cause Unionfs to oops, or stay
-silent and even RESULT IN DATA LOSS.
-
-Unionfs should not use lookup_one_len() on the underlying fs as it confuses
-NFS. Currently, unionfs_lookup() passes lookup intents to the lower
-filesystem, this eliminates part of the problem. The remaining calls to
-lookup_one_len may need to be changed to pass an intent.
-
+For more information, see unionfs.filesystems.org.

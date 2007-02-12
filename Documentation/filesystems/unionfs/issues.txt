@@ -1,0 +1,23 @@
+KNOWN Unionfs ISSUES:
+=====================
+
+1. The NFS server returns -EACCES for read-only exports, instead of -EROFS.
+   This means we can't reliably detect a read-only NFS export.
+
+2. Modifying a Unionfs branch directly, while the union is mounted, is
+   currently unsupported.  We have tested Unionfs under such conditions, and
+   fixed any bugs we found (Unionfs comes with an extensive regression test
+   suite).  However, it may still be possible that changes made to lower
+   branches directly could cause cache incoherency which, in the worst case,
+   may case an oops.  We are currently addressing this problem for Unionfs
+   and also generically for all stackable file systems, by handing mmap and
+   introducing small VFS/MM changes that would allow a file system to handle
+   cache coherency correctly.
+
+3. Unionfs should not use lookup_one_len() on the underlying f/s as it
+   confuses NFS.  Currently, unionfs_lookup() passes lookup intents to the
+   lower file-system, this eliminates part of the problem.  The remaining
+   calls to lookup_one_len may need to be changed to pass an intent.
+
+
+For more information, see <unionfs.filesystems.org>.

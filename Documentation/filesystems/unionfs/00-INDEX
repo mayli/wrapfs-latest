@@ -1,8 +1,10 @@
 00-INDEX
 	- this file.
 concepts.txt
-	- A brief introduction of concepts
+	- A brief introduction of concepts.
+issues.txt
+	- A summary of known issues with unionfs.
 rename.txt
-	- Information regarding rename operations
+	- Information regarding rename operations.
 usage.txt
-	- Usage and known limitations
+	- Usage information and examples.
