@@ -280,7 +280,9 @@ static struct dentry *ecryptfs_lookup(struct inode *dir, struct dentry *dentry,
 	int rc = 0;
 	struct dentry *lower_dir_dentry;
 	struct dentry *lower_dentry;
+	struct dentry *dentry_save;
 	struct vfsmount *lower_mnt;
+	struct vfsmount *mnt_save;
 	char *encoded_name;
 	int encoded_namelen;
 	struct ecryptfs_crypt_stat *crypt_stat = NULL;
@@ -308,9 +310,13 @@ static struct dentry *ecryptfs_lookup(struct inode *dir, struct dentry *dentry,
 	}
 	ecryptfs_printk(KERN_DEBUG, "encoded_name = [%s]; encoded_namelen "
 			"= [%d]\n", encoded_name, encoded_namelen);
-	lower_dentry = lookup_one_len(encoded_name, lower_dir_dentry,
-				      encoded_namelen - 1);
+	dentry_save = nd->dentry;
+	mnt_save = nd->mnt;
+	lower_dentry = lookup_one_len_nd(encoded_name, lower_dir_dentry,
+					 (encoded_namelen - 1), nd);
 	kfree(encoded_name);
+	nd->mnt = mnt_save;
+	nd->dentry = dentry_save;
 	if (IS_ERR(lower_dentry)) {
 		ecryptfs_printk(KERN_ERR, "ERR from lower_dentry\n");
 		rc = PTR_ERR(lower_dentry);
