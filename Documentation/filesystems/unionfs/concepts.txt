@@ -1,0 +1,70 @@
+This file describes the concepts needed by a namespace unification file
+system.
+
+Branch Priority:
+================
+
+Each branch is assigned a unique priority - starting from 0 (highest
+priority).  No two branches can have the same priority.
+
+
+Branch Mode:
+============
+
+Each branch is assigned a mode - read-write or read-only. This allows
+directories on media mounted read-write to be used in a read-only manner.
+
+
+Whiteouts:
+==========
+
+A whiteout removes a file name from the namespace. Whiteouts are needed when
+one attempts to remove a file on a read-only branch.
+
+Suppose we have a two-branch union, where branch 0 is read-write and branch
+1 is read-only. And a file 'foo' on branch 1:
+
+./b0/
+./b1/
+./b1/foo
+
+The unified view would simply be:
+
+./union/
+./union/foo
+
+Since 'foo' is stored on a read-only branch, it cannot be removed. A
+whiteout is used to remove the name 'foo' from the unified namespace. Again,
+since branch 1 is read-only, the whiteout cannot be created there. So, we
+try on a higher priority (lower numerically) branch and create the whiteout
+there.
+
+./b0/
+./b0/.wh.foo
+./b1/
+./b1/foo
+
+Later, when Unionfs traverses branches (due to lookup or readdir), it
+eliminate 'foo' from the namespace (as well as the whiteout itself.)
+
+
+Duplicate Elimination:
+======================
+
+It is possible for files on different branches to have the same name.
+Unionfs then has to select which instance of the file to show to the user.
+Given the fact that each branch has a priority associated with it, the
+simplest solution is to take the instance from the highest priority
+(numerically lowest value) and "hide" the others.
+
+
+Copyup:
+=======
+
+When a change is made to the contents of a file's data or meta-data, they
+have to be stored somewhere. The best way is to create a copy of the
+original file on a branch that is writable, and then redirect the write
+though to this copy. The copy must be made on a higher priority branch so
+that lookup and readdir return this newer "version" of the file rather than
+the original (see duplicate elimination).
+
