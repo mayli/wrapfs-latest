@@ -190,12 +190,6 @@ static void unionfs_d_release(struct dentry *dentry)
 {
 	int bindex, bstart, bend;
 
-	/* There is no reason to lock the dentry, because we have the only
-	 * reference, but the printing functions verify that we have a lock
-	 * on the dentry before calling dbstart, etc.
-	 */
-	unionfs_lock_dentry(dentry);
-
 	/* this could be a negative dentry, so check first */
 	if (!UNIONFS_D(dentry)) {
 		printk(KERN_DEBUG "dentry without private data: %.*s",
