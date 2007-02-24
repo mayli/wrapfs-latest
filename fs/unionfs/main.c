@@ -66,19 +66,14 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 			err = -ENOMEM;
 			goto out;
 		}
-		mutex_lock(&inode->i_mutex);
 	} else {
-		ino_t ino;
 		/* get unique inode number for unionfs */
-		ino = iunique(sb, UNIONFS_ROOT_INO);
-
-		inode = iget(sb, ino);
+		inode = iget(sb, iunique(sb, UNIONFS_ROOT_INO));
 		if (!inode) {
-			err = -EACCES;	/* should be impossible??? */
+			err = -EACCES;
 			goto out;
 		}
 
-		mutex_lock(&inode->i_mutex);
 		if (atomic_read(&inode->i_count) > 1)
 			goto skip;
 	}
@@ -146,8 +141,6 @@ skip:
 		printk(KERN_ERR "Invalid interpose flag passed!");
 		BUG();
 	}
-
-	mutex_unlock(&inode->i_mutex);
 
 out:
 	return err;
