@@ -228,7 +228,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	unionfs_lock_dentry(dentry);
 	sb = dentry->d_sb;
 	unionfs_read_lock(sb);
-	if (!unionfs_d_revalidate(dentry, NULL) && !d_deleted(dentry)) {
+	if (!__unionfs_d_revalidate(dentry, NULL) && !d_deleted(dentry)) {
 		err = -ESTALE;
 		goto out_nofree;
 	}

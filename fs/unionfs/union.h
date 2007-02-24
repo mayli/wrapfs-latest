@@ -296,7 +296,7 @@ extern int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 int unionfs_unlink(struct inode *dir, struct dentry *dentry);
 int unionfs_rmdir(struct inode *dir, struct dentry *dentry);
 
-int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd);
+int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd);
 
 /* The values for unionfs_interpose's flag. */
 #define INTERPOSE_DEFAULT	0

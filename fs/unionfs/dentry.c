@@ -21,7 +21,7 @@
 /*
  * returns 1 if valid, 0 otherwise.
  */
-int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	int valid = 1;		/* default is valid (1); invalid is 0. */
 	struct dentry *hidden_dentry;
@@ -174,13 +174,12 @@ out:
 	return valid;
 }
 
-static int unionfs_d_revalidate_wrap(struct dentry *dentry,
-				     struct nameidata *nd)
+static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	int err;
 
 	unionfs_lock_dentry(dentry);
-	err = unionfs_d_revalidate(dentry, nd);
+	err = __unionfs_d_revalidate(dentry, nd);
 	unionfs_unlock_dentry(dentry);
 
 	return err;
@@ -226,7 +225,7 @@ out:
 }
 
 struct dentry_operations unionfs_dops = {
-	.d_revalidate	= unionfs_d_revalidate_wrap,
+	.d_revalidate	= unionfs_d_revalidate,
 	.d_release	= unionfs_d_release,
 };
 
