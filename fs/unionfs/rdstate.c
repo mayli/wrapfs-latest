@@ -225,12 +225,6 @@ struct filldir_node *find_filldir_node(struct unionfs_dir_state *rdstate,
 	return cursor;
 }
 
-static struct filldir_node *alloc_filldir_node(const char *name, int namelen,
-					       unsigned int hash, int bindex)
-{
-	return kmem_cache_alloc(unionfs_filldir_cachep, GFP_KERNEL);
-}
-
 int add_filldir_node(struct unionfs_dir_state *rdstate, const char *name,
 		     int namelen, int bindex, int whiteout)
 {
@@ -246,7 +240,7 @@ int add_filldir_node(struct unionfs_dir_state *rdstate, const char *name,
 	index = hash % rdstate->size;
 	head = &(rdstate->list[index]);
 
-	new = alloc_filldir_node(name, namelen, hash, bindex);
+	new = kmem_cache_alloc(unionfs_filldir_cachep, GFP_KERNEL);
 	if (!new) {
 		err = -ENOMEM;
 		goto out;
