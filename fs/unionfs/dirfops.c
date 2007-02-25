@@ -135,15 +135,15 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		buf.sb = inode->i_sb;
 
 		/* Read starting from where we last left off. */
-		offset = vfs_llseek(hidden_file, uds->dirpos, 0);
+		offset = vfs_llseek(hidden_file, uds->dirpos, SEEK_SET);
 		if (offset < 0) {
 			err = offset;
 			goto out;
 		}
 		err = vfs_readdir(hidden_file, unionfs_filldir, &buf);
-		/* Save the position for when we continue. */
 
-		offset = vfs_llseek(hidden_file, 0, 1);
+		/* Save the position for when we continue. */
+		offset = vfs_llseek(hidden_file, 0, SEEK_CUR);
 		if (offset < 0) {
 			err = offset;
 			goto out;
