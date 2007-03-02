@@ -230,7 +230,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	unionfs_read_lock(sb);
 	if (!unionfs_d_revalidate(dentry, NULL) && !d_deleted(dentry)) {
 		err = -ESTALE;
-		goto out;
+		goto out_nofree;
 	}
 
 	sbgen = atomic_read(&UNIONFS_SB(sb)->generation);
@@ -286,6 +286,9 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	}
 
 out:
+	if (err)
+		kfree(UNIONFS_F(file)->lower_files);
+out_nofree:
 	unionfs_unlock_dentry(dentry);
 	unionfs_read_unlock(dentry->d_sb);
 	return err;
@@ -391,7 +394,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 	file->private_data = kzalloc(sizeof(struct unionfs_file_info), GFP_KERNEL);
 	if (!UNIONFS_F(file)) {
 		err = -ENOMEM;
-		goto out;
+		goto out_nofree;
 	}
 	fbstart(file) = -1;
 	fbend(file) = -1;
@@ -444,7 +447,7 @@ out:
 		kfree(UNIONFS_F(file)->lower_files);
 		kfree(UNIONFS_F(file));
 	}
-
+out_nofree:
 	return err;
 }
 
