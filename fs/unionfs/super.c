@@ -320,9 +320,8 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 
 		seq_printf(m, "%s=%s", path,
 			   perms & MAY_WRITE ? "rw" : "ro");
-		if (bindex != bend) {
+		if (bindex != bend)
 			seq_printf(m, ":");
-		}
 	}
 
 out:
