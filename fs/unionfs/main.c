@@ -584,10 +584,11 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	atomic_set(&UNIONFS_D(sb->s_root)->generation, 1);
 
 	/* call interpose to create the upper level inode */
-	if ((err = unionfs_interpose(sb->s_root, sb, 0)))
-		goto out_freedpd;
+	err = unionfs_interpose(sb->s_root, sb, 0);
 	unionfs_unlock_dentry(sb->s_root);
-	goto out;
+	if (!err)
+		goto out;
+	/* else fall through */
 
 out_freedpd:
 	if (UNIONFS_D(sb->s_root)) {
