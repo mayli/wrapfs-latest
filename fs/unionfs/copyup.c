@@ -548,6 +548,9 @@ static void __cleanup_dentry(struct dentry * dentry, int bindex,
 		if (!unionfs_lower_dentry_idx(dentry, i)->d_inode) {
 			dput(unionfs_lower_dentry_idx(dentry, i));
 			unionfs_set_lower_dentry_idx(dentry, i, NULL);
+
+			mntput(unionfs_lower_mnt_idx(dentry, i));
+			unionfs_set_lower_mnt_idx(dentry, i, NULL);
 		} else {
 			if (new_bstart < 0)
 				new_bstart = i;
