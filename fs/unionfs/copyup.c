@@ -352,20 +352,18 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 
 	unionfs_read_lock(sb);
 
-	if ((err = is_robranch_super(sb, new_bindex))) {
-		dput(old_hidden_dentry);
+	if ((err = is_robranch_super(sb, new_bindex)))
 		goto out;
-	}
 
 	/* Create the directory structure above this dentry. */
 	new_hidden_dentry = create_parents_named(dir, dentry, name, new_bindex);
 	if (IS_ERR(new_hidden_dentry)) {
-		dput(old_hidden_dentry);
 		err = PTR_ERR(new_hidden_dentry);
 		goto out;
 	}
 
 	old_hidden_dentry = unionfs_lower_dentry_idx(dentry, old_bindex);
+	/* we conditionally dput this old_hidden_dentry at end of function */
 	dget(old_hidden_dentry);
 
 	/* For symlinks, we must read the link before we lock the directory. */
@@ -460,6 +458,14 @@ out_unlock:
 	unlock_dir(new_hidden_parent_dentry);
 
 out_free:
+	/*
+	 * If old_hidden_dentry was a directory, we need to dput it.  If it
+	 * was a file, then it was already dput indirectly by other
+	 * functions we call ablve which operate on regular files.
+	 */
+	if (old_hidden_dentry && old_hidden_dentry->d_inode &&
+	    S_ISDIR(old_hidden_dentry->d_inode->i_mode))
+		dput(old_hidden_dentry);
 	kfree(symbuf);
 
 out:
