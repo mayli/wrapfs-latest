@@ -3707,7 +3707,7 @@ UNIONFS
 P:	Josef "Jeff" Sipek
 M:	jsipek@cs.sunysb.edu
 L:	unionfs@filesystems.org
-W:	http://www.unionfs.org
+W:	http://unionfs.filesystems.org
 S:	Maintained
 
 USB ACM DRIVER
