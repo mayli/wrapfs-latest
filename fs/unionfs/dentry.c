@@ -286,6 +286,10 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	return err;
 }
 
+/*
+ * At this point no one can reference this dentry, so we don't have to be
+ * careful about concurrent access.
+ */
 static void unionfs_d_release(struct dentry *dentry)
 {
 	int bindex, bstart, bend;
