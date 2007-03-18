@@ -18,27 +18,6 @@
 
 #include "union.h"
 
-/* increase the superblock generation count; effectively invalidating every
- * upper inode, dentry and file object */
-int unionfs_ioctl_incgen(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct super_block *sb;
-	int gen;
-
-	sb = file->f_dentry->d_sb;
-
-	unionfs_write_lock(sb);
-
-	gen = atomic_inc_return(&UNIONFS_SB(sb)->generation);
-
-	atomic_set(&UNIONFS_D(sb->s_root)->generation, gen);
-	atomic_set(&UNIONFS_I(sb->s_root->d_inode)->generation, gen);
-
-	unionfs_write_unlock(sb);
-
-	return gen;
-}
-
 /* return to userspace the branch indices containing the file in question
  *
  * We use fd_set and therefore we are limited to the number of the branches

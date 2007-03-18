@@ -623,10 +623,8 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case UNIONFS_IOCTL_INCGEN:
 		/* Increment the superblock generation count */
-		err = -EACCES;
-		if (!capable(CAP_SYS_ADMIN))
-			goto out;
-		err = unionfs_ioctl_incgen(file, cmd, arg);
+		printk("unionfs: incgen ioctl deprecated; use \"-o remount,incgen\"\n");
+		err = -ENOSYS;
 		break;
 
 	case UNIONFS_IOCTL_QUERYFILE:
