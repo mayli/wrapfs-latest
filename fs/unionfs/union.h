@@ -130,7 +130,7 @@ struct unionfs_sb_info {
 	int bend;
 
 	atomic_t generation;
-	struct rw_semaphore rwsem;
+	struct rw_semaphore rwsem; /* protects access to data+id fields */
 
 	struct unionfs_data *data;
 };
