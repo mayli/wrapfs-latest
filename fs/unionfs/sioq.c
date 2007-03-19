@@ -40,7 +40,7 @@ int __init init_sioq(void)
 	return err;
 }
 
-void __exit stop_sioq(void)
+void stop_sioq(void)
 {
 	if (superio_workqueue)
 		destroy_workqueue(superio_workqueue);
