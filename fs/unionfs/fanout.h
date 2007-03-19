@@ -106,22 +106,22 @@ static inline void unionfs_set_lower_super(struct super_block *sb, struct super_
 /* Branch count macros. */
 static inline int branch_count(const struct super_block *sb, int index)
 {
-	return atomic_read(&UNIONFS_SB(sb)->data[index].sbcount);
+	return atomic_read(&UNIONFS_SB(sb)->data[index].open_files);
 }
 
 static inline void set_branch_count(struct super_block *sb, int index, int val)
 {
-	atomic_set(&UNIONFS_SB(sb)->data[index].sbcount, val);
+	atomic_set(&UNIONFS_SB(sb)->data[index].open_files, val);
 }
 
 static inline void branchget(struct super_block *sb, int index)
 {
-	atomic_inc(&UNIONFS_SB(sb)->data[index].sbcount);
+	atomic_inc(&UNIONFS_SB(sb)->data[index].open_files);
 }
 
 static inline void branchput(struct super_block *sb, int index)
 {
-	atomic_dec(&UNIONFS_SB(sb)->data[index].sbcount);
+	atomic_dec(&UNIONFS_SB(sb)->data[index].open_files);
 }
 
 /* Dentry macros */
