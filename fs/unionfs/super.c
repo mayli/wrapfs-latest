@@ -97,6 +97,7 @@ static void unionfs_put_super(struct super_block *sb)
 {
 	int bindex, bstart, bend;
 	struct unionfs_sb_info *spd;
+	int leaks = 0;
 
 	spd = UNIONFS_SB(sb);
 	if (!spd)
@@ -107,7 +108,12 @@ static void unionfs_put_super(struct super_block *sb)
 
 	/* Make sure we have no leaks of branchget/branchput. */
 	for (bindex = bstart; bindex <= bend; bindex++)
-		BUG_ON(branch_count(sb, bindex) != 0);
+		if (branch_count(sb, bindex) != 0) {
+			printk("unionfs: branch %d has %d references left!\n",
+			       bindex, branch_count(sb,bindex));
+			leaks = 1;
+		}
+	BUG_ON(leaks != 0);
 
 	kfree(spd->data);
 	kfree(spd);
