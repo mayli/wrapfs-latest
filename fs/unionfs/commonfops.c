@@ -266,7 +266,11 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 	return err;
 }
 
-/* revalidate the stuct file */
+/*
+ * Revalidate the struct file
+ * @file: file to revalidate
+ * @willwrite: 1 if caller may cause changes to the file; 0 otherwise.
+ */
 int unionfs_file_revalidate(struct file *file, int willwrite)
 {
 	struct super_block *sb;
@@ -280,8 +284,9 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	dentry = file->f_dentry;
 	unionfs_lock_dentry(dentry);
 	sb = dentry->d_sb;
-	unionfs_read_lock(sb);
-	if (!__unionfs_d_revalidate(dentry, NULL) && !d_deleted(dentry)) {
+
+	/* first revalidate the dentry inside struct file */
+	if (!__unionfs_d_revalidate_chain(dentry, NULL) && !d_deleted(dentry)) {
 		err = -ESTALE;
 		goto out_nofree;
 	}
@@ -351,7 +356,6 @@ out:
 	}
 out_nofree:
 	unionfs_unlock_dentry(dentry);
-	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 

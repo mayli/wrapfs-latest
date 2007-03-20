@@ -18,10 +18,15 @@
 
 #include "union.h"
 
+
 /*
- * returns 1 if valid, 0 otherwise.
+ * Revalidate a single dentry.
+ * Assume that dentry's info node is locked.
+ * Assume that parent(s) are all valid already, but
+ * the child may not yet be valid.
+ * Returns 1 if valid, 0 otherwise.
  */
-int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+static int __unionfs_d_revalidate_one(struct dentry *dentry, struct nameidata *nd)
 {
 	int valid = 1;		/* default is valid (1); invalid is 0. */
 	struct dentry *hidden_dentry;
@@ -29,7 +34,6 @@ int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	int sbgen, dgen;
 	int positive = 0;
 	int locked = 0;
-	int restart = 0;
 	int interpose_flag;
 
 	struct nameidata lowernd; /* TODO: be gentler to the stack */
@@ -39,7 +43,6 @@ int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	else
 		memset(&lowernd, 0, sizeof(struct nameidata));
 
-restart:
 	verify_locked(dentry);
 
 	/* if the dentry is unhashed, do NOT revalidate */
@@ -62,28 +65,12 @@ restart:
 		struct dentry *result;
 		int pdgen;
 
-		unionfs_read_lock(dentry->d_sb);
-		locked = 1;
-
 		/* The root entry should always be valid */
 		BUG_ON(IS_ROOT(dentry));
 
 		/* We can't work correctly if our parent isn't valid. */
 		pdgen = atomic_read(&UNIONFS_D(dentry->d_parent)->generation);
-		if (!restart && (pdgen != sbgen)) {
-			unionfs_read_unlock(dentry->d_sb);
-			locked = 0;
-			/* We must be locked before our parent. */
-			if (!
-			    (dentry->d_parent->d_op->
-			     d_revalidate(dentry->d_parent, nd))) {
-				valid = 0;
-				goto out;
-			}
-			restart = 1;
-			goto restart;
-		}
-		BUG_ON(pdgen != sbgen);
+		BUG_ON(pdgen != sbgen);	/* should never happen here */
 
 		/* Free the pointers for our inodes and this dentry. */
 		bstart = dbstart(dentry);
@@ -102,7 +89,17 @@ restart:
 		interpose_flag = INTERPOSE_REVAL_NEG;
 		if (positive) {
 			interpose_flag = INTERPOSE_REVAL;
-			mutex_lock(&dentry->d_inode->i_mutex);
+			/*
+			 * During BRM, the VFS could already hold a lock on
+			 * a file being read, so don't lock it again
+			 * (deadlock), but if you lock it in this function,
+			 * then release it here too.
+			 */
+			if (!mutex_is_locked(&dentry->d_inode->i_mutex)) {
+				mutex_lock(&dentry->d_inode->i_mutex);
+				locked = 1;
+			}
+
 			bstart = ibstart(dentry->d_inode);
 			bend = ibend(dentry->d_inode);
 			if (bstart >= 0) {
@@ -118,7 +115,8 @@ restart:
 			UNIONFS_I(dentry->d_inode)->lower_inodes = NULL;
 			ibstart(dentry->d_inode) = -1;
 			ibend(dentry->d_inode) = -1;
-			mutex_unlock(&dentry->d_inode->i_mutex);
+			if (locked)
+				mutex_unlock(&dentry->d_inode->i_mutex);
 		}
 
 		result = unionfs_lookup_backend(dentry, &lowernd, interpose_flag);
@@ -169,8 +167,111 @@ restart:
 	}
 
 out:
-	if (locked)
-		unionfs_read_unlock(dentry->d_sb);
+	return valid;
+}
+
+/*
+ * Revalidate a parent chain of dentries, then the actual node.
+ * Assumes that dentry is locked, but will lock all parents if/when needed.
+ */
+int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
+{
+	int valid = 0;		/* default is invalid (0); valid is 1. */
+	struct dentry **chain = NULL; /* chain of dentries to reval */
+	int chain_len = 0;
+	struct dentry *dtmp;
+	int sbgen, dgen, i;
+	int saved_bstart, saved_bend, bindex;
+
+	/* find length of chain needed to revalidate */
+	/* XXX: should I grab some global (dcache?) lock? */
+	chain_len = 0;
+	sbgen = atomic_read(&UNIONFS_SB(dentry->d_sb)->generation);
+	dtmp = dentry->d_parent;
+	dgen = atomic_read(&UNIONFS_D(dtmp)->generation);
+	while (sbgen != dgen) {
+		/* The root entry should always be valid */
+		BUG_ON(IS_ROOT(dtmp));
+		chain_len++;
+		dtmp = dtmp->d_parent;
+		dgen = atomic_read(&UNIONFS_D(dtmp)->generation);
+	}
+	if (chain_len == 0) {
+		goto out_this;	/* shortcut if parents are OK */
+	}
+
+	/*
+	 * Allocate array of dentries to reval.  We could use linked lists,
+	 * but the number of entries we need to alloc here is often small,
+	 * and short lived, so locality will be better.
+	 */
+	chain = kzalloc(chain_len * sizeof(struct dentry *), GFP_KERNEL);
+	if (!chain) {
+		printk("unionfs: no more memory in %s\n", __FUNCTION__);
+		goto out;
+	}
+
+	/*
+	 * lock all dentries in chain, in child to parent order.
+	 * if failed, then sleep for a little, then retry.
+	 */
+	dtmp = dentry->d_parent;
+	for (i=chain_len-1; i>=0; i--) {
+		chain[i] = dget(dtmp);
+		dtmp = dtmp->d_parent;
+	}
+
+	/*
+	 * call __unionfs_d_revalidate() on each dentry, but in parent to
+	 * child order.
+	 */
+	for (i=0; i<chain_len; i++) {
+		unionfs_lock_dentry(chain[i]);
+		saved_bstart = dbstart(chain[i]);
+		saved_bend = dbend(chain[i]);
+		sbgen = atomic_read(&UNIONFS_SB(dentry->d_sb)->generation);
+		dgen = atomic_read(&UNIONFS_D(chain[i])->generation);
+
+		valid = __unionfs_d_revalidate_one(chain[i], nd);
+		/* XXX: is this the correct mntput condition?! */
+		if (valid && chain_len > 0 &&
+		    sbgen != dgen && dentry->d_inode &&
+		    S_ISDIR(dentry->d_inode->i_mode)) {
+			for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
+				unionfs_mntput(chain[i], bindex);
+		}
+		unionfs_unlock_dentry(chain[i]);
+
+		if (!valid) {
+			goto out_free;
+		}
+	}
+
+
+ out_this:
+	/* finally, lock this dentry and revalidate it */
+	verify_locked(dentry);
+	dgen = atomic_read(&UNIONFS_D(dentry)->generation);
+	saved_bstart = dbstart(dentry);
+	saved_bend = dbend(dentry);
+	valid = __unionfs_d_revalidate_one(dentry, nd);
+
+	if (valid && chain_len > 0 &&
+	    sbgen != dgen && dentry->d_inode &&
+	    S_ISDIR(dentry->d_inode->i_mode)) {
+		for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
+			unionfs_mntput(dentry, bindex);
+	}
+
+ out_free:
+	/* unlock/dput all dentries in chain and return status */
+	if (chain_len > 0) {
+		for (i=0; i<chain_len; i++) {
+			dput(chain[i]);
+		}
+		kfree(chain);
+	}
+ out:
 	return valid;
 }
 
@@ -179,7 +280,7 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 	int err;
 
 	unionfs_lock_dentry(dentry);
-	err = __unionfs_d_revalidate(dentry, nd);
+	err = __unionfs_d_revalidate_chain(dentry, nd);
 	unionfs_unlock_dentry(dentry);
 
 	return err;

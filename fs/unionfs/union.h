@@ -302,6 +302,7 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry);
 int unionfs_rmdir(struct inode *dir, struct dentry *dentry);
 
 int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd);
+int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd);
 
 /* The values for unionfs_interpose's flag. */
 #define INTERPOSE_DEFAULT	0
