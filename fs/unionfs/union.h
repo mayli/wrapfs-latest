@@ -60,6 +60,9 @@
 /* number of times we try to get a unique temporary file name */
 #define GET_TMPNAM_MAX_RETRY	5
 
+/* maximum number of branches we support, to avoid memory blowup */
+#define UNIONFS_MAX_BRANCHES	128
+
 /* Operations vectors defined in specific files. */
 extern struct file_operations unionfs_main_fops;
 extern struct file_operations unionfs_dir_fops;
@@ -408,6 +411,9 @@ static inline int is_robranch(const struct dentry *dentry)
  * EXTERNALS:
  */
 extern char *alloc_whname(const char *name, int len);
+extern int check_branch(struct nameidata *nd);
+extern int __parse_branch_mode(const char *name);
+extern int parse_branch_mode(const char *name);
 
 /* These two functions are here because it is kind of daft to copy and paste the
  * contents of the two functions to 32+ places in unionfs

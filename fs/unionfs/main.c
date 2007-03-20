@@ -181,7 +181,7 @@ void unionfs_reinterpose(struct dentry *dentry)
  * 2) it exists
  * 3) is a directory
  */
-static int check_branch(struct nameidata *nd)
+int check_branch(struct nameidata *nd)
 {
 	if (!strcmp(nd->dentry->d_sb->s_type->name, "unionfs"))
 		return -EINVAL;
@@ -211,20 +211,29 @@ static int is_branch_overlap(struct dentry *dent1, struct dentry *dent2)
 	return (dent == dent1);
 }
 
-/* parse branch mode */
-static int parse_branch_mode(char *name)
+/*
+ * Parse branch mode helper function
+ */
+int __parse_branch_mode(const char *name)
 {
-	int perms;
-	int l = strlen(name);
-	if (!strcmp(name + l - 3, "=ro")) {
-		perms = MAY_READ;
-		name[l - 3] = '\0';
-	} else if (!strcmp(name + l - 3, "=rw")) {
-		perms = MAY_READ | MAY_WRITE;
-		name[l - 3] = '\0';
-	} else
-		perms = MAY_READ | MAY_WRITE;
+	if (!name)
+		return 0;
+	if (!strcmp(name, "ro"))
+		return MAY_READ;
+	if (!strcmp(name, "rw"))
+		return (MAY_READ | MAY_WRITE);
+	return 0;
+}
 
+/*
+ * Parse "ro" or "rw" options, but default to "rw" of no mode options
+ * was specified.
+ */
+int parse_branch_mode(const char *name)
+{
+	int perms =  __parse_branch_mode(name);
+	if (perms == 0)
+		perms = MAY_READ | MAY_WRITE;
 	return perms;
 }
 
@@ -271,18 +280,22 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		goto out;
 	}
 
-	/* now parsing the string b1:b2=rw:b3=ro:b4 */
+	/* now parsing a string such as "b1:b2=rw:b3=ro:b4" */
 	branches = 0;
 	while ((name = strsep(&options, ":")) != NULL) {
 		int perms;
+		char *mode = strchr(name, '=');
 
-		if (!*name)
+		if (!name || !*name)
 			continue;
 
 		branches++;
 
-		/* strip off =rw or =ro if it is specified. */
-		perms = parse_branch_mode(name);
+		/* strip off '=' if any */
+		if (mode)
+			*mode++ = '\0';
+
+		perms = parse_branch_mode(mode);
 		if (!bindex && !(perms & MAY_WRITE)) {
 			err = -EINVAL;
 			goto out;
@@ -305,8 +318,11 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		hidden_root_info->lower_paths[bindex].dentry = nd.dentry;
 		hidden_root_info->lower_paths[bindex].mnt = nd.mnt;
 
+		unionfs_write_lock(sb);
 		set_branchperms(sb, bindex, perms);
 		set_branch_count(sb, bindex, 0);
+		new_branch_id(sb, bindex);
+		unionfs_write_unlock(sb);
 
 		if (hidden_root_info->bstart < 0)
 			hidden_root_info->bstart = bindex;
@@ -387,7 +403,7 @@ static struct unionfs_dentry_info *unionfs_parse_options(struct super_block *sb,
 		char *endptr;
 		int intval;
 
-		if (!*optname)
+		if (!optname || !*optname)
 			continue;
 
 		optarg = strchr(optname, '=');
