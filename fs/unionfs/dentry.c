@@ -206,7 +206,7 @@ static void unionfs_d_release(struct dentry *dentry)
 	bend = dbend(dentry);
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		dput(unionfs_lower_dentry_idx(dentry, bindex));
-		mntput(unionfs_lower_mnt_idx(dentry, bindex));
+		unionfs_mntput(dentry, bindex);
 
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 		unionfs_set_lower_mnt_idx(dentry, bindex, NULL);

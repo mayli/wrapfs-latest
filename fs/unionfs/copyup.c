@@ -206,7 +206,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 	int err = 0;
 
 	/* open old file */
-	mntget(unionfs_lower_mnt_idx(dentry, old_bindex));
+	unionfs_mntget(dentry, old_bindex);
 	branchget(sb, old_bindex);
 	input_file = dentry_open(old_hidden_dentry,
 				unionfs_lower_mnt_idx(dentry, old_bindex),
@@ -223,7 +223,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 
 	/* open new file */
 	dget(new_hidden_dentry);
-	mntget(unionfs_lower_mnt_idx(dentry, new_bindex));
+	unionfs_mntget(dentry, new_bindex);
 	branchget(sb, new_bindex);
 	output_file = dentry_open(new_hidden_dentry,
 				unionfs_lower_mnt_idx(dentry, new_bindex),
@@ -555,7 +555,7 @@ static void __cleanup_dentry(struct dentry * dentry, int bindex,
 			dput(unionfs_lower_dentry_idx(dentry, i));
 			unionfs_set_lower_dentry_idx(dentry, i, NULL);
 
-			mntput(unionfs_lower_mnt_idx(dentry, i));
+			unionfs_mntput(dentry, i);
 			unionfs_set_lower_mnt_idx(dentry, i, NULL);
 		} else {
 			if (new_bstart < 0)

@@ -434,5 +434,38 @@ static inline void unlock_dir(struct dentry *dir)
 
 extern int make_dir_opaque(struct dentry *dir, int bindex);
 
-#endif	/* not _UNION_H_ */
+static inline struct vfsmount *unionfs_mntget(struct dentry *dentry, int bindex)
+{
+	struct vfsmount *mnt;
+	if (!dentry) {
+		if (bindex < 0)
+			return NULL;
+		BUG_ON(bindex < 0);
+	}
+	mnt = unionfs_lower_mnt_idx(dentry, bindex);
+	if (!mnt) {
+		if (bindex < 0)
+			return NULL;
+		BUG_ON(mnt && bindex < 0);
+	}
+	mnt = mntget(mnt);
+	return mnt;
+}
 
+static inline void unionfs_mntput(struct dentry *dentry, int bindex)
+{
+	struct vfsmount *mnt;
+	if (!dentry) {
+		if (bindex < 0)
+			return;
+		BUG_ON(dentry && bindex < 0);
+	}
+	mnt = unionfs_lower_mnt_idx(dentry, bindex);
+	if (!mnt) {
+		if (bindex < 0)
+			return;
+		BUG_ON(mnt && bindex < 0);
+	}
+	mntput(mnt);
+}
+#endif	/* not _UNION_H_ */

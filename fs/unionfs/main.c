@@ -358,6 +358,7 @@ out:
 		for (i = 0; i < branches; i++)
 			if (hidden_root_info->lower_paths[i].dentry) {
 				dput(hidden_root_info->lower_paths[i].dentry);
+				/* initializing: can't use unionfs_mntput here */
 				mntput(hidden_root_info->lower_paths[i].mnt);
 			}
 
@@ -466,9 +467,8 @@ out_error:
 			m = hidden_root_info->lower_paths[bindex].mnt;
 
 			dput(d);
-
-			if (m)
-				mntput(m);
+			/* initializing: can't use unionfs_mntput here */
+			mntput(m);
 		}
 	}
 
@@ -618,6 +618,7 @@ out_dput:
 			m = hidden_root_info->lower_paths[bindex].mnt;
 
 			dput(d);
+			/* initializing: can't use unionfs_mntput here */
 			mntput(m);
 		}
 		kfree(hidden_root_info->lower_paths);

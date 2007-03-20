@@ -225,7 +225,7 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 			continue;
 
 		dget(hidden_dentry);
-		mntget(unionfs_lower_mnt_idx(dentry, bindex));
+		unionfs_mntget(dentry, bindex);
 		branchget(sb, bindex);
 		hidden_file =
 		    dentry_open(hidden_dentry, unionfs_lower_mnt_idx(dentry, bindex),

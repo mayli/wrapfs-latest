@@ -169,7 +169,7 @@ static int open_all_files(struct file *file)
 			continue;
 
 		dget(hidden_dentry);
-		mntget(unionfs_lower_mnt_idx(dentry, bindex));
+		unionfs_mntget(dentry, bindex);
 		branchget(sb, bindex);
 
 		hidden_file = dentry_open(hidden_dentry,
@@ -214,7 +214,7 @@ static int open_highest_file(struct file *file, int willwrite)
 	}
 
 	dget(hidden_dentry);
-	mntget(unionfs_lower_mnt_idx(dentry, bstart));
+	unionfs_mntget(dentry, bstart);
 	branchget(sb, bstart);
 	hidden_file = dentry_open(hidden_dentry,
 			unionfs_lower_mnt_idx(dentry, bstart), file->f_flags);
@@ -371,7 +371,7 @@ static int __open_dir(struct inode *inode, struct file *file)
 			continue;
 
 		dget(hidden_dentry);
-		mntget(unionfs_lower_mnt_idx(file->f_dentry, bindex));
+		unionfs_mntget(file->f_dentry, bindex);
 		hidden_file = dentry_open(hidden_dentry,
 				unionfs_lower_mnt_idx(file->f_dentry, bindex),
 				file->f_flags);
@@ -431,7 +431,7 @@ static int __open_file(struct inode *inode, struct file *file)
 	/* dentry_open will decrement mnt refcnt if err.
 	 * otherwise fput() will do an mntput() for us upon file close.
 	 */
-	mntget(unionfs_lower_mnt_idx(file->f_dentry, bstart));
+	unionfs_mntget(file->f_dentry, bstart);
 	hidden_file = dentry_open(hidden_dentry,
 				  unionfs_lower_mnt_idx(file->f_dentry, bstart),
 				  hidden_flags);
