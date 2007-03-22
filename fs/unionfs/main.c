@@ -515,6 +515,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	UNIONFS_SB(sb)->bend = -1;
 	atomic_set(&UNIONFS_SB(sb)->generation, 1);
 	init_rwsem(&UNIONFS_SB(sb)->rwsem);
+	UNIONFS_SB(sb)->high_branch_id = -1; /* -1 == invalid branch ID */
 
 	hidden_root_info = unionfs_parse_options(sb, raw_data);
 	if (IS_ERR(hidden_root_info)) {

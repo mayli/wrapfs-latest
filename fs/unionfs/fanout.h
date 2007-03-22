@@ -32,11 +32,28 @@ static inline struct unionfs_inode_info *UNIONFS_I(const struct inode *inode)
 #define sbstart(sb) 0
 #define sbend(sb) (UNIONFS_SB(sb)->bend)
 #define sbmax(sb) (UNIONFS_SB(sb)->bend + 1)
+#define sbhbid(sb) (UNIONFS_SB(sb)->high_branch_id)
 
 /* File to private Data */
 #define UNIONFS_F(file) ((struct unionfs_file_info *)((file)->private_data))
 #define fbstart(file) (UNIONFS_F(file)->bstart)
 #define fbend(file) (UNIONFS_F(file)->bend)
+
+/* macros to manipulate branch IDs in stored in our superblock */
+static inline int branch_id(struct super_block *sb, int index)
+{
+	return UNIONFS_SB(sb)->data[index].branch_id;
+}
+
+static inline void set_branch_id(struct super_block *sb, int index, int val)
+{
+	UNIONFS_SB(sb)->data[index].branch_id = val;
+}
+
+static inline void new_branch_id(struct super_block *sb, int index)
+{
+	set_branch_id(sb, index, ++UNIONFS_SB(sb)->high_branch_id);
+}
 
 /* File to lower file. */
 static inline struct file *unionfs_lower_file(const struct file *f)
@@ -52,11 +69,14 @@ static inline struct file *unionfs_lower_file_idx(const struct file *f, int inde
 static inline void unionfs_set_lower_file_idx(struct file *f, int index, struct file *val)
 {
 	UNIONFS_F(f)->lower_files[index] = val;
+	/* save branch ID (may be redundant?) */
+	UNIONFS_F(f)->saved_branch_ids[index] =
+		branch_id((f)->f_dentry->d_sb, index);
 }
 
 static inline void unionfs_set_lower_file(struct file *f, struct file *val)
 {
-	UNIONFS_F(f)->lower_files[fbstart(f)] = val;
+	unionfs_set_lower_file_idx((f), fbstart(f), (val));
 }
 
 /* Inode to lower inode. */

@@ -86,6 +86,31 @@ out:
 	return err;
 }
 
+/*
+ * Find new index of matching branch with an open file, since branches could
+ * have been added/deleted causing the one with open files to shift.
+ *
+ * @file: current file whose branches may have changed
+ * @bindex: index of branch within current file (could be old branch)
+ * @new_sb: the new superblock which may have new branch IDs
+ * Returns index of newly found branch (0 or greater), -1 otherwise.
+ */
+static int find_new_branch_index(struct file *file, int bindex,
+				 struct super_block *new_sb)
+{
+	int old_branch_id = UNIONFS_F(file)->saved_branch_ids[bindex];
+	int i;
+
+	for (i = 0; i < sbmax(new_sb); i++)
+		if (old_branch_id == branch_id(new_sb, i))
+			return i;
+	/*
+	 * XXX: maybe we should BUG_ON if not found new branch index?
+	 * (really that should never happen).
+	 */
+	return -1;
+}
+
 /* put all references held by upper struct file and free lower file pointer
  * array
  */
@@ -93,6 +118,7 @@ static void cleanup_file(struct file *file)
 {
 	int bindex, bstart, bend;
 	struct file **lf;
+	struct super_block *sb = file->f_dentry->d_sb;
 
 	lf = UNIONFS_F(file)->lower_files;
 	bstart = fbstart(file);
@@ -100,13 +126,29 @@ static void cleanup_file(struct file *file)
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		if (unionfs_lower_file_idx(file, bindex)) {
-			branchput(file->f_dentry->d_sb, bindex);
+			int i;	/* holds (possibly) updated branch index */
+			i = find_new_branch_index(file, bindex, sb);
+			if (i < 0)
+				printk(KERN_ERR "unionfs: no supberlock for file %p\n",
+				       file);
+			else {
+				unionfs_read_lock(sb);
+				branchput(sb, i);
+				unionfs_read_unlock(sb);
+				/* XXX: is it correct to use sb->s_root here? */
+				unionfs_mntput(sb->s_root, i);
+				/* XXX: mntget b/c fput below will call mntput */
+				unionfs_mntget(sb->s_root, bindex);
+			}
 			fput(unionfs_lower_file_idx(file, bindex));
 		}
 	}
 
 	UNIONFS_F(file)->lower_files = NULL;
 	kfree(lf);
+	kfree(UNIONFS_F(file)->saved_branch_ids);
+	/* set to NULL because caller needs to know if to kfree on error */
+	UNIONFS_F(file)->saved_branch_ids = NULL;
 }
 
 /* open all lower files for a given file */
@@ -270,6 +312,12 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			err = -ENOMEM;
 			goto out;
 		}
+		size = sizeof(int) * sbmax(sb);
+		UNIONFS_F(file)->saved_branch_ids = kzalloc(size, GFP_KERNEL);
+		if (!UNIONFS_F(file)->saved_branch_ids) {
+			err = -ENOMEM;
+			goto out;
+		}
 
 		if (S_ISDIR(dentry->d_inode->i_mode)) {
 			/* We need to open all the files. */
@@ -297,8 +345,10 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	}
 
 out:
-	if (err)
+	if (err) {
 		kfree(UNIONFS_F(file)->lower_files);
+		kfree(UNIONFS_F(file)->saved_branch_ids);
+	}
 out_nofree:
 	unionfs_unlock_dentry(dentry);
 	unionfs_read_unlock(dentry->d_sb);
@@ -418,6 +468,12 @@ int unionfs_open(struct inode *inode, struct file *file)
 		err = -ENOMEM;
 		goto out;
 	}
+	size = sizeof(int) * sbmax(inode->i_sb);
+	UNIONFS_F(file)->saved_branch_ids = kzalloc(size, GFP_KERNEL);
+	if (!UNIONFS_F(file)->saved_branch_ids) {
+		err = -ENOMEM;
+		goto out;
+	}
 
 	dentry = file->f_dentry;
 	unionfs_lock_dentry(dentry);
@@ -456,6 +512,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 out:
 	if (err) {
 		kfree(UNIONFS_F(file)->lower_files);
+		kfree(UNIONFS_F(file)->saved_branch_ids);
 		kfree(UNIONFS_F(file));
 	}
 out_nofree:
@@ -487,6 +544,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 		}
 	}
 	kfree(fileinfo->lower_files);
+	kfree(fileinfo->saved_branch_ids);
 
 	if (fileinfo->rdstate) {
 		fileinfo->rdstate->access = jiffies;

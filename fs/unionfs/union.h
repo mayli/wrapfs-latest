@@ -80,6 +80,7 @@ struct unionfs_file_info {
 
 	struct unionfs_dir_state *rdstate;
 	struct file **lower_files;
+	int *saved_branch_ids; /* IDs of branches when file was opened */
 };
 
 /* unionfs inode data in memory */
@@ -123,6 +124,7 @@ struct unionfs_data {
 	struct super_block *sb;
 	atomic_t open_files;	/* number of open files on branch */
 	int branchperms;
+	int branch_id;		/* unique branch ID at re/mount time */
 };
 
 /* unionfs super-block data in memory */
@@ -131,7 +133,7 @@ struct unionfs_sb_info {
 
 	atomic_t generation;
 	struct rw_semaphore rwsem; /* protects access to data+id fields */
-
+	int high_branch_id;	/* last unique branch ID given */
 	struct unionfs_data *data;
 };
 
