@@ -509,6 +509,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 
 	/* freeing the allocated resources, and fput the opened files */
 	if (err) {
+		atomic_dec(&UNIONFS_I(dentry->d_inode)->totalopens);
 		for (bindex = bstart; bindex <= bend; bindex++) {
 			hidden_file = unionfs_lower_file_idx(file, bindex);
 			if (!hidden_file)
