@@ -301,7 +301,6 @@ extern int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 int unionfs_unlink(struct inode *dir, struct dentry *dentry);
 int unionfs_rmdir(struct inode *dir, struct dentry *dentry);
 
-int __unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd);
 int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd);
 
 /* The values for unionfs_interpose's flag. */
@@ -368,7 +367,11 @@ static inline int set_branchperms(struct super_block *sb, int index, int perms)
 /* Is this file on a read-only branch? */
 static inline int is_robranch_super(const struct super_block *sb, int index)
 {
-	return (!(branchperms(sb, index) & MAY_WRITE)) ? -EROFS : 0;
+	int ret;
+	unionfs_read_lock(sb);
+  	ret = (!(branchperms(sb, index) & MAY_WRITE)) ? -EROFS : 0;
+	unionfs_read_unlock(sb);
+	return ret;
 }
 
 /* Is this file on a read-only branch? */
@@ -378,10 +381,11 @@ static inline int is_robranch_idx(const struct dentry *dentry, int index)
 
 	BUG_ON(index < 0);
 
+	unionfs_read_lock(dentry->d_sb);
 	if ((!(branchperms(dentry->d_sb, index) & MAY_WRITE)) ||
 	    IS_RDONLY(unionfs_lower_dentry_idx(dentry, index)->d_inode))
 		err = -EROFS;
-
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 

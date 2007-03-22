@@ -170,7 +170,9 @@ static int open_all_files(struct file *file)
 
 		dget(hidden_dentry);
 		unionfs_mntget(dentry, bindex);
+		unionfs_read_lock(sb);
 		branchget(sb, bindex);
+		unionfs_read_unlock(sb);
 
 		hidden_file = dentry_open(hidden_dentry,
 				unionfs_lower_mnt_idx(dentry, bindex),
@@ -215,7 +217,9 @@ static int open_highest_file(struct file *file, int willwrite)
 
 	dget(hidden_dentry);
 	unionfs_mntget(dentry, bstart);
+	unionfs_read_lock(sb);
 	branchget(sb, bstart);
+	unionfs_read_unlock(sb);
 	hidden_file = dentry_open(hidden_dentry,
 			unionfs_lower_mnt_idx(dentry, bstart), file->f_flags);
 	if (IS_ERR(hidden_file)) {
@@ -256,7 +260,9 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 		bend = fbend(file);
 		for (bindex = bstart; bindex <= bend; bindex++) {
 			if (unionfs_lower_file_idx(file, bindex)) {
+				unionfs_read_lock(dentry->d_sb);
 				branchput(dentry->d_sb, bindex);
+				unionfs_read_unlock(dentry->d_sb);
 				fput(unionfs_lower_file_idx(file, bindex));
 				unionfs_set_lower_file_idx(file, bindex, NULL);
 			}
@@ -387,7 +393,9 @@ static int __open_dir(struct inode *inode, struct file *file)
 		/* The branchget goes after the open, because otherwise
 		 * we would miss the reference on release.
 		 */
+		unionfs_read_lock(inode->i_sb);
 		branchget(inode->i_sb, bindex);
+		unionfs_read_unlock(inode->i_sb);
 	}
 
 	return 0;
@@ -443,7 +451,9 @@ static int __open_file(struct inode *inode, struct file *file)
 		return PTR_ERR(hidden_file);
 
 	unionfs_set_lower_file(file, hidden_file);
+	unionfs_read_lock(inode->i_sb);
 	branchget(inode->i_sb, bstart);
+	unionfs_read_unlock(inode->i_sb);
 
 	return 0;
 }
@@ -456,6 +466,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 	int bindex = 0, bstart = 0, bend = 0;
 	int size;
 
+	unionfs_read_lock(inode->i_sb);
 	file->private_data = kzalloc(sizeof(struct unionfs_file_info), GFP_KERNEL);
 	if (!UNIONFS_F(file)) {
 		err = -ENOMEM;
@@ -481,7 +492,6 @@ int unionfs_open(struct inode *inode, struct file *file)
 
 	dentry = file->f_dentry;
 	unionfs_lock_dentry(dentry);
-	unionfs_read_lock(inode->i_sb);
 
 	bstart = fbstart(file) = dbstart(dentry);
 	bend = fbend(file) = dbend(dentry);
@@ -504,14 +514,15 @@ int unionfs_open(struct inode *inode, struct file *file)
 			if (!hidden_file)
 				continue;
 
+			unionfs_read_lock(file->f_dentry->d_sb);
 			branchput(file->f_dentry->d_sb, bindex);
+			unionfs_read_unlock(file->f_dentry->d_sb);
 			/* fput calls dput for hidden_dentry */
 			fput(hidden_file);
 		}
 	}
 
 	unionfs_unlock_dentry(dentry);
-	unionfs_read_unlock(inode->i_sb);
 
 out:
 	if (err) {
@@ -520,6 +531,7 @@ out:
 		kfree(UNIONFS_F(file));
 	}
 out_nofree:
+	unionfs_read_unlock(inode->i_sb);
 	return err;
 }
 
@@ -532,6 +544,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	int bindex, bstart, bend;
 	int fgen;
 
+	unionfs_read_lock(inode->i_sb);
 	/* fput all the hidden files */
 	fgen = atomic_read(&fileinfo->generation);
 	bstart = fbstart(file);
@@ -565,6 +578,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 		fileinfo->rdstate = NULL;
 	}
 	kfree(fileinfo);
+	unionfs_read_unlock(inode->i_sb);
 	return 0;
 }
 
@@ -593,6 +607,7 @@ static long do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -600,6 +615,7 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long err;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -635,8 +651,11 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	struct dentry *dentry = file->f_dentry;
 	int bindex, bstart, bend;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
+
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
+
 	if (!atomic_dec_and_test(&UNIONFS_I(dentry->d_inode)->totalopens))
 		goto out;
 
@@ -664,6 +683,6 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 out_lock:
 	unionfs_unlock_dentry(dentry);
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
-

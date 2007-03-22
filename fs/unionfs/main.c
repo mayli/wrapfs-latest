@@ -556,11 +556,15 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 
 		d = hidden_root_info->lower_paths[bindex].dentry;
 
+		unionfs_write_lock(sb);
 		unionfs_set_lower_super_idx(sb, bindex, d->d_sb);
+		unionfs_write_unlock(sb);
 	}
 
 	/* Unionfs: Max Bytes is the maximum bytes from highest priority branch */
+	unionfs_read_lock(sb);
 	sb->s_maxbytes = unionfs_lower_super_idx(sb, 0)->s_maxbytes;
+	unionfs_read_unlock(sb);
 
 	sb->s_op = &unionfs_sops;
 

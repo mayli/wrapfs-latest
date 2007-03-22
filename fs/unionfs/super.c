@@ -131,7 +131,9 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 
 	sb = dentry->d_sb;
 
+	unionfs_read_lock(sb);
 	hidden_sb = unionfs_lower_super_idx(sb, sbstart(sb));
+	unionfs_read_unlock(sb);
 	err = vfs_statfs(hidden_sb->s_root, buf);
 
 	buf->f_type = UNIONFS_SUPER_MAGIC;
@@ -884,7 +886,9 @@ static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 	bend = sbend(sb);
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		hidden_mnt = unionfs_lower_mnt_idx(sb->s_root, bindex);
+		unionfs_read_lock(sb);
 		hidden_sb = unionfs_lower_super_idx(sb, bindex);
+		unionfs_read_unlock(sb);
 
 		if (hidden_mnt && hidden_sb && hidden_sb->s_op &&
 		    hidden_sb->s_op->umount_begin)
@@ -922,7 +926,9 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 			goto out;
 		}
 
+		unionfs_read_lock(sb);
 		perms = branchperms(sb, bindex);
+		unionfs_read_unlock(sb);
 
 		seq_printf(m, "%s=%s", path,
 			   perms & MAY_WRITE ? "rw" : "ro");

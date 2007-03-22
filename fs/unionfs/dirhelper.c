@@ -226,14 +226,18 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 
 		dget(hidden_dentry);
 		unionfs_mntget(dentry, bindex);
+		unionfs_read_lock(sb);
 		branchget(sb, bindex);
+		unionfs_read_unlock(sb);
 		hidden_file =
 		    dentry_open(hidden_dentry, unionfs_lower_mnt_idx(dentry, bindex),
 				O_RDONLY);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);
 			dput(hidden_dentry);
+			unionfs_read_lock(sb);
 			branchput(sb, bindex);
+			unionfs_read_unlock(sb);
 			goto out;
 		}
 
@@ -248,7 +252,9 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 
 		/* fput calls dput for hidden_dentry */
 		fput(hidden_file);
+		unionfs_read_lock(sb);
 		branchput(sb, bindex);
+		unionfs_read_unlock(sb);
 
 		if (err < 0)
 			goto out;

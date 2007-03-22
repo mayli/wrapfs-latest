@@ -27,6 +27,7 @@ static loff_t unionfs_llseek(struct file *file, loff_t offset, int origin)
 	loff_t err;
 	struct file *hidden_file = NULL;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
@@ -48,6 +49,7 @@ static loff_t unionfs_llseek(struct file *file, loff_t offset, int origin)
 		file->f_version++;
 	}
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -58,6 +60,7 @@ static ssize_t unionfs_read(struct file * file, char __user * buf,
 	loff_t pos = *ppos;
 	int err;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
@@ -70,6 +73,7 @@ static ssize_t unionfs_read(struct file * file, char __user * buf,
 	*ppos = pos;
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -123,12 +127,14 @@ static ssize_t unionfs_write(struct file * file, const char __user * buf,
 {
 	int err = 0;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
 	err = __unionfs_write(file, buf, count, ppos);
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -143,6 +149,7 @@ static unsigned int unionfs_poll(struct file *file, poll_table * wait)
 	unsigned int mask = DEFAULT_POLLMASK;
 	struct file *hidden_file = NULL;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if (unionfs_file_revalidate(file, 0)) {
 		/* We should pretend an error happend. */
 		mask = POLLERR | POLLIN | POLLOUT;
@@ -157,6 +164,7 @@ static unsigned int unionfs_poll(struct file *file, poll_table * wait)
 	mask = hidden_file->f_op->poll(hidden_file, wait);
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return mask;
 }
 
@@ -184,6 +192,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	int err = 0;
 	int willwrite;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	/* This might could be deferred to mmap's writepage. */
 	willwrite = ((vma->vm_flags | VM_SHARED | VM_WRITE) == vma->vm_flags);
 	if ((err = unionfs_file_revalidate(file, willwrite)))
@@ -192,6 +201,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	err = __do_mmap(file, vma);
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -200,6 +210,7 @@ static int unionfs_fsync(struct file *file, struct dentry *dentry, int datasync)
 	int err;
 	struct file *hidden_file = NULL;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -215,6 +226,7 @@ static int unionfs_fsync(struct file *file, struct dentry *dentry, int datasync)
 	mutex_unlock(&hidden_file->f_dentry->d_inode->i_mutex);
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 
@@ -223,6 +235,7 @@ static int unionfs_fasync(int fd, struct file *file, int flag)
 	int err = 0;
 	struct file *hidden_file = NULL;
 
+	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -232,6 +245,7 @@ static int unionfs_fasync(int fd, struct file *file, int flag)
 		err = hidden_file->f_op->fasync(fd, hidden_file, flag);
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
 }
 

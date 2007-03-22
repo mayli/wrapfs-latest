@@ -207,7 +207,9 @@ static int __copyup_reg_data(struct dentry *dentry,
 
 	/* open old file */
 	unionfs_mntget(dentry, old_bindex);
+	unionfs_read_lock(sb);
 	branchget(sb, old_bindex);
+	unionfs_read_unlock(sb);
 	input_file = dentry_open(old_hidden_dentry,
 				unionfs_lower_mnt_idx(dentry, old_bindex),
 				O_RDONLY | O_LARGEFILE);
@@ -224,7 +226,9 @@ static int __copyup_reg_data(struct dentry *dentry,
 	/* open new file */
 	dget(new_hidden_dentry);
 	unionfs_mntget(dentry, new_bindex);
+	unionfs_read_lock(sb);
 	branchget(sb, new_bindex);
+	unionfs_read_unlock(sb);
 	output_file = dentry_open(new_hidden_dentry,
 				unionfs_lower_mnt_idx(dentry, new_bindex),
 				O_WRONLY | O_LARGEFILE);
@@ -295,13 +299,17 @@ out_close_out:
 	fput(output_file);
 
 out_close_in2:
+	unionfs_read_lock(sb);
 	branchput(sb, new_bindex);
+	unionfs_read_unlock(sb);
 
 out_close_in:
 	fput(input_file);
 
 out:
+	unionfs_read_lock(sb);
 	branchput(sb, old_bindex);
+	unionfs_read_unlock(sb);
 
 	return err;
 }
@@ -349,8 +357,6 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 	BUG_ON(new_bindex >= old_bindex);
 
 	sb = dir->i_sb;
-
-	unionfs_read_lock(sb);
 
 	if ((err = is_robranch_super(sb, new_bindex)))
 		goto out;
@@ -443,7 +449,9 @@ out_unlink:
 		/* need to close the file */
 
 		fput(*copyup_file);
+		unionfs_read_lock(sb);
 		branchput(sb, new_bindex);
+		unionfs_read_unlock(sb);
 	}
 
 	/*
@@ -469,8 +477,6 @@ out_free:
 	kfree(symbuf);
 
 out:
-	unionfs_read_unlock(sb);
-
 	return err;
 }
 

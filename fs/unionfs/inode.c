@@ -789,9 +789,13 @@ static int inode_permission(struct inode *inode, int mask, struct nameidata *nd,
 		retval = inode->i_op->permission(inode, submask, nd);
 		if ((retval == -EACCES) && (submask & MAY_WRITE) &&
 		    (!strcmp("nfs", (inode)->i_sb->s_type->name)) &&
-		    (nd) && (nd->mnt) && (nd->mnt->mnt_sb) &&
-		    (branchperms(nd->mnt->mnt_sb, bindex) & MAY_NFSRO)) {
-			retval = generic_permission(inode, submask, NULL);
+		    (nd) && (nd->mnt) && (nd->mnt->mnt_sb)) {
+			int perms;
+			unionfs_read_lock(nd->mnt->mnt_sb);
+			perms = branchperms(nd->mnt->mnt_sb, bindex);
+			unionfs_read_unlock(nd->mnt->mnt_sb);
+			if (perms & MAY_NFSRO)
+				retval = generic_permission(inode, submask, NULL);
 		}
 	} else
 		retval = generic_permission(inode, submask, NULL);
