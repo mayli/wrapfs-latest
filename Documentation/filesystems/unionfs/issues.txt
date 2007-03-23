@@ -1,5 +1,5 @@
-KNOWN Unionfs ISSUES:
-=====================
+KNOWN Unionfs 2.0 ISSUES:
+=========================
 
 1. The NFS server returns -EACCES for read-only exports, instead of -EROFS.
    This means we can't reliably detect a read-only NFS export.
@@ -14,10 +14,26 @@ KNOWN Unionfs ISSUES:
    introducing small VFS/MM changes that would allow a file system to handle
    cache coherency correctly.
 
+   Unionfs 2.0 has a temporary workaround for this.  You can force Unionfs
+   to increase the superblock generation number, and hence purge all cached
+   Unionfs objects, which would then  be re-gotten from the lower branches.
+   This should ensure cache consistency.  To increase the generation number,
+   executed the command:
+
+	mount -t unionfs -o remount,incgen none MOUNTPOINT
+
+   Note that the older way of incrementing the generation number using an
+   ioctl, is no longer supported in Unionfs 2.0.  Ioctls in general are not
+   encouraged.  Plus, an ioctl is per-file concept, whereas the generation
+   number is a per-file-system concept.  Worse, such an ioctl requires an
+   open file, which then has to be invalidated by the very nature of the
+   generation number increase (read: the old generation increase ioctl was
+   pretty racy).
+
 3. Unionfs should not use lookup_one_len() on the underlying f/s as it
    confuses NFS.  Currently, unionfs_lookup() passes lookup intents to the
    lower file-system, this eliminates part of the problem.  The remaining
    calls to lookup_one_len may need to be changed to pass an intent.
 
 
-For more information, see <unionfs.filesystems.org>.
+For more information, see <http://unionfs.filesystems.org/>.

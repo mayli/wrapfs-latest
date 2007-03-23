@@ -28,4 +28,63 @@ Example:
 	dirs=/writable_branch=rw:/read-only_branch=ro
 
 
-For more information, see unionfs.filesystems.org.
+DYNAMIC BRANCH MANAGEMENT AND REMOUNTS
+======================================
+
+You can remount a union and change its overall mode, or reconfigure the
+branches, as follows.
+
+To downgrade a union from read-write to read-only:
+
+# mount -t unionfs -o remount,ro none MOUNTPOINT
+
+To upgrade a union from read-only to read-write:
+
+# mount -t unionfs -o remount,rw none MOUNTPOINT
+
+To delete a branch /foo, regardless where it is in the current union:
+
+# mount -t unionfs -o del=/foo none MOUNTPOINT
+
+To insert (add) a branch /foo before /bar:
+
+# mount -t unionfs -o remount,add=/bar:/foo none MOUNTPOINT
+
+To insert (add) a branch /foo (with the "rw" mode flag) before /bar:
+
+# mount -t unionfs -o remount,add=/bar:/foo=rw none MOUNTPOINT
+
+To insert (add) a branch /foo (in "rw" mode) at the very beginning (i.e., a
+new highest-priority branch), you can use the above syntax, or use a short
+hand version as follows:
+
+# mount -t unionfs -o remount,add=/foo none MOUNTPOINT
+
+To append a branch to the very end (new lowest-priority branch):
+
+# mount -t unionfs -o remount,add=:/foo none MOUNTPOINT
+
+To append a branch to the very end (new lowest-priority branch), in
+read-only mode:
+
+# mount -t unionfs -o remount,add=:/foo:ro none MOUNTPOINT
+
+Finally, to change the mode of one existing branch, say /foo, from read-only
+to read-write, and change /bar from read-write to read-only:
+
+# mount -t unionfs -o remount,mode=/foo=rw,mode=/bar=ro none MOUNTPOINT
+
+
+CACHE CONSISTENCY
+=================
+
+If you modify any file on any of the lower branches directly, while there is
+a Unionfs 2.0 mounted above any of those branches, you should tell Unionfs
+to purge its caches and re-get the objects.  To do that, you have to
+incremenet the generation number of the superblock using the following
+command:
+
+# mount -t unionfs -o remount,remount,incgen none MOUNTPOINT
+
+
+For more information, see <http://unionfs.filesystems.org/>.

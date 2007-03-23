@@ -1,3 +1,6 @@
+Unionfs 2.0 CONCEPTS:
+=====================
+
 This file describes the concepts needed by a namespace unification file
 system.
 
@@ -68,3 +71,5 @@ though to this copy. The copy must be made on a higher priority branch so
 that lookup and readdir return this newer "version" of the file rather than
 the original (see duplicate elimination).
 
+
+For more information, see <http://unionfs.filesystems.org/>.
