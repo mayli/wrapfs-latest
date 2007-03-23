@@ -56,6 +56,8 @@ ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -75,6 +77,8 @@ int unionfs_setxattr(struct dentry *dentry, const char *name, const void *value,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
@@ -91,6 +95,8 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 {
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -109,6 +115,8 @@ ssize_t unionfs_listxattr(struct dentry * dentry, char *list, size_t size)
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 	char *encoded_list = NULL;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	unionfs_lock_dentry(dentry);
 

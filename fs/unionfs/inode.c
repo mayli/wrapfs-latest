@@ -249,6 +249,9 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 	struct dentry *whiteout_dentry;
 	char *name = NULL;
 
+	BUG_ON(!is_valid_dentry(new_dentry));
+	BUG_ON(!is_valid_dentry(old_dentry));
+
 	double_lock_dentry(new_dentry, old_dentry);
 
 	hidden_new_dentry = unionfs_lower_dentry(new_dentry);
@@ -373,6 +376,8 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 	int bindex = 0, bstart;
 	char *name = NULL;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 
 	/* We start out in the leftmost branch. */
@@ -494,6 +499,8 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 	char *name = NULL;
 	int whiteout_unlinked = 0;
 	struct sioq_args args;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);
@@ -622,6 +629,8 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	char *name = NULL;
 	int whiteout_unlinked = 0;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);
 
@@ -724,6 +733,8 @@ static int unionfs_readlink(struct dentry *dentry, char __user * buf,
 	int err;
 	struct dentry *hidden_dentry;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
@@ -748,6 +759,8 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	char *buf;
 	int len = PAGE_SIZE, err;
 	mm_segment_t old_fs;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	/* This is freed by the put_link method assuming a successful call. */
 	buf = kmalloc(len, GFP_KERNEL);
@@ -907,6 +920,8 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	int bstart, bend, bindex;
 	int i;
 	int copyup = 0;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	unionfs_lock_dentry(dentry);
 	bstart = dbstart(dentry);

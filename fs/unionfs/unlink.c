@@ -74,6 +74,8 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	unionfs_lock_dentry(dentry);
 
 	err = unionfs_unlink_whiteout(dir, dentry);
@@ -121,6 +123,8 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 	struct unionfs_dir_state *namelist = NULL;
+
+	BUG_ON(!is_valid_dentry(dentry));
 
 	unionfs_lock_dentry(dentry);
 

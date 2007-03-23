@@ -129,6 +129,8 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	int err	= 0;
 	struct super_block *sb, *hidden_sb;
 
+	BUG_ON(!is_valid_dentry(dentry));
+
 	sb = dentry->d_sb;
 
 	unionfs_read_lock(sb);
