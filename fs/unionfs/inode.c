@@ -843,8 +843,21 @@ static int unionfs_permission(struct inode *inode, int mask,
 	const int is_file = !S_ISDIR(inode->i_mode);
 	const int write_mask = (mask & MAY_WRITE) && !(mask & MAY_READ);
 
+	unionfs_read_lock(inode->i_sb);
+
 	bstart = ibstart(inode);
 	bend = ibend(inode);
+	if (bstart < 0 || bend < 0) {
+		/*
+		 * With branch-management, we can get a stale inode here.
+		 * If so, we return ESTALE back to link_path_walk, which
+		 * would discard the dcache entry and re-lookup the
+		 * dentry+inode.  This should be equivalent to issuing
+		 * __unionfs_d_revalidate_chain on nd.dentry here.
+		 */
+		err = -ESTALE;	/* force revalidate */
+		goto out;
+	}
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		hidden_inode = unionfs_lower_inode_idx(inode, bindex);
@@ -881,6 +894,7 @@ static int unionfs_permission(struct inode *inode, int mask,
 	}
 
 out:
+	unionfs_read_unlock(inode->i_sb);
 	return err;
 }
 
