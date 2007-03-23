@@ -235,8 +235,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 		valid = __unionfs_d_revalidate_one(chain[i], nd);
 		/* XXX: is this the correct mntput condition?! */
 		if (valid && chain_len > 0 &&
-		    sbgen != dgen && dentry->d_inode &&
-		    S_ISDIR(dentry->d_inode->i_mode)) {
+		    sbgen != dgen && chain[i]->d_inode &&
+		    S_ISDIR(chain[i]->d_inode->i_mode)) {
 			for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
 				unionfs_mntput(chain[i], bindex);
 		}
@@ -256,9 +256,7 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 	saved_bend = dbend(dentry);
 	valid = __unionfs_d_revalidate_one(dentry, nd);
 
-	if (valid && chain_len > 0 &&
-	    sbgen != dgen && dentry->d_inode &&
-	    S_ISDIR(dentry->d_inode->i_mode)) {
+	if (valid && chain_len > 0 && sbgen != dgen) {
 		for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
 			unionfs_mntput(dentry, bindex);
 	}
