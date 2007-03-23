@@ -150,8 +150,7 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry, struct nameidata *n
 		if (!hidden_dentry || !hidden_dentry->d_op
 		    || !hidden_dentry->d_op->d_revalidate)
 			continue;
-
-		if (!hidden_dentry->d_op->d_revalidate(hidden_dentry, nd))
+		if (!hidden_dentry->d_op->d_revalidate(hidden_dentry, &lowernd))
 			valid = 0;
 	}
 
