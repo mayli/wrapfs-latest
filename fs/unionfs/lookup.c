@@ -30,7 +30,7 @@ static int is_validname(const char *name)
 }
 
 /* The rest of these are utility functions for lookup. */
-static int is_opaque_dir(struct dentry *dentry, int bindex)
+static noinline int is_opaque_dir(struct dentry *dentry, int bindex)
 {
 	int err = 0;
 	struct dentry *hidden_dentry;

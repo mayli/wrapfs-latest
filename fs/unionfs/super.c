@@ -148,9 +148,9 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 }
 
 /* handle mode changing during remount */
-static int do_remount_mode_option(char *optarg, int cur_branches,
-				  struct unionfs_data *new_data,
-				  struct path *new_lower_paths)
+static noinline int do_remount_mode_option(char *optarg, int cur_branches,
+					   struct unionfs_data *new_data,
+					   struct path *new_lower_paths)
 {
 	int err = -EINVAL;
 	int perms, idx;
@@ -207,9 +207,9 @@ out:
 }
 
 /* handle branch deletion during remount */
-static int do_remount_del_option(char *optarg, int cur_branches,
-				 struct unionfs_data *new_data,
-				 struct path *new_lower_paths)
+static noinline int do_remount_del_option(char *optarg, int cur_branches,
+					  struct unionfs_data *new_data,
+					  struct path *new_lower_paths)
 {
 	int err = -EINVAL;
 	int idx;
@@ -268,10 +268,10 @@ out:
 }
 
 /* handle branch insertion during remount */
-static int do_remount_add_option(char *optarg, int cur_branches,
-				 struct unionfs_data *new_data,
-				 struct path *new_lower_paths,
-				 int *high_branch_id)
+static noinline int do_remount_add_option(char *optarg, int cur_branches,
+					  struct unionfs_data *new_data,
+					  struct path *new_lower_paths,
+					  int *high_branch_id)
 {
 	int err = -EINVAL;
 	int perms;
