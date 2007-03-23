@@ -28,8 +28,34 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	struct dentry *hidden_parent_dentry = NULL;
 	int bindex = 0, bstart;
 	char *name = NULL;
+	int valid = 0;
 
+	/*
+	 * We have to read-lock the superblock rwsem, and we have to
+	 * revalidate the parent dentry and this one.  A branch-management
+	 * operation could have taken place, mid-way through a VFS operation
+	 * that eventually reaches here.  So we have to ensure consistency,
+	 * just as we do with the file operations.
+	 *
+	 * XXX: we may need to do this for all other inode ops that take a
+	 * dentry.
+	 */
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
+
+	unionfs_lock_dentry(dentry->d_parent);
+	valid = __unionfs_d_revalidate_chain(dentry->d_parent, nd);
+	unionfs_unlock_dentry(dentry->d_parent);
+	if (!valid) {
+		err = -ENOENT;	/* same as what real_lookup does */
+		goto out;
+	}
+	valid = __unionfs_d_revalidate_chain(dentry, nd);
+	/*
+	 * It's only a bug if this dentry was not negative and couldn't be
+	 * revalidated (shouldn't happen).
+	 */
+	BUG_ON(!valid && dentry->d_inode);
 
 	/* We start out in the leftmost branch. */
 	bstart = dbstart(dentry);
@@ -184,6 +210,7 @@ out:
 	kfree(name);
 
 	unionfs_unlock_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 
