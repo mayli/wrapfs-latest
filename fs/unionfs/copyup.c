@@ -183,7 +183,7 @@ static int __copyup_ndentry(struct dentry *old_hidden_dentry,
 		run_sioq(__unionfs_create, &args);
 		err = args.err;
 	} else {
-		printk(KERN_ERR "Unknown inode type %d\n",
+		printk(KERN_ERR "unionfs: unknown inode type %d\n",
 		       old_mode);
 		BUG();
 	}

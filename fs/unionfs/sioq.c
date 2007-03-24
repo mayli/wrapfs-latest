@@ -35,7 +35,7 @@ int __init init_sioq(void)
 		return 0;
 
 	err = PTR_ERR(superio_workqueue);
-	printk(KERN_ERR "create_workqueue failed %d\n", err);
+	printk(KERN_ERR "unionfs: create_workqueue failed %d\n", err);
 	superio_workqueue = NULL;
 	return err;
 }

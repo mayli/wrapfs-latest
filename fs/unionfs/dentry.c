@@ -48,7 +48,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 
 	/* if the dentry is unhashed, do NOT revalidate */
 	if (d_deleted(dentry)) {
-		printk(KERN_DEBUG "unhashed dentry being revalidated: %*s\n",
+		printk(KERN_DEBUG "unionfs: unhashed dentry being "
+		       "revalidated: %*s\n",
 		       dentry->d_name.len, dentry->d_name.name);
 		goto out;
 	}
@@ -291,12 +292,13 @@ static void unionfs_d_release(struct dentry *dentry)
 
 	/* this could be a negative dentry, so check first */
 	if (!UNIONFS_D(dentry)) {
-		printk(KERN_DEBUG "dentry without private data: %.*s",
+		printk(KERN_DEBUG "unionfs: dentry without private data: %.*s",
 		       dentry->d_name.len, dentry->d_name.name);
 		goto out;
 	} else if (dbstart(dentry) < 0) {
 		/* this is due to a failed lookup */
-		printk(KERN_DEBUG "dentry without hidden dentries : %.*s",
+		printk(KERN_DEBUG "unionfs: dentry without hidden "
+		       "dentries: %.*s",
 		       dentry->d_name.len, dentry->d_name.name);
 		goto out_free;
 	}

@@ -55,8 +55,8 @@ int create_whiteout(struct dentry *dentry, int start)
 			hidden_dentry = create_parents(dentry->d_inode,
 						       dentry, bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
-				printk(KERN_DEBUG "create_parents failed for "
-				       "bindex = %d\n", bindex);
+				printk(KERN_DEBUG "unionfs: create_parents "
+				       "failed for bindex = %d\n", bindex);
 				continue;
 			}
 		}

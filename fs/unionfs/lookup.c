@@ -191,8 +191,9 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				break;
 			}
 			err = -EIO;
-			printk(KERN_NOTICE "EIO: Invalid whiteout entry type"
-			       " %d.\n", wh_hidden_dentry->d_inode->i_mode);
+			printk(KERN_NOTICE "unionfs: EIO: invalid whiteout "
+			       "entry type %d.\n",
+			       wh_hidden_dentry->d_inode->i_mode);
 			dput(wh_hidden_dentry);
 			dput(first_hidden_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);

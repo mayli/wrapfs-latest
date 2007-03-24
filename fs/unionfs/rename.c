@@ -38,8 +38,8 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 		hidden_new_dentry =
 			create_parents(new_dentry->d_parent->d_inode, new_dentry, bindex);
 		if (IS_ERR(hidden_new_dentry)) {
-			printk(KERN_DEBUG "error creating directory tree for"
-			       " rename, bindex = %d, err = %ld\n",
+			printk(KERN_DEBUG "unionfs: error creating directory "
+			       "tree for rename, bindex = %d, err = %ld\n",
 			       bindex, PTR_ERR(hidden_new_dentry));
 			err = PTR_ERR(hidden_new_dentry);
 			goto out;
@@ -62,8 +62,8 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (hidden_wh_dentry->d_inode) {
 		/* get rid of the whiteout that is existing */
 		if (hidden_new_dentry->d_inode) {
-			printk(KERN_WARNING "Both a whiteout and a dentry"
-			       " exist when doing a rename!\n");
+			printk(KERN_WARNING "unionfs: both a whiteout and a "
+			       "dentry exist when doing a rename!\n");
 			err = -EIO;
 
 			dput(hidden_wh_dentry);
@@ -246,8 +246,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 			set_dbopaque(old_dentry, bwh_old);
 		else {
 			/* We can't fix anything now, so we cop-out and use -EIO. */
-			printk(KERN_ERR "We can't create a whiteout for the "
-			       "source in rename!\n");
+			printk(KERN_ERR "unionfs: can't create a whiteout for "
+			       "the source in rename!\n");
 			err = -EIO;
 		}
 	}
@@ -260,31 +260,31 @@ revert:
 	/* Do revert here. */
 	local_err = unionfs_refresh_hidden_dentry(new_dentry, old_bstart);
 	if (local_err) {
-		printk(KERN_WARNING "Revert failed in rename: the new refresh "
-		       "failed.\n");
+		printk(KERN_WARNING "unionfs: revert failed in rename: "
+		       "the new refresh failed.\n");
 		eio = -EIO;
 	}
 
 	local_err = unionfs_refresh_hidden_dentry(old_dentry, old_bstart);
 	if (local_err) {
-		printk(KERN_WARNING "Revert failed in rename: the old refresh "
-		       "failed.\n");
+		printk(KERN_WARNING "unionfs: revert failed in rename: "
+		       "the old refresh failed.\n");
 		eio = -EIO;
 		goto revert_out;
 	}
 
 	if (!unionfs_lower_dentry_idx(new_dentry, bindex) ||
 	    !unionfs_lower_dentry_idx(new_dentry, bindex)->d_inode) {
-		printk(KERN_WARNING "Revert failed in rename: the object "
-		       "disappeared from under us!\n");
+		printk(KERN_WARNING "unionfs: revert failed in rename: "
+		       "the object disappeared from under us!\n");
 		eio = -EIO;
 		goto revert_out;
 	}
 
 	if (unionfs_lower_dentry_idx(old_dentry, bindex) &&
 	    unionfs_lower_dentry_idx(old_dentry, bindex)->d_inode) {
-		printk(KERN_WARNING "Revert failed in rename: the object was "
-		       "created underneath us!\n");
+		printk(KERN_WARNING "unionfs: revert failed in rename: "
+		       "the object was created underneath us!\n");
 		eio = -EIO;
 		goto revert_out;
 	}
@@ -294,7 +294,7 @@ revert:
 
 	/* If we can't fix it, then we cop-out with -EIO. */
 	if (local_err) {
-		printk(KERN_WARNING "Revert failed in rename!\n");
+		printk(KERN_WARNING "unionfs: revert failed in rename!\n");
 		eio = -EIO;
 	}
 

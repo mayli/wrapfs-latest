@@ -30,8 +30,8 @@ static void unionfs_read_inode(struct inode *inode)
 	struct unionfs_inode_info *info = UNIONFS_I(inode);
 
 	if (!info) {
-		printk(KERN_ERR "No kernel memory when allocating inode "
-		       "private data!\n");
+		printk(KERN_ERR "unionfs: no kernel memory when allocating "
+		       "inode private data!\n");
 		BUG();
 	}
 
@@ -48,8 +48,8 @@ static void unionfs_read_inode(struct inode *inode)
 	size = sbmax(inode->i_sb) * sizeof(struct inode *);
 	info->lower_inodes = kzalloc(size, GFP_KERNEL);
 	if (!info->lower_inodes) {
-		printk(KERN_ERR "No kernel memory when allocating lower-"
-		       "pointer array!\n");
+		printk(KERN_ERR "unionfs: no kernel memory when allocating "
+		       "lower-pointer array!\n");
 		BUG();
 	}
 

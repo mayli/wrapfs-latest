@@ -447,8 +447,9 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 				if (IS_ERR(hidden_dentry))
 					err = PTR_ERR(hidden_dentry);
 
-				printk(KERN_DEBUG "hidden dentry NULL (or error)"
-				       "for bindex = %d\n", bindex);
+				printk(KERN_DEBUG "unionfs: hidden dentry "
+				       "NULL (or error) for bindex = %d\n",
+				       bindex);
 				continue;
 			}
 		}
@@ -558,8 +559,8 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 		if (!hidden_dentry) {
 			hidden_dentry = create_parents(parent, dentry, bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
-				printk(KERN_DEBUG "hidden dentry NULL for "
-				       "bindex = %d\n", bindex);
+				printk(KERN_DEBUG "unionfs: hidden dentry "
+				       " NULL for bindex = %d\n", bindex);
 				continue;
 			}
 		}
@@ -600,7 +601,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 
 		err = make_dir_opaque(dentry, dbstart(dentry));
 		if (err) {
-			printk(KERN_ERR "mkdir: error creating "
+			printk(KERN_ERR "unionfs: mkdir: error creating "
 			       ".wh.__dir_opaque: %d\n", err);
 			goto out;
 		}
@@ -682,8 +683,8 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 		if (!hidden_dentry) {
 			hidden_dentry = create_parents(dir, dentry, bindex);
 			if (IS_ERR(hidden_dentry)) {
-				printk(KERN_DEBUG
-				       "failed to create parents on %d, err = %ld\n",
+				printk(KERN_DEBUG "unionfs: failed to create "
+				       "parents on %d, err = %ld\n",
 				       bindex, PTR_ERR(hidden_dentry));
 				continue;
 			}

@@ -350,8 +350,8 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	if (willwrite && IS_WRITE_FLAG(file->f_flags) &&
 	    !IS_WRITE_FLAG(unionfs_lower_file(file)->f_flags) &&
 	    is_robranch(dentry)) {
-		printk(KERN_DEBUG "Doing delayed copyup of a read-write "
-		       "file on a read-only branch.\n");
+		printk(KERN_DEBUG "unionfs: Doing delayed copyup of a "
+		       "read-write file on a read-only branch.\n");
 		err = do_delayed_copyup(file, dentry);
 	}
 
@@ -566,7 +566,8 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 
 	if (fileinfo->rdstate) {
 		fileinfo->rdstate->access = jiffies;
-		printk(KERN_DEBUG "Saving rdstate with cookie %u [%d.%lld]\n",
+		printk(KERN_DEBUG "unionfs: saving rdstate with cookie "
+		       "%u [%d.%lld]\n",
 		       fileinfo->rdstate->cookie,
 		       fileinfo->rdstate->bindex,
 		       (long long)fileinfo->rdstate->dirpos);

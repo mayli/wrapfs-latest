@@ -138,7 +138,7 @@ skip:
 		/* Do nothing. */
 		break;
 	default:
-		printk(KERN_ERR "Invalid interpose flag passed!");
+		printk(KERN_ERR "unionfs: invalid interpose flag passed!");
 		BUG();
 	}
 
@@ -516,7 +516,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 
 	if (!raw_data) {
 		printk(KERN_WARNING
-		       "unionfs_read_super: missing data argument\n");
+		       "unionfs: read_super: missing data argument\n");
 		err = -EINVAL;
 		goto out;
 	}
@@ -524,7 +524,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	/* Allocate superblock private data */
 	sb->s_fs_info = kzalloc(sizeof(struct unionfs_sb_info), GFP_KERNEL);
 	if (!UNIONFS_SB(sb)) {
-		printk(KERN_WARNING "%s: out of memory\n", __FUNCTION__);
+		printk(KERN_WARNING "unionfs: read_super: out of memory\n");
 		err = -ENOMEM;
 		goto out;
 	}
@@ -537,7 +537,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	hidden_root_info = unionfs_parse_options(sb, raw_data);
 	if (IS_ERR(hidden_root_info)) {
 		printk(KERN_WARNING
-		       "unionfs_read_super: error while parsing options "
+		       "unionfs: read_super: error while parsing options "
 		       "(err = %ld)\n", PTR_ERR(hidden_root_info));
 		err = PTR_ERR(hidden_root_info);
 		hidden_root_info = NULL;
