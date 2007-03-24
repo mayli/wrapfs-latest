@@ -18,7 +18,8 @@
 
 #include "union.h"
 
-/* 1) Copyup the file
+/*
+ * 1) Copyup the file
  * 2) Rename the file to '.unionfs<original inode#><counter>' - obviously
  * stolen from NFS's silly rename
  */
@@ -110,7 +111,8 @@ static int find_new_branch_index(struct file *file, int bindex,
 	return -1;
 }
 
-/* put all references held by upper struct file and free lower file pointer
+/*
+ * put all references held by upper struct file and free lower file pointer
  * array
  */
 static void cleanup_file(struct file *file)
@@ -305,7 +307,8 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 
 	BUG_ON(sbgen > dgen);
 
-	/* There are two cases we are interested in.  The first is if the
+	/*
+	 * There are two cases we are interested in.  The first is if the
 	 * generation is lower than the super-block.  The second is if someone
 	 * has copied up this file from underneath us, we also need to refresh
 	 * things.
@@ -394,7 +397,8 @@ static int __open_dir(struct inode *inode, struct file *file)
 
 		unionfs_set_lower_file_idx(file, bindex, hidden_file);
 
-		/* The branchget goes after the open, because otherwise
+		/*
+		 * The branchget goes after the open, because otherwise
 		 * we would miss the reference on release.
 		 */
 		unionfs_read_lock(inode->i_sb);
@@ -419,11 +423,13 @@ static int __open_file(struct inode *inode, struct file *file)
 	bstart = fbstart(file) = dbstart(file->f_dentry);
 	bend = fbend(file) = dbend(file->f_dentry);
 
-	/* check for the permission for hidden file.  If the error is
+	/*
+	 * check for the permission for hidden file.  If the error is
 	 * COPYUP_ERR, copyup the file.
 	 */
 	if (hidden_dentry->d_inode && is_robranch(file->f_dentry)) {
-		/* if the open will change the file, copy it up otherwise
+		/*
+		 * if the open will change the file, copy it up otherwise
 		 * defer it.
 		 */
 		if (hidden_flags & O_TRUNC) {
@@ -445,7 +451,8 @@ static int __open_file(struct inode *inode, struct file *file)
 
 	dget(hidden_dentry);
 
-	/* dentry_open will decrement mnt refcnt if err.
+	/*
+	 * dentry_open will decrement mnt refcnt if err.
 	 * otherwise fput() will do an mntput() for us upon file close.
 	 */
 	unionfs_mntget(file->f_dentry, bstart);
@@ -506,7 +513,8 @@ int unionfs_open(struct inode *inode, struct file *file)
 	/* increment, so that we can flush appropriately */
 	atomic_inc(&UNIONFS_I(dentry->d_inode)->totalopens);
 
-	/* open all directories and make the unionfs file struct point to
+	/*
+	 * open all directories and make the unionfs file struct point to
 	 * these hidden file structs
 	 */
 	if (S_ISDIR(inode->i_mode))

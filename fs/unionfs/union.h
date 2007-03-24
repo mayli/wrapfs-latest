@@ -109,7 +109,8 @@ struct unionfs_inode_info {
 
 /* unionfs dentry data in memory */
 struct unionfs_dentry_info {
-	/* The semaphore is used to lock the dentry as soon as we get into a
+	/*
+	 * The semaphore is used to lock the dentry as soon as we get into a
 	 * unionfs function from the VFS.  Our lock ordering is that children
 	 * go before their parents.
 	 */
@@ -150,7 +151,8 @@ struct filldir_node {
 	int hash;		/* name hash */
 	int namelen;		/* name len since name is not 0 terminated */
 
-	/* we can check for duplicate whiteouts and files in the same branch
+	/*
+	 * we can check for duplicate whiteouts and files in the same branch
 	 * in order to return -EIO.
 	 */
 	int bindex;
@@ -247,7 +249,8 @@ extern struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 /* partial lookup */
 extern int unionfs_partial_lookup(struct dentry *dentry);
 
-/* Pass an unionfs dentry and an index and it will try to create a whiteout
+/*
+ * Pass an unionfs dentry and an index and it will try to create a whiteout
  * in branch 'index'.
  *
  * On error, it will proceed to a branch to the left
@@ -416,7 +419,8 @@ static inline int is_valid_dentry(struct dentry *dentry)
 /* What do we use for whiteouts. */
 #define UNIONFS_WHPFX ".wh."
 #define UNIONFS_WHLEN 4
-/* If a directory contains this file, then it is opaque.  We start with the
+/*
+ * If a directory contains this file, then it is opaque.  We start with the
  * .wh. flag so that it is blocked by lookup.
  */
 #define UNIONFS_DIR_OPAQUE_NAME "__dir_opaque"
@@ -434,7 +438,8 @@ extern int check_branch(struct nameidata *nd);
 extern int __parse_branch_mode(const char *name);
 extern int parse_branch_mode(const char *name);
 
-/* These two functions are here because it is kind of daft to copy and paste
+/*
+ * These two functions are here because it is kind of daft to copy and paste
  * the contents of the two functions to 32+ places in unionfs
  */
 static inline struct dentry *lock_parent(struct dentry *dentry)

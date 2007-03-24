@@ -45,12 +45,14 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 	}
 	BUG_ON(is_negative_dentry);
 
-	/* We allocate our new inode below, by calling iget.
+	/*
+	 * We allocate our new inode below, by calling iget.
 	 * iget will call our read_inode which will initialize some
 	 * of the new inode's fields
 	 */
 
-	/* On revalidate we've already got our own inode and just need
+	/*
+	 * On revalidate we've already got our own inode and just need
 	 * to fix it up.
 	 */
 	if (flag == INTERPOSE_REVAL) {
@@ -114,7 +116,8 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 	    S_ISFIFO(hidden_inode->i_mode) || S_ISSOCK(hidden_inode->i_mode))
 		init_special_inode(inode, hidden_inode->i_mode,
 				   hidden_inode->i_rdev);
-	/* Fix our inode's address operations to that of the lower inode
+	/*
+	 * Fix our inode's address operations to that of the lower inode
 	 * (Unionfs is FiST-Lite)
 	 */
 	if (inode->i_mapping->a_ops != hidden_inode->i_mapping->a_ops)
@@ -175,7 +178,8 @@ void unionfs_reinterpose(struct dentry *dentry)
 	ibend(inode) = dbend(dentry);
 }
 
-/* make sure the branch we just looked up (nd) makes sense:
+/*
+ * make sure the branch we just looked up (nd) makes sense:
  *
  * 1) we're not trying to stack unionfs on top of unionfs
  * 2) it exists
@@ -258,7 +262,8 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		goto out;
 	}
 
-	/* Each colon means we have a separator, this is really just a rough
+	/*
+	 * Each colon means we have a separator, this is really just a rough
 	 * guess, since strsep will handle empty fields for us.
 	 */
 	for (i = 0; options[i]; i++)
@@ -366,7 +371,8 @@ out:
 		kfree(hidden_root_info->lower_paths);
 		kfree(UNIONFS_SB(sb)->data);
 
-		/* MUST clear the pointers to prevent potential double free if
+		/*
+		 * MUST clear the pointers to prevent potential double free if
 		 * the caller dies later on
 		 */
 		hidden_root_info->lower_paths = NULL;
@@ -413,7 +419,8 @@ static struct unionfs_dentry_info *unionfs_parse_options(
 		if (optarg)
 			*optarg++ = '\0';
 
-		/* All of our options take an argument now. Insert ones that
+		/*
+		 * All of our options take an argument now. Insert ones that
 		 * don't, above this check.
 		 */
 		if (!optarg) {
@@ -485,7 +492,8 @@ out:
 	return hidden_root_info;
 }
 
-/* our custom d_alloc_root workalike
+/*
+ * our custom d_alloc_root workalike
  *
  * we can't use d_alloc_root if we want to use our own interpose function
  * unchanged, so we simply call our own "fake" d_alloc_root

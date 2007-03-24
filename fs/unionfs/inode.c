@@ -80,8 +80,9 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	}
 
 	if (wh_dentry->d_inode) {
-		/* .wh.foo has been found. */
-		/* First truncate it and then rename it to foo (hence having
+		/*
+		 * .wh.foo has been found.
+		 * First truncate it and then rename it to foo (hence having
 		 * the same overall effect as a normal create.
 		 */
 		struct dentry *hidden_dir_dentry;
@@ -141,13 +142,15 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 			/* exit if the error returned was NOT -EROFS */
 			if (!IS_COPYUP_ERR(err))
 				goto out;
-			/* We were not able to create the file in this
+			/*
+			 * We were not able to create the file in this
 			 * branch, so, we try to create it in one branch to
 			 * left
 			 */
 			bstart--;
 		} else {
-			/* reset the unionfs dentry to point to the .wh.foo
+			/*
+			 * reset the unionfs dentry to point to the .wh.foo
 			 * entry.
 			 */
 
@@ -167,11 +170,13 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	for (bindex = bstart; bindex >= 0; bindex--) {
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		if (!hidden_dentry) {
-			/* if hidden_dentry is NULL, create the entire
+			/*
+			 * if hidden_dentry is NULL, create the entire
 			 * dentry directory structure in branch 'bindex'.
 			 * hidden_dentry will NOT be null when bindex == bstart
 			 * because lookup passed as a negative unionfs dentry
-			 * pointing to a lone negative underlying dentry */
+			 * pointing to a lone negative underlying dentry.
+			 */
 			hidden_dentry = create_parents(parent, dentry, bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
 				if (IS_ERR(hidden_dentry))
@@ -264,7 +269,8 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 
 	hidden_new_dentry = unionfs_lower_dentry(new_dentry);
 
-	/* check if whiteout exists in the branch of new dentry, i.e. lookup
+	/*
+	 * check if whiteout exists in the branch of new dentry, i.e. lookup
 	 * .wh.foo first. If present, delete it
 	 */
 	name = alloc_whname(new_dentry->d_name.name, new_dentry->d_name.len);
@@ -396,7 +402,8 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
-	/* check if whiteout exists in this branch, i.e. lookup .wh.foo
+	/*
+	 * check if whiteout exists in this branch, i.e. lookup .wh.foo
 	 * first. If present, delete it
 	 */
 	name = alloc_whname(dentry->d_name.name, dentry->d_name.len);
@@ -446,13 +453,15 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 		}
 	}
 
-	/* deleted whiteout if it was present, now do a normal vfs_symlink()
+	/*
+	 * deleted whiteout if it was present, now do a normal vfs_symlink()
 	 * with possible recursive directory creation
 	 */
 	for (bindex = bstart; bindex >= 0; bindex--) {
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		if (!hidden_dentry) {
-			/* if hidden_dentry is NULL, create the entire
+			/*
+			 * if hidden_dentry is NULL, create the entire
 			 * dentry directory structure in branch 'bindex'.
 			 * hidden_dentry will NOT be null when bindex ==
 			 * bstart because lookup passed as a negative
@@ -827,7 +836,8 @@ static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 	kfree(nd_get_link(nd));
 }
 
-/* Basically copied from the kernel vfs permission(), but we've changed
+/*
+ * Basically copied from the kernel vfs permission(), but we've changed
  * the following:
  *   (1) the IS_RDONLY check is skipped, and
  *   (2) if you set the mount option `mode=nfsro', we assume that -EACCES
@@ -912,19 +922,22 @@ static int unionfs_permission(struct inode *inode, int mask,
 		if (!hidden_inode)
 			continue;
 
-		/* check the condition for D-F-D underlying files/directories,
+		/*
+		 * check the condition for D-F-D underlying files/directories,
 		 * we dont have to check for files, if we are checking for
 		 * directories.
 		 */
 		if (!is_file && !S_ISDIR(hidden_inode->i_mode))
 			continue;
 
-		/* We use our own special version of permission, such that
+		/*
+		 * We use our own special version of permission, such that
 		 * only the first branch returns -EROFS.
 		 */
 		err = inode_permission(hidden_inode, mask, nd, bindex);
 
-		/* The permissions are an intersection of the overall directory
+		/*
+		 * The permissions are an intersection of the overall directory
 		 * permissions, so we fail if one fails.
 		 */
 		if (err)

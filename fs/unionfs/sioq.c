@@ -18,7 +18,8 @@
 
 #include "union.h"
 
-/* Super-user IO work Queue - sometimes we need to perform actions which
+/*
+ * Super-user IO work Queue - sometimes we need to perform actions which
  * would fail due to the unix permissions on the parent directory (e.g.,
  * rmdir a directory which appears empty, but in reality contains
  * whiteouts).

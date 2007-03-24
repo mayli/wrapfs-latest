@@ -26,7 +26,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 					   struct dentry *dentry,
 					   const char *name, int bindex);
 
-/* For detailed explanation of copyup see:
+/*
+ * For detailed explanation of copyup see:
  * Documentation/filesystems/unionfs/concepts.txt
  */
 
@@ -135,7 +136,8 @@ int copyup_dentry(struct inode *dir, struct dentry *dentry,
 				   dentry->d_name.len, copyup_file, len);
 }
 
-/* create the new device/file/directory - use copyup_permission to copyup
+/*
+ * create the new device/file/directory - use copyup_permission to copyup
  * times, and mode
  *
  * if the object being copied up is a regular file, the file is only created,
@@ -314,7 +316,8 @@ out:
 	return err;
 }
 
-/* dput the lower references for old and new dentry & clear a lower dentry
+/*
+ * dput the lower references for old and new dentry & clear a lower dentry
  * pointer
  */
 static void __clear(struct dentry *dentry, struct dentry *old_hidden_dentry,
@@ -439,10 +442,10 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 		unionfs_reinterpose(dentry);
 
 	goto out_unlock;
-	/****/
 
 out_unlink:
-	/* copyup failed, because we possibly ran out of space or
+	/*
+	 * copyup failed, because we possibly ran out of space or
 	 * quota, or something else happened so let's unlink; we don't
 	 * really care about the return value of vfs_unlink
 	 */
@@ -483,7 +486,8 @@ out:
 	return err;
 }
 
-/* This function creates a copy of a file represented by 'file' which currently
+/*
+ * This function creates a copy of a file represented by 'file' which currently
  * resides in branch 'bstart' to branch 'new_bindex.'  The copy will be named
  * "name".
  */
@@ -504,7 +508,8 @@ int copyup_named_file(struct inode *dir, struct file *file, char *name,
 	return err;
 }
 
-/* This function creates a copy of a file represented by 'file' which currently
+/*
+ * This function creates a copy of a file represented by 'file' which currently
  * resides in branch 'bstart' to branch 'new_bindex'.
  */
 int copyup_file(struct inode *dir, struct file *file, int bstart,
@@ -523,7 +528,8 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 	return err;
 }
 
-/* This function replicates the directory structure upto given dentry in the
+/*
+ * This function replicates the directory structure upto given dentry in the
  * bindex branch. Can create directory structure recursively to the right
  * also.
  */
@@ -545,7 +551,8 @@ static void __cleanup_dentry(struct dentry * dentry, int bindex,
 	loop_start = min(old_bstart, bindex);
 	loop_end = max(old_bend, bindex);
 
-	/* This loop sets the bstart and bend for the new dentry by
+	/*
+	 * This loop sets the bstart and bend for the new dentry by
 	 * traversing from left to right.  It also dputs all negative
 	 * dentries except bindex
 	 */
@@ -606,7 +613,8 @@ static void __set_dentry(struct dentry * upper, struct dentry * lower,
 		set_dbend(upper, bindex);
 }
 
-/* This function replicates the directory structure upto given dentry
+/*
+ * This function replicates the directory structure upto given dentry
  * in the bindex branch.
  */
 static struct dentry *create_parents_named(struct inode *dir,
@@ -649,7 +657,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 	parent_dentry = dentry;
 
 	count = 0;
-	/* This loop finds the first parent that exists in the given branch.
+	/*
+	 * This loop finds the first parent that exists in the given branch.
 	 * We start building the directory structure from there.  At the end
 	 * of the loop, the following should hold:
 	 *  - child_dentry is the first nonexistent child
@@ -688,7 +697,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 
 	sb = dentry->d_sb;
 
-	/* This is basically while(child_dentry != dentry).  This loop is
+	/*
+	 * This is basically while(child_dentry != dentry).  This loop is
 	 * horrible to follow and should be replaced with cleaner code.
 	 */
 	while (1) {
@@ -710,7 +720,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 				goto out;
 		} else {
 
-			/* is the name a whiteout of the childname ?
+			/*
+			 * is the name a whiteout of the childname ?
 			 * lookup the whiteout child in the underlying file
 			 * system
 			 */
@@ -733,7 +744,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 		}
 
 		if (hidden_dentry->d_inode) {
-			/* since this already exists we dput to avoid
+			/*
+			 * since this already exists we dput to avoid
 			 * multiple references on the same dentry
 			 */
 			dput(hidden_dentry);

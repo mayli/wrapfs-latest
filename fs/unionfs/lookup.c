@@ -92,7 +92,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 	const char *name;
 	int namelen;
 
-	/* We should already have a lock on this dentry in the case of a
+	/*
+	 * We should already have a lock on this dentry in the case of a
 	 * partial lookup, or a revalidation. Otherwise it is returned from
 	 * new_dentry_private_data already locked.
 	 */
@@ -137,7 +138,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 	bopaque = dbopaque(parent_dentry);
 	BUG_ON(bstart < 0);
 
-	/* It would be ideal if we could convert partial lookups to only have
+	/*
+	 * It would be ideal if we could convert partial lookups to only have
 	 * to do this work when they really need to.  It could probably improve
 	 * performance quite a bit, and maybe simplify the rest of the code.
 	 */
@@ -218,13 +220,15 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 			goto out_free;
 		}
 
-		/* Store the first negative dentry specially, because if they
+		/*
+		 * Store the first negative dentry specially, because if they
 		 * are all negative we need this for future creates.
 		 */
 		if (!hidden_dentry->d_inode) {
 			if (!first_hidden_dentry && (dbstart(dentry) == -1)) {
 				first_hidden_dentry = hidden_dentry;
-				/* FIXME: following line needs to be changed
+				/*
+				 * FIXME: following line needs to be changed
 				 * to allow mountpoint crossing
 				 */
 				first_dentry = parent_dentry;
@@ -244,7 +248,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		if (dbstart(dentry) == -1)
 			set_dbstart(dentry, bindex);
 		unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
-		/* FIXME: the following line needs to get fixed to allow
+		/*
+		 * FIXME: the following line needs to get fixed to allow
 		 * mountpoint crossing
 		 */
 		unionfs_set_lower_mnt_idx(dentry, bindex,
@@ -311,7 +316,8 @@ out_negative:
 			goto out;
 		}
 
-		/* FIXME: the following line needs to be changed to allow
+		/*
+		 * FIXME: the following line needs to be changed to allow
 		 * mountpoint crossing
 		 */
 		first_dentry = dentry;
@@ -334,7 +340,8 @@ out_negative:
 out_positive:
 	BUG_ON(dentry_count <= 0);
 
-	/* If we're holding onto the first negative dentry & corresponding
+	/*
+	 * If we're holding onto the first negative dentry & corresponding
 	 * vfsmount - throw it out.
 	 */
 	dput(first_hidden_dentry);
@@ -347,7 +354,8 @@ out_positive:
 			goto out;
 		}
 
-		/* This somehow turned positive, so it is as if we had a
+		/*
+		 * This somehow turned positive, so it is as if we had a
 		 * negative revalidation.
 		 */
 		lookupmode = INTERPOSE_REVAL_NEG;
@@ -500,7 +508,8 @@ out:
 	return -ENOMEM;
 }
 
-/* scan through the lower dentry objects, and set bstart to reflect the
+/*
+ * scan through the lower dentry objects, and set bstart to reflect the
  * starting branch
  */
 void update_bstart(struct dentry *dentry)

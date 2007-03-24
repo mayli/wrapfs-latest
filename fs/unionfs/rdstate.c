@@ -20,11 +20,13 @@
 
 /* This file contains the routines for maintaining readdir state. */
 
-/* There are two structures here, rdstate which is a hash table
+/*
+ * There are two structures here, rdstate which is a hash table
  * of the second structure which is a filldir_node.
  */
 
-/* This is a struct kmem_cache for filldir nodes, because we allocate a lot
+/*
+ * This is a struct kmem_cache for filldir nodes, because we allocate a lot
  * of them and they shouldn't waste memory.  If the node has a small name
  * (as defined by the dentry structure), then we use an inline name to
  * preserve kmalloc space.
@@ -47,7 +49,8 @@ void unionfs_destroy_filldir_cache(void)
 		kmem_cache_destroy(unionfs_filldir_cachep);
 }
 
-/* This is a tuning parameter that tells us roughly how big to make the
+/*
+ * This is a tuning parameter that tells us roughly how big to make the
  * hash table in directory entries per page.  This isn't perfect, but
  * at least we get a hash table size that shouldn't be too overloaded.
  * The following averages are based on my home directory.
@@ -204,12 +207,14 @@ struct filldir_node *find_filldir_node(struct unionfs_dir_state *rdstate,
 
 		if (cursor->namelen == namelen && cursor->hash == hash &&
 		    !strncmp(cursor->name, name, namelen)) {
-			/* a duplicate exists, and hence no need to create
+			/*
+			 * a duplicate exists, and hence no need to create
 			 * entry to the list
 			 */
 			found = 1;
 
-			/* if the duplicate is in this branch, then the file
+			/*
+			 * if the duplicate is in this branch, then the file
 			 * system is corrupted.
 			 */
 			if (cursor->bindex == rdstate->bindex) {

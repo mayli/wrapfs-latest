@@ -18,7 +18,8 @@
 
 #include "union.h"
 
-/* Delete all of the whiteouts in a given directory for rmdir.
+/*
+ * Delete all of the whiteouts in a given directory for rmdir.
  *
  * hidden directory inode should be locked
  */

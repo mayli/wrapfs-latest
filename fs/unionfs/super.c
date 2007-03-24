@@ -18,7 +18,8 @@
 
 #include "union.h"
 
-/* The inode cache is used with alloc_inode for both our inode info and the
+/*
+ * The inode cache is used with alloc_inode for both our inode info and the
  * vfs inode.
  */
 static struct kmem_cache *unionfs_inode_cachep;
@@ -119,7 +120,8 @@ static void unionfs_put_super(struct super_block *sb)
 	sb->s_fs_info = NULL;
 }
 
-/* Since people use this to answer the "How big of a file can I write?"
+/*
+ * Since people use this to answer the "How big of a file can I write?"
  * question, we report the size of the highest priority branch as the size of
  * the union.
  */
@@ -779,7 +781,8 @@ static void unionfs_clear_inode(struct inode *inode)
 		free_rdstate(rdstate);
 	}
 
-	/* Decrement a reference to a hidden_inode, which was incremented
+	/*
+	 * Decrement a reference to a hidden_inode, which was incremented
 	 * by our read_inode when it was created initially.
 	 */
 	bstart = ibstart(inode);
@@ -844,7 +847,8 @@ void unionfs_destroy_inode_cache(void)
 		kmem_cache_destroy(unionfs_inode_cachep);
 }
 
-/* Called when we have a dirty inode, right here we only throw out
+/*
+ * Called when we have a dirty inode, right here we only throw out
  * parts of our readdir list that are too old.
  */
 static int unionfs_write_inode(struct inode *inode, int sync)
@@ -878,7 +882,8 @@ static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 	int bindex, bstart, bend;
 
 	if (!(flags & MNT_FORCE))
-		/* we are not being MNT_FORCEd, therefore we should emulate
+		/*
+		 * we are not being MNT_FORCEd, therefore we should emulate
 		 * old behaviour
 		 */
 		return;

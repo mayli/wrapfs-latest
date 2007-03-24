@@ -95,7 +95,8 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (err)
 		goto out_unlock;
 
-	/* ready to whiteout for old_dentry. caller will create the actual
+	/*
+	 * ready to whiteout for old_dentry. caller will create the actual
 	 * whiteout, and must dput(*wh_old)
 	 */
 	if (wh_old) {
@@ -174,7 +175,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 	} else
 		revert = 1;
 
-	/* Unlink all instances of destination that exist to the left of
+	/*
+	 * Unlink all instances of destination that exist to the left of
 	 * bstart of source. On error, revert back, goto out.
 	 */
 	for (bindex = old_bstart - 1; bindex >= new_bstart; bindex--) {
@@ -213,7 +215,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 
 	if (do_copyup != -1) {
 		for (bindex = do_copyup; bindex >= 0; bindex--) {
-			/* copyup the file into some left directory, so that
+			/*
+			 * copyup the file into some left directory, so that
 			 * you can rename it
 			 */
 			err = copyup_dentry(old_dentry->d_parent->d_inode,
@@ -236,7 +239,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 			goto revert;
 	}
 
-	/* Create whiteout for source, only if:
+	/*
+	 * Create whiteout for source, only if:
 	 * (1) There is more than one underlying instance of source.
 	 * (2) We did a copy_up
 	 */
@@ -353,7 +357,8 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 	return wh_dentry;
 }
 
-/* We can't copyup a directory, because it may involve huge
+/*
+ * We can't copyup a directory, because it may involve huge
  * numbers of children, etc.  Doing that in the kernel would
  * be bad, so instead we let the userspace recurse and ask us
  * to copy up each file separately
@@ -444,8 +449,10 @@ out:
 		/* clear the new_dentry stuff created */
 		d_drop(new_dentry);
 	else
-		/* force re-lookup since the dir on ro branch is not renamed,
-		   and hidden dentries still indicate the un-renamed ones. */
+		/*
+		 * force re-lookup since the dir on ro branch is not renamed,
+		 * and hidden dentries still indicate the un-renamed ones.
+		 */
 		if (S_ISDIR(old_dentry->d_inode->i_mode))
 			atomic_dec(&UNIONFS_D(old_dentry)->generation);
 

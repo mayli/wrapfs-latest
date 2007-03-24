@@ -183,7 +183,8 @@ out:
 	return err;
 }
 
-/* This is not meant to be a generic repositioning function.  If you do
+/*
+ * This is not meant to be a generic repositioning function.  If you do
  * things that aren't supported, then we return EINVAL.
  *
  * What is allowed:
@@ -258,7 +259,8 @@ out:
 	return err;
 }
 
-/* Trimmed directory options, we shouldn't pass everything down since
+/*
+ * Trimmed directory options, we shouldn't pass everything down since
  * we don't want to operate on partial directories.
  */
 struct file_operations unionfs_dir_fops = {

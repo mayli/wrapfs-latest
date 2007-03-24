@@ -47,7 +47,8 @@ void unionfs_xattr_free(void *ptr, size_t size)
 		vfree(ptr);
 }
 
-/* BKL held by caller.
+/*
+ * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
 ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
@@ -68,7 +69,8 @@ ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
 	return err;
 }
 
-/* BKL held by caller.
+/*
+ * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
 int unionfs_setxattr(struct dentry *dentry, const char *name,
@@ -89,7 +91,8 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 	return err;
 }
 
-/* BKL held by caller.
+/*
+ * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
 int unionfs_removexattr(struct dentry *dentry, const char *name)
@@ -108,7 +111,8 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 	return err;
 }
 
-/* BKL held by caller.
+/*
+ * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
 ssize_t unionfs_listxattr(struct dentry * dentry, char *list, size_t size)

@@ -18,7 +18,8 @@
 
 #include "union.h"
 
-/* Pass an unionfs dentry and an index.  It will try to create a whiteout
+/*
+ * Pass an unionfs dentry and an index.  It will try to create a whiteout
  * for the filename in dentry, and will try in branch 'index'.  On error,
  * it will proceed to a branch to the left.
  */
@@ -47,7 +48,8 @@ int create_whiteout(struct dentry *dentry, int start)
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 
 		if (!hidden_dentry) {
-			/* if hidden dentry is not present, create the entire
+			/*
+			 * if hidden dentry is not present, create the entire
 			 * hidden dentry directory structure and go ahead.
 			 * Since we want to just create whiteout, we only want
 			 * the parent dentry, and hence get rid of this dentry.
@@ -67,7 +69,8 @@ int create_whiteout(struct dentry *dentry, int start)
 		if (IS_ERR(hidden_wh_dentry))
 			continue;
 
-		/* The whiteout already exists. This used to be impossible, but
+		/*
+		 * The whiteout already exists. This used to be impossible, but
 		 * now is possible because of opaqueness.
 		 */
 		if (hidden_wh_dentry->d_inode) {
@@ -98,7 +101,8 @@ out:
 	return err;
 }
 
-/* This is a helper function for rename, which ends up with hosed over dentries
+/*
+ * This is a helper function for rename, which ends up with hosed over dentries
  * when it needs to revert.
  */
 int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
@@ -170,7 +174,8 @@ out:
 	return err;
 }
 
-/* returns the sum of the n_link values of all the underlying inodes of the
+/*
+ * returns the sum of the n_link values of all the underlying inodes of the
  * passed inode
  */
 int unionfs_get_nlinks(struct inode *inode)

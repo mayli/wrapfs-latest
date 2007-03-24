@@ -12,7 +12,8 @@
 #ifndef _LINUX_FS_STACK_H
 #define _LINUX_FS_STACK_H
 
-/* This file defines generic functions used primarily by stackable
+/*
+ * This file defines generic functions used primarily by stackable
  * filesystems; none of these functions require i_mutex to be held.
  */
 

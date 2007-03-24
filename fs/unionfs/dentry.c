@@ -58,7 +58,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 		positive = 1;
 	dgen = atomic_read(&UNIONFS_D(dentry)->generation);
 	sbgen = atomic_read(&UNIONFS_SB(dentry->d_sb)->generation);
-	/* If we are working on an unconnected dentry, then there is no
+	/*
+	 * If we are working on an unconnected dentry, then there is no
 	 * revalidation to be done, because this file does not exist within the
 	 * namespace, and Unionfs operates on the namespace, not data.
 	 */
@@ -130,7 +131,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 				valid = 0;
 				goto out;
 			}
-			/* current unionfs_lookup_backend() doesn't return
+			/*
+			 * current unionfs_lookup_backend() doesn't return
 			 * a valid dentry
 			 */
 			dput(dentry);
