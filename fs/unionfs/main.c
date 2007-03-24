@@ -266,15 +266,15 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 			branches++;
 
 	/* allocate space for underlying pointers to hidden dentry */
-	UNIONFS_SB(sb)->data = kcalloc(branches,
-				       sizeof(struct unionfs_data), GFP_KERNEL);
+	UNIONFS_SB(sb)->data =
+		kcalloc(branches, sizeof(struct unionfs_data), GFP_KERNEL);
 	if (!UNIONFS_SB(sb)->data) {
 		err = -ENOMEM;
 		goto out;
 	}
 
-	hidden_root_info->lower_paths = kcalloc(branches,
-						sizeof(struct path), GFP_KERNEL);
+	hidden_root_info->lower_paths =
+		kcalloc(branches, sizeof(struct path), GFP_KERNEL);
 	if (!hidden_root_info->lower_paths) {
 		err = -ENOMEM;
 		goto out;
@@ -304,7 +304,8 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		err = path_lookup(name, LOOKUP_FOLLOW, &nd);
 		if (err) {
 			printk(KERN_WARNING "unionfs: error accessing "
-			       "hidden directory '%s' (error %d)\n", name, err);
+			       "hidden directory '%s' (error %d)\n",
+			       name, err);
 			goto out;
 		}
 
@@ -358,7 +359,7 @@ out:
 		for (i = 0; i < branches; i++)
 			if (hidden_root_info->lower_paths[i].dentry) {
 				dput(hidden_root_info->lower_paths[i].dentry);
-				/* initializing: can't use unionfs_mntput here */
+				/* initialize: can't use unionfs_mntput here */
 				mntput(hidden_root_info->lower_paths[i].mnt);
 			}
 
@@ -562,7 +563,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 		unionfs_write_unlock(sb);
 	}
 
-	/* Unionfs: Max Bytes is the maximum bytes from highest priority branch */
+	/* max Bytes is the maximum bytes from highest priority branch */
 	unionfs_read_lock(sb);
 	sb->s_maxbytes = unionfs_lower_super_idx(sb, 0)->s_maxbytes;
 	unionfs_read_unlock(sb);

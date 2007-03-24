@@ -362,7 +362,8 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 		goto out;
 
 	/* Create the directory structure above this dentry. */
-	new_hidden_dentry = create_parents_named(dir, dentry, name, new_bindex);
+	new_hidden_dentry =
+		create_parents_named(dir, dentry, name, new_bindex);
 	if (IS_ERR(new_hidden_dentry)) {
 		err = PTR_ERR(new_hidden_dentry);
 		goto out;
@@ -417,12 +418,14 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 	/* We actually copyup the file here. */
 	if (S_ISREG(old_hidden_dentry->d_inode->i_mode))
 		err = __copyup_reg_data(dentry, new_hidden_dentry, new_bindex,
-					old_hidden_dentry, old_bindex, copyup_file, len);
+					old_hidden_dentry, old_bindex,
+					copyup_file, len);
 	if (err)
 		goto out_unlink;
 
 	/* Set permissions. */
-	if ((err = copyup_permissions(sb, old_hidden_dentry, new_hidden_dentry)))
+	if ((err = copyup_permissions(sb, old_hidden_dentry,
+				      new_hidden_dentry)))
 		goto out_unlink;
 
 #ifdef CONFIG_UNION_FS_XATTR
@@ -664,7 +667,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 		unionfs_lock_dentry(parent_dentry);
 
 		/* find out the hidden_parent_dentry in the given branch */
-		hidden_parent_dentry = unionfs_lower_dentry_idx(parent_dentry, bindex);
+		hidden_parent_dentry =
+			unionfs_lower_dentry_idx(parent_dentry, bindex);
 
 		/* grow path table */
 		if (count == nr_dentry) {
@@ -691,7 +695,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 	 */
 	while (1) {
 		/* get hidden parent dir in the current branch */
-		hidden_parent_dentry = unionfs_lower_dentry_idx(parent_dentry, bindex);
+		hidden_parent_dentry =
+			unionfs_lower_dentry_idx(parent_dentry, bindex);
 		unionfs_unlock_dentry(parent_dentry);
 
 		/* init the values to lookup */
@@ -708,7 +713,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 		} else {
 
 			/* is the name a whiteout of the childname ?
-			 * lookup the whiteout child in the underlying file system
+			 * lookup the whiteout child in the underlying file
+			 * system
 			 */
 			hidden_dentry =
 				lookup_one_len(name, hidden_parent_dentry,
@@ -716,9 +722,13 @@ static struct dentry *create_parents_named(struct inode *dir,
 			if (IS_ERR(hidden_dentry))
 				goto out;
 
-			/* Replace the current dentry (if any) with the new one. */
+			/*
+			 * Replace the current dentry (if any) with the new
+			 * one.
+			 */
 			dput(unionfs_lower_dentry_idx(dentry, bindex));
-			unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
+			unionfs_set_lower_dentry_idx(dentry, bindex,
+						     hidden_dentry);
 
 			__cleanup_dentry(dentry, bindex, old_bstart, old_bend);
 			break;
@@ -744,7 +754,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 
 			if (!err)
 				err = copyup_permissions(dir->i_sb,
-							 child_dentry, hidden_dentry);
+							 child_dentry,
+							 hidden_dentry);
 			unlock_dir(hidden_parent_dentry);
 			if (err) {
 				dput(hidden_dentry);

@@ -70,7 +70,10 @@ static int unionfs_filldir(void *dirent, const char *name, int namelen,
 			verify_rdstate_offset(buf->rdstate);
 		}
 	}
-	/* If we did fill it, stuff it in our hash, otherwise return an error */
+	/*
+	 * If we did fill it, stuff it in our hash, otherwise return an
+	 * error.
+	 */
 	if (err) {
 		buf->filldir_error = err;
 		goto out;
@@ -200,7 +203,10 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 
 	rdstate = UNIONFS_F(file)->rdstate;
 
-	/* We let users seek to their current position, but not anywhere else. */
+	/*
+	 * we let users seek to their current position, but not anywhere
+	 * else.
+	 */
 	if (!offset) {
 		switch (origin) {
 		case SEEK_SET:

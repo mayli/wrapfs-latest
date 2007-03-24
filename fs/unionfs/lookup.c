@@ -46,8 +46,9 @@ static noinline int is_opaque_dir(struct dentry *dentry, int bindex)
 	mutex_lock(&hidden_inode->i_mutex);
 
 	if (!permission(hidden_inode, MAY_EXEC, NULL))
-		wh_hidden_dentry = lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
-						  sizeof(UNIONFS_DIR_OPAQUE) - 1);
+		wh_hidden_dentry =
+			lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
+				       sizeof(UNIONFS_DIR_OPAQUE) - 1);
 	else {
 		args.is_opaque.dentry = hidden_dentry;
 		run_sioq(__is_opaque_dir, &args);
@@ -153,7 +154,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 			continue;
 		BUG_ON(hidden_dentry != NULL);
 
-		hidden_dir_dentry = unionfs_lower_dentry_idx(parent_dentry, bindex);
+		hidden_dir_dentry =
+			unionfs_lower_dentry_idx(parent_dentry, bindex);
 
 		/* if the parent hidden dentry does not exist skip this */
 		if (!(hidden_dir_dentry && hidden_dir_dentry->d_inode))
@@ -227,7 +229,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				 * to allow mountpoint crossing
 				 */
 				first_dentry = parent_dentry;
-				first_hidden_mnt = unionfs_mntget(parent_dentry, bindex);
+				first_hidden_mnt =
+					unionfs_mntget(parent_dentry, bindex);
 				first_dentry_offset = bindex;
 			} else
 				dput(hidden_dentry);
@@ -246,7 +249,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		 * mountpoint crossing
 		 */
 		unionfs_set_lower_mnt_idx(dentry, bindex,
-					  unionfs_mntget(parent_dentry, bindex));
+					  unionfs_mntget(parent_dentry,
+							 bindex));
 		set_dbend(dentry, bindex);
 
 		/* update parent directory's atime with the bindex */
@@ -260,7 +264,8 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 			if (dentry_count == 1)
 				goto out_positive;
 			/* This can only happen with mixed D-*-F-* */
-			BUG_ON(!S_ISDIR(unionfs_lower_dentry(dentry)->d_inode->i_mode));
+			BUG_ON(!S_ISDIR(unionfs_lower_dentry(dentry)->
+					d_inode->i_mode));
 			continue;
 		}
 
@@ -299,8 +304,9 @@ out_negative:
 		/* FIXME: fix following line for mount point crossing */
 		nd->mnt = unionfs_lower_mnt_idx(parent_dentry, bindex);
 
-		first_hidden_dentry = lookup_one_len_nd(name, hidden_dir_dentry,
-							namelen, nd);
+		first_hidden_dentry =
+			lookup_one_len_nd(name, hidden_dir_dentry,
+					  namelen, nd);
 		first_dentry_offset = bindex;
 		if (IS_ERR(first_hidden_dentry)) {
 			err = PTR_ERR(first_hidden_dentry);
@@ -412,9 +418,10 @@ int unionfs_partial_lookup(struct dentry *dentry)
 static struct kmem_cache *unionfs_dentry_cachep;
 int unionfs_init_dentry_cache(void)
 {
-	unionfs_dentry_cachep = kmem_cache_create("unionfs_dentry",
-						  sizeof(struct unionfs_dentry_info), 0,
-						  SLAB_RECLAIM_ACCOUNT, NULL, NULL);
+	unionfs_dentry_cachep =
+		kmem_cache_create("unionfs_dentry",
+				  sizeof(struct unionfs_dentry_info),
+				  0, SLAB_RECLAIM_ACCOUNT, NULL, NULL);
 
 	return (unionfs_dentry_cachep ? 0 : -ENOMEM);
 }

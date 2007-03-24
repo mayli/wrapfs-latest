@@ -81,7 +81,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 			struct dentry *hidden_dentry;
 			for (bindex = bstart; bindex <= bend; bindex++) {
 				hidden_dentry =
-					unionfs_lower_dentry_idx(dentry, bindex);
+					unionfs_lower_dentry_idx(dentry,
+								 bindex);
 				dput(hidden_dentry);
 			}
 		}
@@ -106,10 +107,12 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 			bend = ibend(dentry->d_inode);
 			if (bstart >= 0) {
 				struct inode *hidden_inode;
-				for (bindex = bstart; bindex <= bend; bindex++) {
+				for (bindex = bstart; bindex <= bend;
+				     bindex++) {
 					hidden_inode =
-						unionfs_lower_inode_idx(dentry->d_inode,
-									bindex);
+						unionfs_lower_inode_idx(
+							dentry->d_inode,
+							bindex);
 					iput(hidden_inode);
 				}
 			}
@@ -121,7 +124,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 				mutex_unlock(&dentry->d_inode->i_mutex);
 		}
 
-		result = unionfs_lookup_backend(dentry, &lowernd, interpose_flag);
+		result = unionfs_lookup_backend(dentry, &lowernd,
+						interpose_flag);
 		if (result) {
 			if (IS_ERR(result)) {
 				valid = 0;
@@ -152,7 +156,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 		if (!hidden_dentry || !hidden_dentry->d_op
 		    || !hidden_dentry->d_op->d_revalidate)
 			continue;
-		if (!hidden_dentry->d_op->d_revalidate(hidden_dentry, &lowernd))
+		if (!hidden_dentry->d_op->d_revalidate(hidden_dentry,
+						       &lowernd))
 			valid = 0;
 	}
 
@@ -237,7 +242,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 		if (valid && chain_len > 0 &&
 		    sbgen != dgen && chain[i]->d_inode &&
 		    S_ISDIR(chain[i]->d_inode->i_mode)) {
-			for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
+			for (bindex = saved_bstart; bindex <= saved_bend;
+			     bindex++)
 				unionfs_mntput(chain[i], bindex);
 		}
 		unionfs_unlock_dentry(chain[i]);

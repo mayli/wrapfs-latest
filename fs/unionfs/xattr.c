@@ -82,7 +82,8 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 	unionfs_lock_dentry(dentry);
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
-	err = vfs_setxattr(hidden_dentry, (char*) name, (void*) value, size, flags);
+	err = vfs_setxattr(hidden_dentry, (char*) name, (void*) value,
+			   size, flags);
 
 	unionfs_unlock_dentry(dentry);
 	return err;

@@ -257,7 +257,8 @@ static noinline int do_remount_del_option(char *optarg, int cur_branches,
 	if (idx < cur_branches - 1) {
 		/* if idx==cur_branches-1, we delete last branch: easy */
 		memmove(&new_data[idx], &new_data[idx+1],
-			(cur_branches - 1 - idx) * sizeof(struct unionfs_data));
+			(cur_branches - 1 - idx) *
+			sizeof(struct unionfs_data));
 		memmove(&new_lower_paths[idx], &new_lower_paths[idx+1],
 			(cur_branches - 1 - idx) * sizeof(struct path));
 	}
@@ -572,8 +573,8 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 				goto out_release;
 			new_branches++;
 			if (new_branches > UNIONFS_MAX_BRANCHES) {
-				printk("unionfs: command exceeds %d branches\n",
-				       UNIONFS_MAX_BRANCHES);
+				printk("unionfs: command exceeds "
+				       "%d branches\n", UNIONFS_MAX_BRANCHES);
 				err = -E2BIG;
 				goto out_release;
 			}
@@ -921,8 +922,8 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	seq_printf(m, ",dirs=");
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		path = d_path(unionfs_lower_dentry_idx(sb->s_root, bindex),
-			      unionfs_lower_mnt_idx(sb->s_root, bindex), tmp_page,
-			      PAGE_SIZE);
+			      unionfs_lower_mnt_idx(sb->s_root, bindex),
+			      tmp_page, PAGE_SIZE);
 		if (IS_ERR(path)) {
 			ret = PTR_ERR(path);
 			goto out;

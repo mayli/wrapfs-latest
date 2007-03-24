@@ -61,8 +61,9 @@ int create_whiteout(struct dentry *dentry, int start)
 			}
 		}
 
-		hidden_wh_dentry = lookup_one_len(name, hidden_dentry->d_parent,
-						  dentry->d_name.len + UNIONFS_WHLEN);
+		hidden_wh_dentry =
+			lookup_one_len(name, hidden_dentry->d_parent,
+				       dentry->d_name.len + UNIONFS_WHLEN);
 		if (IS_ERR(hidden_wh_dentry))
 			continue;
 
@@ -79,7 +80,8 @@ int create_whiteout(struct dentry *dentry, int start)
 		if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
 			err = vfs_create(hidden_dir_dentry->d_inode,
 					 hidden_wh_dentry,
-					 ~current->fs->umask & S_IRWXUGO, NULL);
+					 ~current->fs->umask & S_IRWXUGO,
+					 NULL);
 
 		}
 		unlock_dir(hidden_dir_dentry);

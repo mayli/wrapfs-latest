@@ -52,7 +52,8 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 	for (i = 0; !err && i < namelist->size; i++) {
 		list_for_each(pos, &namelist->list[i]) {
 			cursor =
-				list_entry(pos, struct filldir_node, file_list);
+				list_entry(pos, struct filldir_node,
+					   file_list);
 			/* Only operate on whiteouts in this branch. */
 			if (cursor->bindex != bindex)
 				continue;
@@ -62,7 +63,8 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 			strcpy(p, cursor->name);
 			hidden_dentry =
 				lookup_one_len(name, hidden_dir_dentry,
-					       cursor->namelen + UNIONFS_WHLEN);
+					       cursor->namelen +
+					       UNIONFS_WHLEN);
 			if (IS_ERR(hidden_dentry)) {
 				err = PTR_ERR(hidden_dentry);
 				break;
@@ -148,7 +150,8 @@ static int readdir_util_callback(void *dirent, const char *name, int namelen,
 
 	buf->filldir_called = 1;
 
-	if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2)))
+	if (name[0] == '.' && (namelen == 1 ||
+			       (name[1] == '.' && namelen == 2)))
 		goto out;
 
 	if (namelen > UNIONFS_WHLEN &&
@@ -163,7 +166,10 @@ static int readdir_util_callback(void *dirent, const char *name, int namelen,
 	if (found)
 		goto out;
 
-	/* If it wasn't found and isn't a whiteout, the directory isn't empty. */
+	/*
+	 * if it wasn't found and isn't a whiteout, the directory isn't
+	 * empty.
+	 */
 	err = -ENOTEMPTY;
 	if ((buf->mode == RD_CHECK_EMPTY) && !whiteout)
 		goto out;
@@ -230,7 +236,8 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 		branchget(sb, bindex);
 		unionfs_read_unlock(sb);
 		hidden_file =
-			dentry_open(hidden_dentry, unionfs_lower_mnt_idx(dentry, bindex),
+			dentry_open(hidden_dentry,
+				    unionfs_lower_mnt_idx(dentry, bindex),
 				    O_RDONLY);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);

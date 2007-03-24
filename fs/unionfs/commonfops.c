@@ -129,15 +129,15 @@ static void cleanup_file(struct file *file)
 			int i;	/* holds (possibly) updated branch index */
 			i = find_new_branch_index(file, bindex, sb);
 			if (i < 0)
-				printk(KERN_ERR "unionfs: no supberlock for file %p\n",
-				       file);
+				printk(KERN_ERR "unionfs: no supberlock for "
+				       "file %p\n", file);
 			else {
 				unionfs_read_lock(sb);
 				branchput(sb, i);
 				unionfs_read_unlock(sb);
-				/* XXX: is it correct to use sb->s_root here? */
+				/* XXX: is it OK to use sb->s_root here? */
 				unionfs_mntput(sb->s_root, i);
-				/* XXX: mntget b/c fput below will call mntput */
+				/* mntget b/c fput below will call mntput */
 				unionfs_mntget(sb->s_root, bindex);
 			}
 			fput(unionfs_lower_file_idx(file, bindex));
@@ -174,9 +174,10 @@ static int open_all_files(struct file *file)
 		branchget(sb, bindex);
 		unionfs_read_unlock(sb);
 
-		hidden_file = dentry_open(hidden_dentry,
-					  unionfs_lower_mnt_idx(dentry, bindex),
-					  file->f_flags);
+		hidden_file =
+			dentry_open(hidden_dentry,
+				    unionfs_lower_mnt_idx(dentry, bindex),
+				    file->f_flags);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);
 			goto out;
@@ -211,7 +212,8 @@ static int open_highest_file(struct file *file, int willwrite)
 				break;
 		}
 		atomic_set(&UNIONFS_F(file)->generation,
-			   atomic_read(&UNIONFS_I(dentry->d_inode)->generation));
+			   atomic_read(&UNIONFS_I(dentry->d_inode)->
+				       generation));
 		goto out;
 	}
 
@@ -221,7 +223,8 @@ static int open_highest_file(struct file *file, int willwrite)
 	branchget(sb, bstart);
 	unionfs_read_unlock(sb);
 	hidden_file = dentry_open(hidden_dentry,
-				  unionfs_lower_mnt_idx(dentry, bstart), file->f_flags);
+				  unionfs_lower_mnt_idx(dentry, bstart),
+				  file->f_flags);
 	if (IS_ERR(hidden_file)) {
 		err = PTR_ERR(hidden_file);
 		goto out;
@@ -251,7 +254,8 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 			err = copyup_file(parent_inode, file, bstart,
 					  bindex, inode_size);
 		else
-			err = copyup_deleted_file(file, dentry, bstart, bindex);
+			err = copyup_deleted_file(file, dentry, bstart,
+						  bindex);
 
 		if (!err)
 			break;
@@ -292,7 +296,8 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	sb = dentry->d_sb;
 
 	/* first revalidate the dentry inside struct file */
-	if (!__unionfs_d_revalidate_chain(dentry, NULL) && !d_deleted(dentry)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL) &&
+	    !d_deleted(dentry)) {
 		err = -ESTALE;
 		goto out_nofree;
 	}
@@ -376,14 +381,16 @@ static int __open_dir(struct inode *inode, struct file *file)
 	bend = fbend(file) = dbend(file->f_dentry);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(file->f_dentry, bindex);
+		hidden_dentry =
+			unionfs_lower_dentry_idx(file->f_dentry, bindex);
 		if (!hidden_dentry)
 			continue;
 
 		dget(hidden_dentry);
 		unionfs_mntget(file->f_dentry, bindex);
 		hidden_file = dentry_open(hidden_dentry,
-					  unionfs_lower_mnt_idx(file->f_dentry, bindex),
+					  unionfs_lower_mnt_idx(file->f_dentry,
+								bindex),
 					  file->f_flags);
 		if (IS_ERR(hidden_file))
 			return PTR_ERR(hidden_file);
@@ -415,8 +422,8 @@ static int __open_file(struct inode *inode, struct file *file)
 	bstart = fbstart(file) = dbstart(file->f_dentry);
 	bend = fbend(file) = dbend(file->f_dentry);
 
-	/* check for the permission for hidden file.  If the error is COPYUP_ERR,
-	 * copyup the file.
+	/* check for the permission for hidden file.  If the error is
+	 * COPYUP_ERR, copyup the file.
 	 */
 	if (hidden_dentry->d_inode && is_robranch(file->f_dentry)) {
 		/* if the open will change the file, copy it up otherwise
@@ -428,8 +435,9 @@ static int __open_file(struct inode *inode, struct file *file)
 
 			/* copyup the file */
 			for (bindex = bstart - 1; bindex >= 0; bindex--) {
-				err = copyup_file(file->f_dentry->d_parent->d_inode,
-						  file, bstart, bindex, size);
+				err = copyup_file(
+					file->f_dentry->d_parent->d_inode,
+					file, bstart, bindex, size);
 				if (!err)
 					break;
 			}
@@ -444,9 +452,10 @@ static int __open_file(struct inode *inode, struct file *file)
 	 * otherwise fput() will do an mntput() for us upon file close.
 	 */
 	unionfs_mntget(file->f_dentry, bstart);
-	hidden_file = dentry_open(hidden_dentry,
-				  unionfs_lower_mnt_idx(file->f_dentry, bstart),
-				  hidden_flags);
+	hidden_file =
+		dentry_open(hidden_dentry,
+			    unionfs_lower_mnt_idx(file->f_dentry, bstart),
+			    hidden_flags);
 	if (IS_ERR(hidden_file))
 		return PTR_ERR(hidden_file);
 
@@ -467,7 +476,8 @@ int unionfs_open(struct inode *inode, struct file *file)
 	int size;
 
 	unionfs_read_lock(inode->i_sb);
-	file->private_data = kzalloc(sizeof(struct unionfs_file_info), GFP_KERNEL);
+	file->private_data =
+		kzalloc(sizeof(struct unionfs_file_info), GFP_KERNEL);
 	if (!UNIONFS_F(file)) {
 		err = -ENOMEM;
 		goto out_nofree;
@@ -625,7 +635,8 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case UNIONFS_IOCTL_INCGEN:
 		/* Increment the superblock generation count */
-		printk("unionfs: incgen ioctl deprecated; use \"-o remount,incgen\"\n");
+		printk("unionfs: incgen ioctl deprecated; "
+		       "use \"-o remount,incgen\"\n");
 		err = -ENOSYS;
 		break;
 
@@ -666,15 +677,17 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		hidden_file = unionfs_lower_file_idx(file, bindex);
 
-		if (hidden_file && hidden_file->f_op && hidden_file->f_op->flush) {
+		if (hidden_file && hidden_file->f_op &&
+		    hidden_file->f_op->flush) {
 			err = hidden_file->f_op->flush(hidden_file, id);
 			if (err)
 				goto out_lock;
 
-			/* if there are no more references to the dentry, dput it */
+			/* if there are no more refs to the dentry, dput it */
 			if (d_deleted(dentry)) {
 				dput(unionfs_lower_dentry_idx(dentry, bindex));
-				unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
+				unionfs_set_lower_dentry_idx(dentry, bindex,
+							     NULL);
 			}
 		}
 

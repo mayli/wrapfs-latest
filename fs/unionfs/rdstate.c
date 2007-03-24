@@ -34,7 +34,8 @@ static struct kmem_cache *unionfs_filldir_cachep;
 int unionfs_init_filldir_cache(void)
 {
 	unionfs_filldir_cachep =
-		kmem_cache_create("unionfs_filldir", sizeof(struct filldir_node), 0,
+		kmem_cache_create("unionfs_filldir",
+				  sizeof(struct filldir_node), 0,
 				  SLAB_RECLAIM_ACCOUNT, NULL, NULL);
 
 	return (unionfs_filldir_cachep ? 0 : -ENOMEM);
@@ -74,7 +75,8 @@ static int guesstimate_hash_size(struct inode *inode)
 		if (hidden_inode->i_size == DENTPAGE)
 			hashsize += DENTPERONEPAGE;
 		else
-			hashsize += (hidden_inode->i_size / DENTPAGE) * DENTPERPAGE;
+			hashsize += (hidden_inode->i_size / DENTPAGE) *
+				DENTPERPAGE;
 	}
 
 	return hashsize;
@@ -82,7 +84,8 @@ static int guesstimate_hash_size(struct inode *inode)
 
 int init_rdstate(struct file *file)
 {
-	BUG_ON(sizeof(loff_t) != (sizeof(unsigned int) + sizeof(unsigned int)));
+	BUG_ON(sizeof(loff_t) !=
+	       (sizeof(unsigned int) + sizeof(unsigned int)));
 	BUG_ON(UNIONFS_F(file)->rdstate != NULL);
 
 	UNIONFS_F(file)->rdstate = alloc_rdstate(file->f_dentry->d_inode,
@@ -126,8 +129,8 @@ struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex)
 	if (mallocsize > PAGE_SIZE)
 		mallocsize = PAGE_SIZE;
 
-	hashsize = (mallocsize -
-		    sizeof(struct unionfs_dir_state)) / sizeof(struct list_head);
+	hashsize = (mallocsize - sizeof(struct unionfs_dir_state)) /
+		sizeof(struct list_head);
 
 	rdstate = kmalloc(mallocsize, GFP_KERNEL);
 	if (!rdstate)

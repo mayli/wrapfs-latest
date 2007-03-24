@@ -164,10 +164,10 @@ struct filldir_node {
 
 /* Directory hash table. */
 struct unionfs_dir_state {
-	unsigned int cookie;	/* The cookie, which is based off of rdversion */
+	unsigned int cookie;	/* the cookie, based off of rdversion */
 	unsigned int offset;	/* The entry we have returned. */
 	int bindex;
-	loff_t dirpos;		/* The offset within the lower level directory. */
+	loff_t dirpos;		/* offset within the lower level directory */
 	int size;		/* How big is the hash table? */
 	int hashentries;	/* How many entries have been inserted? */
 	unsigned long access;
@@ -260,7 +260,8 @@ extern int copyup_named_file(struct inode *dir, struct file *file,
 			     loff_t len);
 /* copies a dentry from dbstart to newbindex branch */
 extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
-			 int new_bindex, struct file **copyup_file, loff_t len);
+			 int new_bindex, struct file **copyup_file,
+			 loff_t len);
 
 extern int remove_whiteouts(struct dentry *dentry,
 			    struct dentry *hidden_dentry, int bindex);

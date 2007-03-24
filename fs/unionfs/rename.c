@@ -36,7 +36,8 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	if (!hidden_new_dentry) {
 		hidden_new_dentry =
-			create_parents(new_dentry->d_parent->d_inode, new_dentry, bindex);
+			create_parents(new_dentry->d_parent->d_inode,
+				       new_dentry, bindex);
 		if (IS_ERR(hidden_new_dentry)) {
 			printk(KERN_DEBUG "unionfs: error creating directory "
 			       "tree for rename, bindex = %d, err = %ld\n",
@@ -46,14 +47,16 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 		}
 	}
 
-	wh_name = alloc_whname(new_dentry->d_name.name, new_dentry->d_name.len);
+	wh_name = alloc_whname(new_dentry->d_name.name,
+			       new_dentry->d_name.len);
 	if (IS_ERR(wh_name)) {
 		err = PTR_ERR(wh_name);
 		goto out;
 	}
 
 	hidden_wh_dentry = lookup_one_len(wh_name, hidden_new_dentry->d_parent,
-					  new_dentry->d_name.len + UNIONFS_WHLEN);
+					  new_dentry->d_name.len +
+					  UNIONFS_WHLEN);
 	if (IS_ERR(hidden_wh_dentry)) {
 		err = PTR_ERR(hidden_wh_dentry);
 		goto out;
@@ -103,7 +106,8 @@ static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
 		if (IS_ERR(whname))
 			goto out_unlock;
 		*wh_old = lookup_one_len(whname, hidden_old_dir_dentry,
-					 old_dentry->d_name.len + UNIONFS_WHLEN);
+					 old_dentry->d_name.len +
+					 UNIONFS_WHLEN);
 		kfree(whname);
 		err = PTR_ERR(*wh_old);
 		if (IS_ERR(*wh_old)) {
@@ -196,7 +200,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 		if (!err) {
 			if (bindex != new_bstart) {
 				dput(unlink_dentry);
-				unionfs_set_lower_dentry_idx(new_dentry, bindex, NULL);
+				unionfs_set_lower_dentry_idx(new_dentry,
+							     bindex, NULL);
 			}
 		} else if (IS_COPYUP_ERR(err)) {
 			do_copyup = bindex - 1;
@@ -212,8 +217,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 			 * you can rename it
 			 */
 			err = copyup_dentry(old_dentry->d_parent->d_inode,
-					    old_dentry, old_bstart, bindex, NULL,
-					    old_dentry->d_inode->i_size);
+					    old_dentry, old_bstart, bindex,
+					    NULL, old_dentry->d_inode->i_size);
 			if (!err) {
 				dput(wh_old);
 				bwh_old = bindex;
@@ -245,7 +250,10 @@ static int do_unionfs_rename(struct inode *old_dir,
 		if (!local_err)
 			set_dbopaque(old_dentry, bwh_old);
 		else {
-			/* We can't fix anything now, so we cop-out and use -EIO. */
+			/*
+			 * we can't fix anything now, so we cop-out and use
+			 * -EIO.
+			 */
 			printk(KERN_ERR "unionfs: can't create a whiteout for "
 			       "the source in rename!\n");
 			err = -EIO;
@@ -289,8 +297,8 @@ revert:
 		goto revert_out;
 	}
 
-	local_err = do_rename(new_dir, new_dentry, old_dir, old_dentry, old_bstart,
-			      NULL);
+	local_err = do_rename(new_dir, new_dentry,
+			      old_dir, old_dentry, old_bstart, NULL);
 
 	/* If we can't fix it, then we cop-out with -EIO. */
 	if (local_err) {
