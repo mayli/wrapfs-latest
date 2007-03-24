@@ -701,7 +701,6 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 		if (err) {
 			if (!IS_COPYUP_ERR(err))
 				goto out;
-
 			bstart--;
 		} else
 			whiteout_unlinked = 1;

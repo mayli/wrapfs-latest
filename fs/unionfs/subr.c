@@ -82,7 +82,6 @@ int create_whiteout(struct dentry *dentry, int start)
 					 hidden_wh_dentry,
 					 ~current->fs->umask & S_IRWXUGO,
 					 NULL);
-
 		}
 		unlock_dir(hidden_dir_dentry);
 		dput(hidden_wh_dentry);

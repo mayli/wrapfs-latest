@@ -51,7 +51,6 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 	if (err) {
 		if (dbstart(dentry) == 0)
 			goto out;
-
 		err = create_whiteout(dentry, dbstart(dentry) - 1);
 	} else if (dbopaque(dentry) != -1)
 		/* There is a hidden lower-priority file with the same name. */

@@ -295,7 +295,6 @@ out_negative:
 	if (lookupmode == INTERPOSE_REVAL) {
 		if (dentry->d_inode)
 			UNIONFS_I(dentry->d_inode)->stale = 1;
-
 		goto out;
 	}
 	/* This should only happen if we found a whiteout. */

@@ -353,16 +353,13 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 static inline int branchperms(const struct super_block *sb, int index)
 {
 	BUG_ON(index < 0);
-
 	return UNIONFS_SB(sb)->data[index].branchperms;
 }
 
 static inline int set_branchperms(struct super_block *sb, int index, int perms)
 {
 	BUG_ON(index < 0);
-
 	UNIONFS_SB(sb)->data[index].branchperms = perms;
-
 	return perms;
 }
 

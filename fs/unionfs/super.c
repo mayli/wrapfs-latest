@@ -88,7 +88,6 @@ static void unionfs_put_inode(struct inode *inode)
 static void unionfs_delete_inode(struct inode *inode)
 {
 	inode->i_size = 0;	/* every f/s seems to do that */
-
 	clear_inode(inode);
 }
 
