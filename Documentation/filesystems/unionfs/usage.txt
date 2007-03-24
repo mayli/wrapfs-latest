@@ -84,7 +84,7 @@ to purge its caches and re-get the objects.  To do that, you have to
 incremenet the generation number of the superblock using the following
 command:
 
-# mount -t unionfs -o remount,remount,incgen none MOUNTPOINT
+# mount -t unionfs -o remount,incgen none MOUNTPOINT
 
 
 For more information, see <http://unionfs.filesystems.org/>.
