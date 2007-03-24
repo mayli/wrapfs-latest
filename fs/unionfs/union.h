@@ -210,6 +210,7 @@ struct unionfs_data *alloc_new_data(int objs);
 static inline off_t rdstate2offset(struct unionfs_dir_state *buf)
 {
 	off_t tmp;
+
 	tmp = ((buf->cookie & MAXRDCOOKIE) << RDOFFBITS)
 		| (buf->offset & DIREOF);
 	return tmp;
@@ -367,6 +368,7 @@ static inline int set_branchperms(struct super_block *sb, int index, int perms)
 static inline int is_robranch_super(const struct super_block *sb, int index)
 {
 	int ret;
+
 	unionfs_read_lock(sb);
   	ret = (!(branchperms(sb, index) & MAY_WRITE)) ? -EROFS : 0;
 	unionfs_read_unlock(sb);
@@ -455,6 +457,7 @@ static inline struct vfsmount *unionfs_mntget(struct dentry *dentry,
 					      int bindex)
 {
 	struct vfsmount *mnt;
+ 
 	if (!dentry) {
 		if (bindex < 0)
 			return NULL;
@@ -473,6 +476,7 @@ static inline struct vfsmount *unionfs_mntget(struct dentry *dentry,
 static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 {
 	struct vfsmount *mnt;
+
 	if (!dentry) {
 		if (bindex < 0)
 			return;

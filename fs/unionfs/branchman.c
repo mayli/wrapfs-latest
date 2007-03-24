@@ -28,7 +28,6 @@ int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 {
 	int err = 0;
 	fd_set branchlist;
-
 	int bstart = 0, bend = 0, bindex = 0;
 	struct dentry *dentry, *hidden_dentry;
 

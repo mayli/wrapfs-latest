@@ -87,7 +87,6 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 	int locked_parent = 0;
 	int locked_child = 0;
 	int allocated_new_info = 0;
-
 	int opaque;
 	char *whname = NULL;
 	const char *name;

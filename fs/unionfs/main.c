@@ -232,6 +232,7 @@ int __parse_branch_mode(const char *name)
 int parse_branch_mode(const char *name)
 {
 	int perms =  __parse_branch_mode(name);
+
 	if (perms == 0)
 		perms = MAY_READ | MAY_WRITE;
 	return perms;
@@ -248,7 +249,6 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 	int bindex = 0;
 	int i = 0;
 	int j = 0;
-
 	struct dentry *dent1;
 	struct dentry *dent2;
 
@@ -511,7 +511,6 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 			      int silent)
 {
 	int err = 0;
-
 	struct unionfs_dentry_info *hidden_root_info = NULL;
 	int bindex, bstart, bend;
 
@@ -663,6 +662,7 @@ static struct file_system_type unionfs_fs_type = {
 static int __init init_unionfs_fs(void)
 {
 	int err;
+
 	printk("Registering unionfs " UNIONFS_VERSION "\n");
 
 	if ((err = unionfs_init_filldir_cache()))

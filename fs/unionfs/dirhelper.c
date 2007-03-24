@@ -30,7 +30,6 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 	struct dentry *hidden_dentry;
 	char *name = NULL, *p;
 	struct inode *hidden_dir;
-
 	int i;
 	struct list_head *pos;
 	struct filldir_node *cursor;
@@ -94,7 +93,6 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 	struct super_block *sb;
 	struct dentry *hidden_dir_dentry;
 	struct inode *hidden_dir;
-
 	struct sioq_args args;
 
 	sb = dentry->d_sb;

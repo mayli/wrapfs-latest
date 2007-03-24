@@ -36,7 +36,6 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 	int positive = 0;
 	int locked = 0;
 	int interpose_flag;
-
 	struct nameidata lowernd; /* TODO: be gentler to the stack */
 
 	if (nd)

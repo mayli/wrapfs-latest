@@ -213,6 +213,7 @@ static noinline int do_remount_del_option(char *optarg, int cur_branches,
 	int err = -EINVAL;
 	int idx;
 	struct nameidata nd;
+
 	/* optarg contains the branch name to delete */
 
 	/*

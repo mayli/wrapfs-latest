@@ -620,10 +620,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 	struct dentry *hidden_dentry = NULL;
 	const char *childname;
 	unsigned int childnamelen;
-
 	int nr_dentry;
 	int count;
-
 	int old_bstart;
 	int old_bend;
 	struct dentry **path = NULL;

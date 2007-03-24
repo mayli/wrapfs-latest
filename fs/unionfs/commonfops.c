@@ -30,7 +30,6 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 	const int countersize = sizeof(counter) * 2;
 	const int nlen = sizeof(".unionfs") + i_inosize + countersize - 1;
 	char name[nlen + 1];
-
 	int err;
 	struct dentry *tmp_dentry = NULL;
 	struct dentry *hidden_dentry;
@@ -194,7 +193,6 @@ static int open_highest_file(struct file *file, int willwrite)
 	int bindex, bstart, bend, err = 0;
 	struct file *hidden_file;
 	struct dentry *hidden_dentry;
-
 	struct dentry *dentry = file->f_dentry;
 	struct inode *parent_inode = dentry->d_parent->d_inode;
 	struct super_block *sb = dentry->d_sb;
@@ -288,7 +286,6 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	int sbgen, fgen, dgen;
 	int bstart, bend;
 	int size;
-
 	int err = 0;
 
 	dentry = file->f_dentry;
