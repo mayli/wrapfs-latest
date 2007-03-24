@@ -196,9 +196,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 		dtmp = dtmp->d_parent;
 		dgen = atomic_read(&UNIONFS_D(dtmp)->generation);
 	}
-	if (chain_len == 0) {
+	if (chain_len == 0)
 		goto out_this;	/* shortcut if parents are OK */
-	}
 
 	/*
 	 * Allocate array of dentries to reval.  We could use linked lists,
@@ -242,9 +241,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 		}
 		unionfs_unlock_dentry(chain[i]);
 
-		if (!valid) {
+		if (!valid)
 			goto out_free;
-		}
 	}
 
 
@@ -264,9 +262,8 @@ out_this:
 out_free:
 	/* unlock/dput all dentries in chain and return status */
 	if (chain_len > 0) {
-		for (i=0; i<chain_len; i++) {
+		for (i=0; i<chain_len; i++)
 			dput(chain[i]);
-		}
 		kfree(chain);
 	}
 out:
