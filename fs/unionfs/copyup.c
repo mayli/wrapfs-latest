@@ -9,7 +9,7 @@
  * Copyright (c) 2003      Puja Gupta
  * Copyright (c) 2003      Harikesavan Krishnan
  * Copyright (c) 2003-2007 Stony Brook University
- * Copyright (c) 2003-2007 The Research Foundation of State University of New York*
+ * Copyright (c) 2003-2007 The Research Foundation of SUNY
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -520,8 +520,8 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 	return err;
 }
 
-/* This function replicates the directory structure upto given dentry
- * in the bindex branch. Can create directory structure recursively to the right
+/* This function replicates the directory structure upto given dentry in the
+ * bindex branch. Can create directory structure recursively to the right
  * also.
  */
 struct dentry *create_parents(struct inode *dir, struct dentry *dentry,

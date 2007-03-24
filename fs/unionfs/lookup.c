@@ -9,7 +9,7 @@
  * Copyright (c) 2003      Puja Gupta
  * Copyright (c) 2003      Harikesavan Krishnan
  * Copyright (c) 2003-2007 Stony Brook University
- * Copyright (c) 2003-2007 The Research Foundation of State University of New York
+ * Copyright (c) 2003-2007 The Research Foundation of SUNY
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -69,8 +69,8 @@ out:
 	return err;
 }
 
-struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd,
-				      int lookupmode)
+struct dentry *unionfs_lookup_backend(struct dentry *dentry,
+				      struct nameidata *nd, int lookupmode)
 {
 	int err = 0;
 	struct dentry *hidden_dentry = NULL;
@@ -312,8 +312,10 @@ out_negative:
 		first_dentry = dentry;
 		first_hidden_mnt = unionfs_mntget(dentry, bindex);
 	}
-	unionfs_set_lower_dentry_idx(dentry, first_dentry_offset, first_hidden_dentry);
-	unionfs_set_lower_mnt_idx(dentry, first_dentry_offset, first_hidden_mnt);
+	unionfs_set_lower_dentry_idx(dentry, first_dentry_offset,
+				     first_hidden_dentry);
+	unionfs_set_lower_mnt_idx(dentry, first_dentry_offset,
+				  first_hidden_mnt);
 	set_dbstart(dentry, first_dentry_offset);
 	set_dbend(dentry, first_dentry_offset);
 

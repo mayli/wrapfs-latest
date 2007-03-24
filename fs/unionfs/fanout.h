@@ -8,7 +8,7 @@
  * Copyright (c) 2003      Puja Gupta
  * Copyright (c) 2003      Harikesavan Krishnan
  * Copyright (c) 2003-2007 Stony Brook University
- * Copyright (c) 2003-2007 The Research Foundation of State University of New York
+ * Copyright (c) 2003-2007 The Research Foundation of SUNY
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -61,12 +61,14 @@ static inline struct file *unionfs_lower_file(const struct file *f)
 	return UNIONFS_F(f)->lower_files[fbstart(f)];
 }
 
-static inline struct file *unionfs_lower_file_idx(const struct file *f, int index)
+static inline struct file *unionfs_lower_file_idx(const struct file *f,
+						  int index)
 {
 	return UNIONFS_F(f)->lower_files[index];
 }
 
-static inline void unionfs_set_lower_file_idx(struct file *f, int index, struct file *val)
+static inline void unionfs_set_lower_file_idx(struct file *f, int index,
+					      struct file *val)
 {
 	UNIONFS_F(f)->lower_files[index] = val;
 	/* save branch ID (may be redundant?) */
@@ -85,7 +87,8 @@ static inline struct inode *unionfs_lower_inode(const struct inode *i)
 	return UNIONFS_I(i)->lower_inodes[ibstart(i)];
 }
 
-static inline struct inode *unionfs_lower_inode_idx(const struct inode *i, int index)
+static inline struct inode *unionfs_lower_inode_idx(const struct inode *i,
+						    int index)
 {
 	return UNIONFS_I(i)->lower_inodes[index];
 }
@@ -102,23 +105,28 @@ static inline void unionfs_set_lower_inode(struct inode *i, struct inode *val)
 }
 
 /* Superblock to lower superblock. */
-static inline struct super_block *unionfs_lower_super(const struct super_block *sb)
+static inline struct super_block *unionfs_lower_super(
+					const struct super_block *sb)
 {
 	return UNIONFS_SB(sb)->data[sbstart(sb)].sb;
 }
 
-static inline struct super_block *unionfs_lower_super_idx(const struct super_block *sb, int index)
+static inline struct super_block *unionfs_lower_super_idx(
+					const struct super_block *sb,
+					int index)
 {
 	return UNIONFS_SB(sb)->data[index].sb;
 }
 
-static inline void unionfs_set_lower_super_idx(struct super_block *sb, int index,
+static inline void unionfs_set_lower_super_idx(struct super_block *sb,
+					       int index,
 					       struct super_block *val)
 {
 	UNIONFS_SB(sb)->data[index].sb = val;
 }
 
-static inline void unionfs_set_lower_super(struct super_block *sb, struct super_block *val)
+static inline void unionfs_set_lower_super(struct super_block *sb,
+					   struct super_block *val)
 {
 	UNIONFS_SB(sb)->data[sbstart(sb)].sb = val;
 }
@@ -186,7 +194,9 @@ static inline void unionfs_set_lower_dentry_idx(struct dentry *dent, int index,
 	UNIONFS_D(dent)->lower_paths[index].dentry = val;
 }
 
-static inline struct dentry *unionfs_lower_dentry_idx(const struct dentry *dent, int index)
+static inline struct dentry *unionfs_lower_dentry_idx(
+				const struct dentry *dent,
+				int index)
 {
 	return UNIONFS_D(dent)->lower_paths[index].dentry;
 }
@@ -202,7 +212,9 @@ static inline void unionfs_set_lower_mnt_idx(struct dentry *dent, int index,
 	UNIONFS_D(dent)->lower_paths[index].mnt = mnt;
 }
 
-static inline struct vfsmount *unionfs_lower_mnt_idx(const struct dentry *dent, int index)
+static inline struct vfsmount *unionfs_lower_mnt_idx(
+					const struct dentry *dent,
+					int index)
 {
 	return UNIONFS_D(dent)->lower_paths[index].mnt;
 }

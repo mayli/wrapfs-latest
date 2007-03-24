@@ -8,7 +8,7 @@
  * Copyright (c) 2003      Puja Gupta
  * Copyright (c) 2003      Harikesavan Krishnan
  * Copyright (c) 2003-2007 Stony Brook University
- * Copyright (c) 2003-2007 The Research Foundation of State University of New York
+ * Copyright (c) 2003-2007 The Research Foundation of SUNY
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -262,8 +262,8 @@ extern int copyup_named_file(struct inode *dir, struct file *file,
 extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 			 int new_bindex, struct file **copyup_file, loff_t len);
 
-extern int remove_whiteouts(struct dentry *dentry, struct dentry *hidden_dentry,
-			    int bindex);
+extern int remove_whiteouts(struct dentry *dentry,
+			    struct dentry *hidden_dentry, int bindex);
 
 extern int do_delete_whiteouts(struct dentry *dentry, int bindex,
 			       struct unionfs_dir_state *namelist);
@@ -310,8 +310,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd);
 #define INTERPOSE_REVAL_NEG	3
 #define INTERPOSE_PARTIAL	4
 
-extern int unionfs_interpose(struct dentry *this_dentry, struct super_block *sb,
-			     int flag);
+extern int unionfs_interpose(struct dentry *this_dentry,
+			     struct super_block *sb, int flag);
 
 /* Branch management ioctls. */
 int unionfs_ioctl_incgen(struct file *file, unsigned int cmd,
@@ -339,7 +339,8 @@ static inline int d_deleted(struct dentry *d)
 	return d_unhashed(d) && (d != d->d_sb->s_root);
 }
 
-struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *nd, int lookupmode);
+struct dentry *unionfs_lookup_backend(struct dentry *dentry,
+				      struct nameidata *nd, int lookupmode);
 
 /* unionfs_permission, check if we should bypass error to facilitate copyup */
 #define IS_COPYUP_ERR(err) ((err) == -EROFS)
@@ -433,8 +434,8 @@ extern int check_branch(struct nameidata *nd);
 extern int __parse_branch_mode(const char *name);
 extern int parse_branch_mode(const char *name);
 
-/* These two functions are here because it is kind of daft to copy and paste the
- * contents of the two functions to 32+ places in unionfs
+/* These two functions are here because it is kind of daft to copy and paste
+ * the contents of the two functions to 32+ places in unionfs
  */
 static inline struct dentry *lock_parent(struct dentry *dentry)
 {
@@ -452,7 +453,8 @@ static inline void unlock_dir(struct dentry *dir)
 
 extern int make_dir_opaque(struct dentry *dir, int bindex);
 
-static inline struct vfsmount *unionfs_mntget(struct dentry *dentry, int bindex)
+static inline struct vfsmount *unionfs_mntget(struct dentry *dentry,
+					      int bindex)
 {
 	struct vfsmount *mnt;
 	if (!dentry) {
