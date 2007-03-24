@@ -102,7 +102,7 @@ static void unionfs_put_super(struct super_block *sb)
 	spd = UNIONFS_SB(sb);
 	if (!spd)
 		return;
-		
+
 	bstart = sbstart(sb);
 	bend = sbend(sb);
 

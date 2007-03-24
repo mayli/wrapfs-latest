@@ -795,7 +795,7 @@ static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 
 /* Basically copied from the kernel vfs permission(), but we've changed
  * the following:
- *   (1) the IS_RDONLY check is skipped, and 
+ *   (1) the IS_RDONLY check is skipped, and
  *   (2) if you set the mount option `mode=nfsro', we assume that -EACCES
  *   means that the export is read-only and we should check standard Unix
  *   permissions.  This means that NFS ACL checks (or other advanced

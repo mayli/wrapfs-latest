@@ -305,7 +305,7 @@ out_negative:
 			err = PTR_ERR(first_hidden_dentry);
 			goto out;
 		}
-		
+
 		/* FIXME: the following line needs to be changed to allow
 		 * mountpoint crossing
 		 */

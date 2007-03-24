@@ -483,7 +483,7 @@ out:
 	return hidden_root_info;
 }
 
-/* our custom d_alloc_root workalike 
+/* our custom d_alloc_root workalike
  *
  * we can't use d_alloc_root if we want to use our own interpose function
  * unchanged, so we simply call our own "fake" d_alloc_root

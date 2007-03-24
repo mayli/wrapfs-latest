@@ -98,7 +98,7 @@ struct unionfs_inode_info {
 	int rdcount;
 	int hashsize;
 	int cookie;
-	
+
 	/* The hidden inodes */
 	struct inode **lower_inodes;
 	/* to keep track of reads/writes for unlinks before closes */
@@ -152,8 +152,8 @@ struct filldir_node {
 
 	/* we can check for duplicate whiteouts and files in the same branch
 	 * in order to return -EIO.
-	 */ 
-	int bindex;		
+	 */
+	int bindex;
 
 	/* is this a whiteout entry? */
 	int whiteout;

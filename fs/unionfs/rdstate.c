@@ -87,7 +87,7 @@ int init_rdstate(struct file *file)
 
 	UNIONFS_F(file)->rdstate = alloc_rdstate(file->f_dentry->d_inode,
 						 fbstart(file));
-	
+
 	return (UNIONFS_F(file)->rdstate ? 0 : -ENOMEM);
 }
 
