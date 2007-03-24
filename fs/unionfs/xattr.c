@@ -51,7 +51,7 @@ void unionfs_xattr_free(void *ptr, size_t size)
  * dentry->d_inode->i_mutex locked
  */
 ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
-		size_t size)
+			 size_t size)
 {
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
@@ -72,7 +72,7 @@ ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
  * dentry->d_inode->i_mutex locked
  */
 int unionfs_setxattr(struct dentry *dentry, const char *name, const void *value,
-		size_t size, int flags)
+		     size_t size, int flags)
 {
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
@@ -128,4 +128,3 @@ ssize_t unionfs_listxattr(struct dentry * dentry, char *list, size_t size)
 	unionfs_unlock_dentry(dentry);
 	return err;
 }
-

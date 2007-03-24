@@ -266,7 +266,7 @@ extern int remove_whiteouts(struct dentry *dentry, struct dentry *hidden_dentry,
 			    int bindex);
 
 extern int do_delete_whiteouts(struct dentry *dentry, int bindex,
-		     struct unionfs_dir_state *namelist);
+			       struct unionfs_dir_state *namelist);
 
 extern int unionfs_get_nlinks(struct inode *inode);
 
@@ -325,12 +325,12 @@ extern void *unionfs_xattr_alloc(size_t size, size_t limit);
 extern void unionfs_xattr_free(void *ptr, size_t size);
 
 extern ssize_t unionfs_getxattr(struct dentry *dentry, const char *name,
-		void *value, size_t size);
+				void *value, size_t size);
 extern int unionfs_removexattr(struct dentry *dentry, const char *name);
 extern ssize_t unionfs_listxattr(struct dentry *dentry, char *list,
-		size_t size);
+				 size_t size);
 extern int unionfs_setxattr(struct dentry *dentry, const char *name,
-		const void *value, size_t size, int flags);
+			    const void *value, size_t size, int flags);
 #endif /* CONFIG_UNION_FS_XATTR */
 
 /* The root directory is unhashed, but isn't deleted. */

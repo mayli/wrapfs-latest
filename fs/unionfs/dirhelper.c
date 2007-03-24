@@ -23,7 +23,7 @@
  * hidden directory inode should be locked
  */
 int do_delete_whiteouts(struct dentry *dentry, int bindex,
-		     struct unionfs_dir_state *namelist)
+			struct unionfs_dir_state *namelist)
 {
 	int err = 0;
 	struct dentry *hidden_dir_dentry = NULL;
@@ -52,7 +52,7 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 	for (i = 0; !err && i < namelist->size; i++) {
 		list_for_each(pos, &namelist->list[i]) {
 			cursor =
-			    list_entry(pos, struct filldir_node, file_list);
+				list_entry(pos, struct filldir_node, file_list);
 			/* Only operate on whiteouts in this branch. */
 			if (cursor->bindex != bindex)
 				continue;
@@ -61,8 +61,8 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 
 			strcpy(p, cursor->name);
 			hidden_dentry =
-			    lookup_one_len(name, hidden_dir_dentry,
-					   cursor->namelen + UNIONFS_WHLEN);
+				lookup_one_len(name, hidden_dir_dentry,
+					       cursor->namelen + UNIONFS_WHLEN);
 			if (IS_ERR(hidden_dentry)) {
 				err = PTR_ERR(hidden_dentry);
 				break;
@@ -230,8 +230,8 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 		branchget(sb, bindex);
 		unionfs_read_unlock(sb);
 		hidden_file =
-		    dentry_open(hidden_dentry, unionfs_lower_mnt_idx(dentry, bindex),
-				O_RDONLY);
+			dentry_open(hidden_dentry, unionfs_lower_mnt_idx(dentry, bindex),
+				    O_RDONLY);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);
 			dput(hidden_dentry);
@@ -273,4 +273,3 @@ out:
 
 	return err;
 }
-

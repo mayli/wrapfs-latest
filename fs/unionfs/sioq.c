@@ -117,7 +117,6 @@ void __is_opaque_dir(struct work_struct *work)
 	struct sioq_args *args = container_of(work, struct sioq_args, work);
 
 	args->ret = lookup_one_len(UNIONFS_DIR_OPAQUE, args->is_opaque.dentry,
-				sizeof(UNIONFS_DIR_OPAQUE) - 1);
+				   sizeof(UNIONFS_DIR_OPAQUE) - 1);
 	complete(&args->comp);
 }
-

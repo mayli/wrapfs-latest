@@ -34,8 +34,8 @@ static struct kmem_cache *unionfs_filldir_cachep;
 int unionfs_init_filldir_cache(void)
 {
 	unionfs_filldir_cachep =
-	    kmem_cache_create("unionfs_filldir", sizeof(struct filldir_node), 0,
-			      SLAB_RECLAIM_ACCOUNT, NULL, NULL);
+		kmem_cache_create("unionfs_filldir", sizeof(struct filldir_node), 0,
+				  SLAB_RECLAIM_ACCOUNT, NULL, NULL);
 
 	return (unionfs_filldir_cachep ? 0 : -ENOMEM);
 }
@@ -99,7 +99,7 @@ struct unionfs_dir_state *find_rdstate(struct inode *inode, loff_t fpos)
 	spin_lock(&UNIONFS_I(inode)->rdlock);
 	list_for_each(pos, &UNIONFS_I(inode)->readdircache) {
 		struct unionfs_dir_state *r =
-		    list_entry(pos, struct unionfs_dir_state, cache);
+			list_entry(pos, struct unionfs_dir_state, cache);
 		if (fpos == rdstate2offset(r)) {
 			UNIONFS_I(inode)->rdcount--;
 			list_del(&r->cache);
@@ -127,7 +127,7 @@ struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex)
 		mallocsize = PAGE_SIZE;
 
 	hashsize = (mallocsize -
-	     sizeof(struct unionfs_dir_state)) / sizeof(struct list_head);
+		    sizeof(struct unionfs_dir_state)) / sizeof(struct list_head);
 
 	rdstate = kmalloc(mallocsize, GFP_KERNEL);
 	if (!rdstate)
@@ -211,9 +211,9 @@ struct filldir_node *find_filldir_node(struct unionfs_dir_state *rdstate,
 			 */
 			if (cursor->bindex == rdstate->bindex) {
 				printk(KERN_DEBUG "Possible I/O error "
-					"unionfs_filldir: a file is duplicated "
-					"in the same branch %d: %s\n",
-					rdstate->bindex, cursor->name);
+				       "unionfs_filldir: a file is duplicated "
+				       "in the same branch %d: %s\n",
+				       rdstate->bindex, cursor->name);
 			}
 			break;
 		}
@@ -272,4 +272,3 @@ int add_filldir_node(struct unionfs_dir_state *rdstate, const char *name,
 out:
 	return err;
 }
-

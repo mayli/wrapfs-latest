@@ -39,7 +39,7 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 	hidden_dentry = unionfs_lower_dentry_idx(dentry, bstart);
 
 	sprintf(name, ".unionfs%*.*lx",
-			i_inosize, i_inosize, hidden_dentry->d_inode->i_ino);
+		i_inosize, i_inosize, hidden_dentry->d_inode->i_ino);
 
 	/*
 	 * Loop, looking for an unused temp name to copyup to.
@@ -59,7 +59,7 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 		sprintf(suffix, "%*.*x", countersize, countersize, counter);
 
 		printk(KERN_DEBUG "unionfs: trying to rename %s to %s\n",
-				dentry->d_name.name, name);
+		       dentry->d_name.name, name);
 
 		tmp_dentry = lookup_one_len(name, hidden_dentry->d_parent,
 					    UNIONFS_TMPNAM_LEN);
@@ -175,8 +175,8 @@ static int open_all_files(struct file *file)
 		unionfs_read_unlock(sb);
 
 		hidden_file = dentry_open(hidden_dentry,
-				unionfs_lower_mnt_idx(dentry, bindex),
-				file->f_flags);
+					  unionfs_lower_mnt_idx(dentry, bindex),
+					  file->f_flags);
 		if (IS_ERR(hidden_file)) {
 			err = PTR_ERR(hidden_file);
 			goto out;
@@ -211,7 +211,7 @@ static int open_highest_file(struct file *file, int willwrite)
 				break;
 		}
 		atomic_set(&UNIONFS_F(file)->generation,
-			atomic_read(&UNIONFS_I(dentry->d_inode)->generation));
+			   atomic_read(&UNIONFS_I(dentry->d_inode)->generation));
 		goto out;
 	}
 
@@ -221,7 +221,7 @@ static int open_highest_file(struct file *file, int willwrite)
 	branchget(sb, bstart);
 	unionfs_read_unlock(sb);
 	hidden_file = dentry_open(hidden_dentry,
-			unionfs_lower_mnt_idx(dentry, bstart), file->f_flags);
+				  unionfs_lower_mnt_idx(dentry, bstart), file->f_flags);
 	if (IS_ERR(hidden_file)) {
 		err = PTR_ERR(hidden_file);
 		goto out;
@@ -249,7 +249,7 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 	for (bindex = bstart - 1; bindex >= 0; bindex--) {
 		if (!d_deleted(file->f_dentry))
 			err = copyup_file(parent_inode, file, bstart,
-					bindex, inode_size);
+					  bindex, inode_size);
 		else
 			err = copyup_deleted_file(file, dentry, bstart, bindex);
 
@@ -351,7 +351,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	    !IS_WRITE_FLAG(unionfs_lower_file(file)->f_flags) &&
 	    is_robranch(dentry)) {
 		printk(KERN_DEBUG "Doing delayed copyup of a read-write "
-				  "file on a read-only branch.\n");
+		       "file on a read-only branch.\n");
 		err = do_delayed_copyup(file, dentry);
 	}
 
@@ -383,8 +383,8 @@ static int __open_dir(struct inode *inode, struct file *file)
 		dget(hidden_dentry);
 		unionfs_mntget(file->f_dentry, bindex);
 		hidden_file = dentry_open(hidden_dentry,
-				unionfs_lower_mnt_idx(file->f_dentry, bindex),
-				file->f_flags);
+					  unionfs_lower_mnt_idx(file->f_dentry, bindex),
+					  file->f_flags);
 		if (IS_ERR(hidden_file))
 			return PTR_ERR(hidden_file);
 
@@ -429,7 +429,7 @@ static int __open_file(struct inode *inode, struct file *file)
 			/* copyup the file */
 			for (bindex = bstart - 1; bindex >= 0; bindex--) {
 				err = copyup_file(file->f_dentry->d_parent->d_inode,
-						file, bstart, bindex, size);
+						  file, bstart, bindex, size);
 				if (!err)
 					break;
 			}

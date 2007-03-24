@@ -79,7 +79,7 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry, struct nameidata *n
 			struct dentry *hidden_dentry;
 			for (bindex = bstart; bindex <= bend; bindex++) {
 				hidden_dentry =
-				    unionfs_lower_dentry_idx(dentry, bindex);
+					unionfs_lower_dentry_idx(dentry, bindex);
 				dput(hidden_dentry);
 			}
 		}
@@ -106,8 +106,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry, struct nameidata *n
 				struct inode *hidden_inode;
 				for (bindex = bstart; bindex <= bend; bindex++) {
 					hidden_inode =
-					    unionfs_lower_inode_idx(dentry->d_inode,
-							bindex);
+						unionfs_lower_inode_idx(dentry->d_inode,
+									bindex);
 					iput(hidden_inode);
 				}
 			}
@@ -159,10 +159,10 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry, struct nameidata *n
 
 	if (valid) {
 		fsstack_copy_attr_all(dentry->d_inode,
-				unionfs_lower_inode(dentry->d_inode),
-				unionfs_get_nlinks);
+				      unionfs_lower_inode(dentry->d_inode),
+				      unionfs_get_nlinks);
 		fsstack_copy_inode_size(dentry->d_inode,
-				unionfs_lower_inode(dentry->d_inode));
+					unionfs_lower_inode(dentry->d_inode));
 	}
 
 out:
@@ -247,7 +247,7 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 	}
 
 
- out_this:
+out_this:
 	/* finally, lock this dentry and revalidate it */
 	verify_locked(dentry);
 	dgen = atomic_read(&UNIONFS_D(dentry)->generation);
@@ -260,7 +260,7 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 			unionfs_mntput(dentry, bindex);
 	}
 
- out_free:
+out_free:
 	/* unlock/dput all dentries in chain and return status */
 	if (chain_len > 0) {
 		for (i=0; i<chain_len; i++) {
@@ -268,7 +268,7 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 		}
 		kfree(chain);
 	}
- out:
+out:
 	return valid;
 }
 
@@ -330,4 +330,3 @@ struct dentry_operations unionfs_dops = {
 	.d_revalidate	= unionfs_d_revalidate,
 	.d_release	= unionfs_d_release,
 };
-

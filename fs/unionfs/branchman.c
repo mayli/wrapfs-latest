@@ -57,4 +57,3 @@ out:
 	unionfs_unlock_dentry(dentry);
 	return err < 0 ? err : bend;
 }
-

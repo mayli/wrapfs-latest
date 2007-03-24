@@ -56,13 +56,13 @@ int create_whiteout(struct dentry *dentry, int start)
 						       dentry, bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
 				printk(KERN_DEBUG "create_parents failed for "
-						"bindex = %d\n", bindex);
+				       "bindex = %d\n", bindex);
 				continue;
 			}
 		}
 
 		hidden_wh_dentry = lookup_one_len(name, hidden_dentry->d_parent,
-					dentry->d_name.len + UNIONFS_WHLEN);
+						  dentry->d_name.len + UNIONFS_WHLEN);
 		if (IS_ERR(hidden_wh_dentry))
 			continue;
 
@@ -78,8 +78,8 @@ int create_whiteout(struct dentry *dentry, int start)
 		hidden_dir_dentry = lock_parent(hidden_wh_dentry);
 		if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
 			err = vfs_create(hidden_dir_dentry->d_inode,
-				       hidden_wh_dentry,
-				       ~current->fs->umask & S_IRWXUGO, NULL);
+					 hidden_wh_dentry,
+					 ~current->fs->umask & S_IRWXUGO, NULL);
 
 		}
 		unlock_dir(hidden_dir_dentry);
@@ -116,7 +116,7 @@ int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
 	BUG_ON(!S_ISDIR(hidden_parent->d_inode->i_mode));
 
 	hidden_dentry = lookup_one_len(dentry->d_name.name, hidden_parent,
-				dentry->d_name.len);
+				       dentry->d_name.len);
 	if (IS_ERR(hidden_dentry)) {
 		err = PTR_ERR(hidden_dentry);
 		goto out;
@@ -132,7 +132,7 @@ int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
 	} else {
 		unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
 		unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
-				igrab(hidden_dentry->d_inode));
+					    igrab(hidden_dentry->d_inode));
 	}
 
 out:
@@ -230,4 +230,3 @@ char *alloc_whname(const char *name, int len)
 
 	return buf;
 }
-

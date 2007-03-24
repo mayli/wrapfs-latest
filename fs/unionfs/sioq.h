@@ -75,4 +75,3 @@ extern void __delete_whiteouts(struct work_struct *work);
 extern void __is_opaque_dir(struct work_struct *work);
 
 #endif /* _SIOQ_H */
-

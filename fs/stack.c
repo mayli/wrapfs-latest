@@ -18,7 +18,7 @@ EXPORT_SYMBOL_GPL(fsstack_copy_inode_size);
  * copying
  */
 void fsstack_copy_attr_all(struct inode *dest, const struct inode *src,
-				int (*get_nlinks)(struct inode *))
+			   int (*get_nlinks)(struct inode *))
 {
 	dest->i_mode = src->i_mode;
 	dest->i_uid = src->i_uid;

@@ -91,7 +91,7 @@ static inline struct inode *unionfs_lower_inode_idx(const struct inode *i, int i
 }
 
 static inline void unionfs_set_lower_inode_idx(struct inode *i, int index,
-				   struct inode *val)
+					       struct inode *val)
 {
 	UNIONFS_I(i)->lower_inodes[index] = val;
 }
@@ -113,7 +113,7 @@ static inline struct super_block *unionfs_lower_super_idx(const struct super_blo
 }
 
 static inline void unionfs_set_lower_super_idx(struct super_block *sb, int index,
-				   struct super_block *val)
+					       struct super_block *val)
 {
 	UNIONFS_SB(sb)->data[index].sb = val;
 }
@@ -181,7 +181,7 @@ static inline void set_dbopaque(struct dentry *dent, int val)
 }
 
 static inline void unionfs_set_lower_dentry_idx(struct dentry *dent, int index,
-				   struct dentry *val)
+						struct dentry *val)
 {
 	UNIONFS_D(dent)->lower_paths[index].dentry = val;
 }
@@ -197,7 +197,7 @@ static inline struct dentry *unionfs_lower_dentry(const struct dentry *dent)
 }
 
 static inline void unionfs_set_lower_mnt_idx(struct dentry *dent, int index,
-				   struct vfsmount *mnt)
+					     struct vfsmount *mnt)
 {
 	UNIONFS_D(dent)->lower_paths[index].mnt = mnt;
 }

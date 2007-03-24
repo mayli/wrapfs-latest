@@ -31,7 +31,7 @@ static void unionfs_read_inode(struct inode *inode)
 
 	if (!info) {
 		printk(KERN_ERR "No kernel memory when allocating inode "
-				"private data!\n");
+		       "private data!\n");
 		BUG();
 	}
 
@@ -49,7 +49,7 @@ static void unionfs_read_inode(struct inode *inode)
 	info->lower_inodes = kzalloc(size, GFP_KERNEL);
 	if (!info->lower_inodes) {
 		printk(KERN_ERR "No kernel memory when allocating lower-"
-				"pointer array!\n");
+		       "pointer array!\n");
 		BUG();
 	}
 
@@ -504,7 +504,7 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 	}
 	/* allocate space for new pointers to lower paths */
 	tmp_lower_paths = kcalloc(max_branches,
-			   sizeof(struct path), GFP_KERNEL);
+				  sizeof(struct path), GFP_KERNEL);
 	if (!tmp_lower_paths) {
 		err = -ENOMEM;
 		goto out_free;
@@ -829,9 +829,9 @@ int unionfs_init_inode_cache(void)
 	int err = 0;
 
 	unionfs_inode_cachep =
-	    kmem_cache_create("unionfs_inode_cache",
-			      sizeof(struct unionfs_inode_info), 0,
-			      SLAB_RECLAIM_ACCOUNT, init_once, NULL);
+		kmem_cache_create("unionfs_inode_cache",
+				  sizeof(struct unionfs_inode_info), 0,
+				  SLAB_RECLAIM_ACCOUNT, init_once, NULL);
 	if (!unionfs_inode_cachep)
 		err = -ENOMEM;
 	return err;
@@ -921,8 +921,8 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	seq_printf(m, ",dirs=");
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		path = d_path(unionfs_lower_dentry_idx(sb->s_root, bindex),
-			   unionfs_lower_mnt_idx(sb->s_root, bindex), tmp_page,
-			   PAGE_SIZE);
+			      unionfs_lower_mnt_idx(sb->s_root, bindex), tmp_page,
+			      PAGE_SIZE);
 		if (IS_ERR(path)) {
 			ret = PTR_ERR(path);
 			goto out;
@@ -960,4 +960,3 @@ struct super_operations unionfs_sops = {
 	.alloc_inode	= unionfs_alloc_inode,
 	.destroy_inode	= unionfs_destroy_inode,
 };
-

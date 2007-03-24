@@ -163,4 +163,3 @@ out:
 	unionfs_unlock_dentry(dentry);
 	return err;
 }
-

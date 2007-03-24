@@ -231,7 +231,7 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 					err = -EINVAL;
 			} else {
 				rdstate = find_rdstate(file->f_dentry->d_inode,
-							offset);
+						       offset);
 				if (rdstate) {
 					UNIONFS_F(file)->rdstate = rdstate;
 					err = rdstate->offset;
@@ -264,4 +264,3 @@ struct file_operations unionfs_dir_fops = {
 	.release	= unionfs_file_release,
 	.flush		= unionfs_flush,
 };
-

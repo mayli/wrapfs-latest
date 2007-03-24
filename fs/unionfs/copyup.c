@@ -85,7 +85,7 @@ static int copyup_xattrs(struct dentry *old_hidden_dentry,
 			goto out;
 		name_list += strlen(name_list) + 1;
 	}
-      out:
+out:
 	name_list = name_list_orig;
 
 	if (name_list)
@@ -118,8 +118,8 @@ static int copyup_permissions(struct super_block *sb,
 	newattrs.ia_mode = i->i_mode;
 
 	newattrs.ia_valid = ATTR_CTIME | ATTR_ATIME | ATTR_MTIME |
-	    ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_FORCE |
-	    ATTR_GID | ATTR_UID | ATTR_MODE;
+		ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_FORCE |
+		ATTR_GID | ATTR_UID | ATTR_MODE;
 
 	err = notify_change(new_hidden_dentry, &newattrs);
 
@@ -184,7 +184,7 @@ static int __copyup_ndentry(struct dentry *old_hidden_dentry,
 		err = args.err;
 	} else {
 		printk(KERN_ERR "Unknown inode type %d\n",
-				old_mode);
+		       old_mode);
 		BUG();
 	}
 
@@ -211,8 +211,8 @@ static int __copyup_reg_data(struct dentry *dentry,
 	branchget(sb, old_bindex);
 	unionfs_read_unlock(sb);
 	input_file = dentry_open(old_hidden_dentry,
-				unionfs_lower_mnt_idx(dentry, old_bindex),
-				O_RDONLY | O_LARGEFILE);
+				 unionfs_lower_mnt_idx(dentry, old_bindex),
+				 O_RDONLY | O_LARGEFILE);
 	if (IS_ERR(input_file)) {
 		dput(old_hidden_dentry);
 		err = PTR_ERR(input_file);
@@ -230,8 +230,8 @@ static int __copyup_reg_data(struct dentry *dentry,
 	branchget(sb, new_bindex);
 	unionfs_read_unlock(sb);
 	output_file = dentry_open(new_hidden_dentry,
-				unionfs_lower_mnt_idx(dentry, new_bindex),
-				O_WRONLY | O_LARGEFILE);
+				  unionfs_lower_mnt_idx(dentry, new_bindex),
+				  O_WRONLY | O_LARGEFILE);
 	if (IS_ERR(output_file)) {
 		err = PTR_ERR(output_file);
 		goto out_close_in2;
@@ -265,19 +265,19 @@ static int __copyup_reg_data(struct dentry *dentry,
 		len -= PAGE_SIZE;
 
 		read_bytes =
-		    input_file->f_op->read(input_file,
-					   (char __user *)buf, size,
-					   &input_file->f_pos);
+			input_file->f_op->read(input_file,
+					       (char __user *)buf, size,
+					       &input_file->f_pos);
 		if (read_bytes <= 0) {
 			err = read_bytes;
 			break;
 		}
 
 		write_bytes =
-		    output_file->f_op->write(output_file,
-					     (char __user *)buf,
-					     read_bytes,
-					     &output_file->f_pos);
+			output_file->f_op->write(output_file,
+						 (char __user *)buf,
+						 read_bytes,
+						 &output_file->f_pos);
 		if ((write_bytes < 0) || (write_bytes < read_bytes)) {
 			err = write_bytes;
 			break;
@@ -387,9 +387,9 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 		oldfs = get_fs();
 		set_fs(KERNEL_DS);
 		err = old_hidden_dentry->d_inode->i_op->readlink(
-					old_hidden_dentry,
-					(char __user *)symbuf,
-					PATH_MAX);
+			old_hidden_dentry,
+			(char __user *)symbuf,
+			PATH_MAX);
 		set_fs(oldfs);
 		if (err) {
 			__clear(dentry, old_hidden_dentry,
@@ -417,7 +417,7 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 	/* We actually copyup the file here. */
 	if (S_ISREG(old_hidden_dentry->d_inode->i_mode))
 		err = __copyup_reg_data(dentry, new_hidden_dentry, new_bindex,
-				old_hidden_dentry, old_bindex, copyup_file, len);
+					old_hidden_dentry, old_bindex, copyup_file, len);
 	if (err)
 		goto out_unlink;
 
@@ -584,7 +584,7 @@ static void __set_inode(struct dentry * upper, struct dentry * lower,
 			int bindex)
 {
 	unionfs_set_lower_inode_idx(upper->d_inode, bindex,
-			igrab(lower->d_inode));
+				    igrab(lower->d_inode));
 	if (likely(ibstart(upper->d_inode) > bindex))
 		ibstart(upper->d_inode) = bindex;
 	if (likely(ibend(upper->d_inode) < bindex))
@@ -701,8 +701,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 		if (child_dentry != dentry) {
 			/* lookup child in the underlying file system */
 			hidden_dentry =
-			    lookup_one_len(childname, hidden_parent_dentry,
-					   childnamelen);
+				lookup_one_len(childname, hidden_parent_dentry,
+					       childnamelen);
 			if (IS_ERR(hidden_dentry))
 				goto out;
 		} else {
@@ -711,8 +711,8 @@ static struct dentry *create_parents_named(struct inode *dir,
 			 * lookup the whiteout child in the underlying file system
 			 */
 			hidden_dentry =
-			    lookup_one_len(name, hidden_parent_dentry,
-					   strlen(name));
+				lookup_one_len(name, hidden_parent_dentry,
+					       strlen(name));
 			if (IS_ERR(hidden_dentry))
 				goto out;
 
@@ -744,7 +744,7 @@ static struct dentry *create_parents_named(struct inode *dir,
 
 			if (!err)
 				err = copyup_permissions(dir->i_sb,
-						child_dentry, hidden_dentry);
+							 child_dentry, hidden_dentry);
 			unlock_dir(hidden_parent_dentry);
 			if (err) {
 				dput(hidden_dentry);
@@ -764,4 +764,3 @@ out:
 	kfree(path);
 	return hidden_dentry;
 }
-

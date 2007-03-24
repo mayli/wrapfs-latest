@@ -47,7 +47,7 @@ static noinline int is_opaque_dir(struct dentry *dentry, int bindex)
 
 	if (!permission(hidden_inode, MAY_EXEC, NULL))
 		wh_hidden_dentry = lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
-					sizeof(UNIONFS_DIR_OPAQUE) - 1);
+						  sizeof(UNIONFS_DIR_OPAQUE) - 1);
 	else {
 		args.is_opaque.dentry = hidden_dentry;
 		run_sioq(__is_opaque_dir, &args);
@@ -208,7 +208,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *n
 		nd->mnt = unionfs_lower_mnt_idx(parent_dentry, bindex);
 
 		hidden_dentry = lookup_one_len_nd(name, hidden_dir_dentry,
-					       namelen, nd);
+						  namelen, nd);
 		if (IS_ERR(hidden_dentry)) {
 			dput(first_hidden_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);
@@ -250,7 +250,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry, struct nameidata *n
 
 		/* update parent directory's atime with the bindex */
 		fsstack_copy_attr_atime(parent_dentry->d_inode,
-				     hidden_dir_dentry->d_inode);
+					hidden_dir_dentry->d_inode);
 
 		/* We terminate file lookups here. */
 		if (!S_ISDIR(hidden_dentry->d_inode->i_mode)) {
@@ -299,7 +299,7 @@ out_negative:
 		nd->mnt = unionfs_lower_mnt_idx(parent_dentry, bindex);
 
 		first_hidden_dentry = lookup_one_len_nd(name, hidden_dir_dentry,
-						     namelen, nd);
+							namelen, nd);
 		first_dentry_offset = bindex;
 		if (IS_ERR(first_hidden_dentry)) {
 			err = PTR_ERR(first_hidden_dentry);
@@ -410,8 +410,8 @@ static struct kmem_cache *unionfs_dentry_cachep;
 int unionfs_init_dentry_cache(void)
 {
 	unionfs_dentry_cachep = kmem_cache_create("unionfs_dentry",
-					sizeof(struct unionfs_dentry_info), 0,
-					SLAB_RECLAIM_ACCOUNT, NULL, NULL);
+						  sizeof(struct unionfs_dentry_info), 0,
+						  SLAB_RECLAIM_ACCOUNT, NULL, NULL);
 
 	return (unionfs_dentry_cachep ? 0 : -ENOMEM);
 }
@@ -440,7 +440,7 @@ int new_dentry_private_data(struct dentry *dentry)
 	spin_lock(&dentry->d_lock);
 	if (!info) {
 		dentry->d_fsdata = kmem_cache_alloc(unionfs_dentry_cachep,
-						GFP_ATOMIC);
+						    GFP_ATOMIC);
 		info = UNIONFS_D(dentry);
 
 		if (!info)
@@ -514,4 +514,3 @@ void update_bstart(struct dentry *dentry)
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 	}
 }
-

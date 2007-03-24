@@ -61,7 +61,7 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 			   atomic_read(&UNIONFS_SB(sb)->generation));
 
 		UNIONFS_I(inode)->lower_inodes =
-		    kcalloc(sbmax(sb), sizeof(struct inode *), GFP_KERNEL);
+			kcalloc(sbmax(sb), sizeof(struct inode *), GFP_KERNEL);
 		if (!UNIONFS_I(inode)->lower_inodes) {
 			err = -ENOMEM;
 			goto out;
@@ -90,7 +90,7 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 			continue;
 
 		unionfs_set_lower_inode_idx(inode, bindex,
-				igrab(hidden_dentry->d_inode));
+					    igrab(hidden_dentry->d_inode));
 	}
 
 	ibstart(inode) = dbstart(dentry);
@@ -169,7 +169,7 @@ void unionfs_reinterpose(struct dentry *dentry)
 		if (unionfs_lower_inode_idx(inode, bindex))
 			continue;
 		unionfs_set_lower_inode_idx(inode, bindex,
-				igrab(hidden_dentry->d_inode));
+					    igrab(hidden_dentry->d_inode));
 	}
 	ibstart(inode) = dbstart(dentry);
 	ibend(inode) = dbend(dentry);
@@ -267,14 +267,14 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 
 	/* allocate space for underlying pointers to hidden dentry */
 	UNIONFS_SB(sb)->data = kcalloc(branches,
-			sizeof(struct unionfs_data), GFP_KERNEL);
+				       sizeof(struct unionfs_data), GFP_KERNEL);
 	if (!UNIONFS_SB(sb)->data) {
 		err = -ENOMEM;
 		goto out;
 	}
 
 	hidden_root_info->lower_paths = kcalloc(branches,
-			sizeof(struct path), GFP_KERNEL);
+						sizeof(struct path), GFP_KERNEL);
 	if (!hidden_root_info->lower_paths) {
 		err = -ENOMEM;
 		goto out;
@@ -346,7 +346,7 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 
 			if (is_branch_overlap(dent1, dent2)) {
 				printk(KERN_WARNING "unionfs: branches %d and "
-					"%d overlap\n", i, j);
+				       "%d overlap\n", i, j);
 				err = -EINVAL;
 				goto out;
 			}
@@ -392,7 +392,7 @@ static struct unionfs_dentry_info *unionfs_parse_options(struct super_block *sb,
 	/* allocate private data area */
 	err = -ENOMEM;
 	hidden_root_info =
-	    kzalloc(sizeof(struct unionfs_dentry_info), GFP_KERNEL);
+		kzalloc(sizeof(struct unionfs_dentry_info), GFP_KERNEL);
 	if (!hidden_root_info)
 		goto out_error;
 	hidden_root_info->bstart = -1;
@@ -693,11 +693,10 @@ static void __exit exit_unionfs_fs(void)
 }
 
 MODULE_AUTHOR("Erez Zadok, Filesystems and Storage Lab, Stony Brook University"
-		" (http://www.fsl.cs.sunysb.edu)");
+	      " (http://www.fsl.cs.sunysb.edu)");
 MODULE_DESCRIPTION("Unionfs " UNIONFS_VERSION
-		" (http://unionfs.filesystems.org)");
+		   " (http://unionfs.filesystems.org)");
 MODULE_LICENSE("GPL");
 
 module_init(init_unionfs_fs);
 module_exit(exit_unionfs_fs);
-
