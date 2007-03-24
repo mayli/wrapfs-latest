@@ -77,12 +77,11 @@ int create_whiteout(struct dentry *dentry, int start)
 		}
 
 		hidden_dir_dentry = lock_parent(hidden_wh_dentry);
-		if (!(err = is_robranch_super(dentry->d_sb, bindex))) {
+		if (!(err = is_robranch_super(dentry->d_sb, bindex)))
 			err = vfs_create(hidden_dir_dentry->d_inode,
 					 hidden_wh_dentry,
 					 ~current->fs->umask & S_IRWXUGO,
 					 NULL);
-		}
 		unlock_dir(hidden_dir_dentry);
 		dput(hidden_wh_dentry);
 
