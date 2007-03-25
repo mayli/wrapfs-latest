@@ -79,6 +79,7 @@ struct sioq_args {
 	};
 };
 
+/* Extern definitions for SIOQ functions */
 extern int __init init_sioq(void);
 extern __exit void stop_sioq(void);
 extern void run_sioq(work_func_t func, struct sioq_args *args);
