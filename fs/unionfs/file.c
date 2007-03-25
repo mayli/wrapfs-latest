@@ -53,8 +53,8 @@ out:
 	return err;
 }
 
-static ssize_t unionfs_read(struct file * file, char __user * buf,
-			    size_t count, loff_t * ppos)
+static ssize_t unionfs_read(struct file *file, char __user *buf,
+			    size_t count, loff_t *ppos)
 {
 	struct file *hidden_file;
 	loff_t pos = *ppos;
@@ -77,7 +77,7 @@ out:
 	return err;
 }
 
-static ssize_t unionfs_write(struct file * file, const char __user * buf,
+static ssize_t unionfs_write(struct file *file, const char __user *buf,
 			     size_t count, loff_t *ppos)
 {
 	int err;
@@ -135,7 +135,7 @@ static int unionfs_file_readdir(struct file *file, void *dirent,
 	return -ENOTDIR;
 }
 
-static unsigned int unionfs_poll(struct file *file, poll_table * wait)
+static unsigned int unionfs_poll(struct file *file, poll_table *wait)
 {
 	unsigned int mask = DEFAULT_POLLMASK;
 	struct file *hidden_file = NULL;

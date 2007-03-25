@@ -541,7 +541,7 @@ struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 }
 
 /* purge a dentry's lower-branch states (dput/mntput, etc.) */
-static void __cleanup_dentry(struct dentry * dentry, int bindex,
+static void __cleanup_dentry(struct dentry *dentry, int bindex,
 			     int old_bstart, int old_bend)
 {
 	int loop_start;
@@ -592,7 +592,7 @@ static void __cleanup_dentry(struct dentry * dentry, int bindex,
 }
 
 /* set lower inode ptr and update bstart & bend if necessary */
-static void __set_inode(struct dentry * upper, struct dentry * lower,
+static void __set_inode(struct dentry *upper, struct dentry *lower,
 			int bindex)
 {
 	unionfs_set_lower_inode_idx(upper->d_inode, bindex,
@@ -605,7 +605,7 @@ static void __set_inode(struct dentry * upper, struct dentry * lower,
 }
 
 /* set lower dentry ptr and update bstart & bend if necessary */
-static void __set_dentry(struct dentry * upper, struct dentry * lower,
+static void __set_dentry(struct dentry *upper, struct dentry *lower,
 			 int bindex)
 {
 	unionfs_set_lower_dentry_idx(upper, bindex, lower);

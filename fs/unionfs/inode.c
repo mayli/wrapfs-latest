@@ -767,7 +767,7 @@ out:
 	return err;
 }
 
-static int unionfs_readlink(struct dentry *dentry, char __user * buf,
+static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 			    int bufsiz)
 {
 	int err;

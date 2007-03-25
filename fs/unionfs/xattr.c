@@ -51,7 +51,7 @@ void unionfs_xattr_free(void *ptr, size_t size)
  * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
-ssize_t unionfs_getxattr(struct dentry * dentry, const char *name, void *value,
+ssize_t unionfs_getxattr(struct dentry *dentry, const char *name, void *value,
 			 size_t size)
 {
 	struct dentry *hidden_dentry = NULL;
@@ -115,7 +115,7 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
  * BKL held by caller.
  * dentry->d_inode->i_mutex locked
  */
-ssize_t unionfs_listxattr(struct dentry * dentry, char *list, size_t size)
+ssize_t unionfs_listxattr(struct dentry *dentry, char *list, size_t size)
 {
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
