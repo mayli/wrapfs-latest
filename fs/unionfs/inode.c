@@ -332,11 +332,10 @@ docopyup:
 		int bindex;
 
 		for (bindex = old_bstart - 1; bindex >= 0; bindex--) {
-			err =
-				copyup_dentry(old_dentry->d_parent->
-					      d_inode, old_dentry,
-					      old_bstart, bindex, NULL,
-					      old_dentry->d_inode->i_size);
+			err = copyup_dentry(old_dentry->d_parent->d_inode,
+					    old_dentry, old_bstart,
+					    bindex, NULL,
+					    old_dentry->d_inode->i_size);
 			if (!err) {
 				hidden_new_dentry =
 					create_parents(dir, new_dentry,
