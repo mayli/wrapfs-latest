@@ -320,12 +320,6 @@ extern int __unionfs_d_revalidate_chain(struct dentry *dentry,
 extern int unionfs_interpose(struct dentry *this_dentry,
 			     struct super_block *sb, int flag);
 
-/* Branch management ioctls. */
-extern int unionfs_ioctl_incgen(struct file *file, unsigned int cmd,
-				unsigned long arg);
-extern int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
-				   unsigned long arg);
-
 #ifdef CONFIG_UNION_FS_XATTR
 /* Extended attribute functions. */
 extern void *unionfs_xattr_alloc(size_t size, size_t limit);

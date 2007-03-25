@@ -629,6 +629,46 @@ out:
 	return err;
 }
 
+/*
+ * return to user-space the branch indices containing the file in question
+ *
+ * We use fd_set and therefore we are limited to the number of the branches
+ * to FD_SETSIZE, which is currently 1024 - plenty for most people
+ */
+static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
+				   unsigned long arg)
+{
+	int err = 0;
+	fd_set branchlist;
+	int bstart = 0, bend = 0, bindex = 0;
+	struct dentry *dentry, *hidden_dentry;
+
+	dentry = file->f_dentry;
+	unionfs_lock_dentry(dentry);
+	if ((err = unionfs_partial_lookup(dentry)))
+		goto out;
+	bstart = dbstart(dentry);
+	bend = dbend(dentry);
+
+	FD_ZERO(&branchlist);
+
+	for (bindex = bstart; bindex <= bend; bindex++) {
+		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!hidden_dentry)
+			continue;
+		if (hidden_dentry->d_inode)
+			FD_SET(bindex, &branchlist);
+	}
+
+	err = copy_to_user((void __user *)arg, &branchlist, sizeof(fd_set));
+	if (err)
+		err = -EFAULT;
+
+out:
+	unionfs_unlock_dentry(dentry);
+	return err < 0 ? err : bend;
+}
+
 long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long err;
