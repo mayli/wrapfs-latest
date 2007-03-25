@@ -462,7 +462,7 @@ static inline struct vfsmount *unionfs_mntget(struct dentry *dentry,
 					      int bindex)
 {
 	struct vfsmount *mnt;
- 
+
 	if (!dentry) {
 		if (bindex < 0)
 			return NULL;
