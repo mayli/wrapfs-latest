@@ -77,16 +77,19 @@ out:
 	return err;
 }
 
-/* helper function to unionfs_write */
-static ssize_t __unionfs_write(struct file * file, const char __user * buf,
-			       size_t count, loff_t * ppos)
+static ssize_t unionfs_write(struct file * file, const char __user * buf,
+			     size_t count, loff_t *ppos)
 {
-	int err = -EINVAL;
+	int err;
 	struct file *hidden_file = NULL;
 	struct inode *inode;
 	struct inode *hidden_inode;
 	loff_t pos = *ppos;
 	int bstart, bend;
+
+	unionfs_read_lock(file->f_dentry->d_sb);
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
 
 	inode = file->f_dentry->d_inode;
 
@@ -98,8 +101,10 @@ static ssize_t __unionfs_write(struct file * file, const char __user * buf,
 	hidden_file = unionfs_lower_file(file);
 	hidden_inode = hidden_file->f_dentry->d_inode;
 
-	if (!hidden_file->f_op || !hidden_file->f_op->write)
+	if (!hidden_file->f_op || !hidden_file->f_op->write) {
+		err = -EINVAL;
 		goto out;
+	}
 
 	/* adjust for append -- seek to the end of the file */
 	if (file->f_flags & O_APPEND)
@@ -119,21 +124,6 @@ static ssize_t __unionfs_write(struct file * file, const char __user * buf,
 	/* update this inode's size */
 	if (pos > inode->i_size)
 		inode->i_size = pos;
-out:
-	return err;
-}
-
-static ssize_t unionfs_write(struct file * file, const char __user * buf,
-			     size_t count, loff_t * ppos)
-{
-	int err = 0;
-
-	unionfs_read_lock(file->f_dentry->d_sb);
-	if ((err = unionfs_file_revalidate(file, 1)))
-		goto out;
-
-	err = __unionfs_write(file, buf, count, ppos);
-
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
 	return err;
