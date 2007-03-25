@@ -19,7 +19,7 @@
 #include "union.h"
 
 /*
- * return to userspace the branch indices containing the file in question
+ * return to user-space the branch indices containing the file in question
  *
  * We use fd_set and therefore we are limited to the number of the branches
  * to FD_SETSIZE, which is currently 1024 - plenty for most people

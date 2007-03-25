@@ -614,7 +614,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 
 		unlock_dir(hidden_parent_dentry);
 
-		/* did the mkdir suceed? */
+		/* did the mkdir succeed? */
 		if (err)
 			break;
 
@@ -924,7 +924,7 @@ static int unionfs_permission(struct inode *inode, int mask,
 
 		/*
 		 * check the condition for D-F-D underlying files/directories,
-		 * we dont have to check for files, if we are checking for
+		 * we don't have to check for files, if we are checking for
 		 * directories.
 		 */
 		if (!is_file && !S_ISDIR(hidden_inode->i_mode))

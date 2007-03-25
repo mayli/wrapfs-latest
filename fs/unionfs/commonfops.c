@@ -130,7 +130,7 @@ static void cleanup_file(struct file *file)
 			int i;	/* holds (possibly) updated branch index */
 			i = find_new_branch_index(file, bindex, sb);
 			if (i < 0)
-				printk(KERN_ERR "unionfs: no supberlock for "
+				printk(KERN_ERR "unionfs: no superblock for "
 				       "file %p\n", file);
 			else {
 				unionfs_read_lock(sb);

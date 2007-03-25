@@ -151,7 +151,7 @@ static unsigned int unionfs_poll(struct file *file, poll_table * wait)
 
 	unionfs_read_lock(file->f_dentry->d_sb);
 	if (unionfs_file_revalidate(file, 0)) {
-		/* We should pretend an error happend. */
+		/* We should pretend an error happened. */
 		mask = POLLERR | POLLIN | POLLOUT;
 		goto out;
 	}

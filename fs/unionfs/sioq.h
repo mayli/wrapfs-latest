@@ -83,7 +83,7 @@ extern int __init init_sioq(void);
 extern __exit void stop_sioq(void);
 extern void run_sioq(work_func_t func, struct sioq_args *args);
 
-/* Extern definitions for our privlege escalation helpers */
+/* Extern definitions for our privilege escalation helpers */
 extern void __unionfs_create(struct work_struct *work);
 extern void __unionfs_mkdir(struct work_struct *work);
 extern void __unionfs_mknod(struct work_struct *work);

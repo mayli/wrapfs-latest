@@ -229,7 +229,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				first_hidden_dentry = hidden_dentry;
 				/*
 				 * FIXME: following line needs to be changed
-				 * to allow mountpoint crossing
+				 * to allow mount-point crossing
 				 */
 				first_dentry = parent_dentry;
 				first_hidden_mnt =
@@ -250,7 +250,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
 		/*
 		 * FIXME: the following line needs to get fixed to allow
-		 * mountpoint crossing
+		 * mount-point crossing
 		 */
 		unionfs_set_lower_mnt_idx(dentry, bindex,
 					  unionfs_mntget(parent_dentry,
@@ -318,7 +318,7 @@ out_negative:
 
 		/*
 		 * FIXME: the following line needs to be changed to allow
-		 * mountpoint crossing
+		 * mount-point crossing
 		 */
 		first_dentry = dentry;
 		first_hidden_mnt = unionfs_mntget(dentry, bindex);
@@ -347,7 +347,7 @@ out_positive:
 	dput(first_hidden_dentry);
 	unionfs_mntput(first_dentry, first_dentry_offset);
 
-	/* Partial lookups need to reinterpose, or throw away older negs. */
+	/* Partial lookups need to re-interpose, or throw away older negs. */
 	if (lookupmode == INTERPOSE_PARTIAL) {
 		if (dentry->d_inode) {
 			unionfs_reinterpose(dentry);

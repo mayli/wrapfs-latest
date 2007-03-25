@@ -129,7 +129,7 @@ out_unlock:
 
 out:
 	if (!err) {
-		/* Fixup the newdentry. */
+		/* Fixup the new_dentry. */
 		if (bindex < dbstart(new_dentry))
 			set_dbstart(new_dentry, bindex);
 		else if (bindex > dbend(new_dentry))
@@ -360,7 +360,7 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 /*
  * We can't copyup a directory, because it may involve huge
  * numbers of children, etc.  Doing that in the kernel would
- * be bad, so instead we let the userspace recurse and ask us
+ * be bad, so instead we let the user-space recurse and ask us
  * to copy up each file separately
  */
 static int may_rename_dir(struct dentry *dentry)
@@ -411,7 +411,7 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	/*
 	 * if new_dentry is already hidden because of whiteout,
-	 * simply override it even if the whiteouted dir is not empty.
+	 * simply override it even if the whited-out dir is not empty.
 	 */
 	wh_dentry = lookup_whiteout(new_dentry);
 	if (!IS_ERR(wh_dentry))

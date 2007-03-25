@@ -242,7 +242,7 @@ void update_bstart(struct dentry *dentry);
  * EXTERNALS:
  */
 
-/* replicates the directory structure upto given dentry in given branch */
+/* replicates the directory structure up to given dentry in given branch */
 extern struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 				     int bindex);
 

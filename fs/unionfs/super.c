@@ -628,7 +628,7 @@ out_no_change:
 	 * WE'RE ALMOST DONE: see if we need to allocate a small-sized new
 	 * vector, copy the vectors to their correct place, release the
 	 * refcnt of the older ones, and return.
-	 * Also handle invalidating any pgaes that will have to be re-read.
+	 * Also handle invalidating any pages that will have to be re-read.
 	 *******************************************************************/
 
 	/*
@@ -691,7 +691,7 @@ out_no_change:
 	 * super.  This function calls invalidate_inode_pages(mapping),
 	 * which calls invalidate_mapping_pages(): the latter, however, will
 	 * not invalidate pages which are dirty, locked, under writeback, or
-	 * mapped into pagetables.  We shouldn't have to worry about dirty
+	 * mapped into page tables.  We shouldn't have to worry about dirty
 	 * or under-writeback pages, because do_remount_sb() called
 	 * fsync_super() which would not have returned until all dirty pages
 	 * were flushed.
@@ -883,8 +883,8 @@ static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 
 	if (!(flags & MNT_FORCE))
 		/*
-		 * we are not being MNT_FORCEd, therefore we should emulate
-		 * old behaviour
+		 * we are not being MNT_FORCE'd, therefore we should emulate
+		 * old behavior
 		 */
 		return;
 

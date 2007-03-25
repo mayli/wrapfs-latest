@@ -437,7 +437,7 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 		goto out_unlink;
 #endif
 
-	/* do not allow files getting deleted to be reinterposed */
+	/* do not allow files getting deleted to be re-interposed */
 	if (!d_deleted(dentry))
 		unionfs_reinterpose(dentry);
 
@@ -463,7 +463,7 @@ out_unlink:
 	/*
 	 * TODO: should we reset the error to something like -EIO?
 	 *
-	 * If we don't reset, the user may get some non-sensical errors, but
+	 * If we don't reset, the user may get some nonsensical errors, but
 	 * on the other hand, if we reset to EIO, we guarantee that the user
 	 * will get a "confusing" error message.
 	 */
@@ -475,7 +475,7 @@ out_free:
 	/*
 	 * If old_hidden_dentry was a directory, we need to dput it.  If it
 	 * was a file, then it was already dput indirectly by other
-	 * functions we call ablve which operate on regular files.
+	 * functions we call above which operate on regular files.
 	 */
 	if (old_hidden_dentry && old_hidden_dentry->d_inode &&
 	    S_ISDIR(old_hidden_dentry->d_inode->i_mode))
@@ -529,7 +529,7 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 }
 
 /*
- * This function replicates the directory structure upto given dentry in the
+ * This function replicates the directory structure up-to given dentry in the
  * bindex branch. Can create directory structure recursively to the right
  * also.
  */
@@ -614,7 +614,7 @@ static void __set_dentry(struct dentry * upper, struct dentry * lower,
 }
 
 /*
- * This function replicates the directory structure upto given dentry
+ * This function replicates the directory structure up-to given dentry
  * in the bindex branch.
  */
 static struct dentry *create_parents_named(struct inode *dir,
@@ -721,7 +721,7 @@ static struct dentry *create_parents_named(struct inode *dir,
 		} else {
 
 			/*
-			 * is the name a whiteout of the childname ?
+			 * is the name a whiteout of the child name ?
 			 * lookup the whiteout child in the underlying file
 			 * system
 			 */
