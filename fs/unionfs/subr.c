@@ -49,10 +49,11 @@ int create_whiteout(struct dentry *dentry, int start)
 
 		if (!hidden_dentry) {
 			/*
-			 * if hidden dentry is not present, create the entire
-			 * hidden dentry directory structure and go ahead.
-			 * Since we want to just create whiteout, we only want
-			 * the parent dentry, and hence get rid of this dentry.
+			 * if hidden dentry is not present, create the
+			 * entire hidden dentry directory structure and go
+			 * ahead.  Since we want to just create whiteout, we
+			 * only want the parent dentry, and hence get rid of
+			 * this dentry.
 			 */
 			hidden_dentry = create_parents(dentry->d_inode,
 						       dentry, bindex);
@@ -70,8 +71,8 @@ int create_whiteout(struct dentry *dentry, int start)
 			continue;
 
 		/*
-		 * The whiteout already exists. This used to be impossible, but
-		 * now is possible because of opaqueness.
+		 * The whiteout already exists. This used to be impossible,
+		 * but now is possible because of opaqueness.
 		 */
 		if (hidden_wh_dentry->d_inode) {
 			dput(hidden_wh_dentry);
@@ -92,7 +93,7 @@ int create_whiteout(struct dentry *dentry, int start)
 			break;
 	}
 
-	/* set dbopaque  so that lookup will not proceed after this branch */
+	/* set dbopaque so that lookup will not proceed after this branch */
 	if (!err)
 		set_dbopaque(dentry, bindex);
 
@@ -102,8 +103,8 @@ out:
 }
 
 /*
- * This is a helper function for rename, which ends up with hosed over dentries
- * when it needs to revert.
+ * This is a helper function for rename, which ends up with hosed over
+ * dentries when it needs to revert.
  */
 int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
 {

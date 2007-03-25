@@ -18,7 +18,6 @@
 
 #include "union.h"
 
-
 /*
  * Revalidate a single dentry.
  * Assume that dentry's info node is locked.
@@ -60,8 +59,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 	sbgen = atomic_read(&UNIONFS_SB(dentry->d_sb)->generation);
 	/*
 	 * If we are working on an unconnected dentry, then there is no
-	 * revalidation to be done, because this file does not exist within the
-	 * namespace, and Unionfs operates on the namespace, not data.
+	 * revalidation to be done, because this file does not exist within
+	 * the namespace, and Unionfs operates on the namespace, not data.
 	 */
 	if (sbgen != dgen) {
 		struct dentry *result;

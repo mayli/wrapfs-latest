@@ -18,6 +18,12 @@
 
 #include "union.h"
 
+/*
+ * For detailed explanation of copyup see:
+ * Documentation/filesystems/unionfs/concepts.txt
+ */
+
+/* forward definitions */
 static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 			       int bstart, int new_bindex, const char *name,
 			       int namelen, struct file **copyup_file,
@@ -25,11 +31,6 @@ static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 static struct dentry *create_parents_named(struct inode *dir,
 					   struct dentry *dentry,
 					   const char *name, int bindex);
-
-/*
- * For detailed explanation of copyup see:
- * Documentation/filesystems/unionfs/concepts.txt
- */
 
 #ifdef CONFIG_UNION_FS_XATTR
 /* copyup all extended attrs for a given dentry */
@@ -487,9 +488,9 @@ out:
 }
 
 /*
- * This function creates a copy of a file represented by 'file' which currently
- * resides in branch 'bstart' to branch 'new_bindex.'  The copy will be named
- * "name".
+ * This function creates a copy of a file represented by 'file' which
+ * currently resides in branch 'bstart' to branch 'new_bindex.'  The copy
+ * will be named "name".
  */
 int copyup_named_file(struct inode *dir, struct file *file, char *name,
 		      int bstart, int new_bindex, loff_t len)
@@ -509,8 +510,8 @@ int copyup_named_file(struct inode *dir, struct file *file, char *name,
 }
 
 /*
- * This function creates a copy of a file represented by 'file' which currently
- * resides in branch 'bstart' to branch 'new_bindex'.
+ * This function creates a copy of a file represented by 'file' which
+ * currently resides in branch 'bstart' to branch 'new_bindex'.
  */
 int copyup_file(struct inode *dir, struct file *file, int bstart,
 		int new_bindex, loff_t len)
@@ -539,6 +540,7 @@ struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 	return create_parents_named(dir, dentry, dentry->d_name.name, bindex);
 }
 
+/* purge a dentry's lower-branch states (dput/mntput, etc.) */
 static void __cleanup_dentry(struct dentry * dentry, int bindex,
 			     int old_bstart, int old_bend)
 {

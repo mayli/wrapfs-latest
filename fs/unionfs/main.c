@@ -20,7 +20,12 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 
-/* sb we pass is unionfs's super_block */
+/*
+ * Connect a unionfs inode dentry/inode with several lower ones.  This is
+ * the classic stackable file system "vnode interposition" action.
+ *
+ * @sb: unionfs's super_block
+ */
 int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 {
 	struct inode *hidden_inode;
@@ -149,6 +154,7 @@ out:
 	return err;
 }
 
+/* like interpose above, but for an already existing dentry */
 void unionfs_reinterpose(struct dentry *dentry)
 {
 	struct dentry *hidden_dentry;

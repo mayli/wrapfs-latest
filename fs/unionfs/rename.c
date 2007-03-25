@@ -141,6 +141,11 @@ out:
 	return err;
 }
 
+/*
+ * Main rename code.  This is sufficienly complex, that it's documented in
+ * Docmentation/filesystems/unionfs/rename.txt.  This routine calls
+ * do_rename() above to perform some of the work.
+ */
 static int do_unionfs_rename(struct inode *old_dir,
 			     struct dentry *old_dentry,
 			     struct inode *new_dir,
@@ -358,10 +363,10 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 }
 
 /*
- * We can't copyup a directory, because it may involve huge
- * numbers of children, etc.  Doing that in the kernel would
- * be bad, so instead we let the user-space recurse and ask us
- * to copy up each file separately
+ * We can't copyup a directory, because it may involve huge numbers of
+ * children, etc.  Doing that in the kernel would be bad, so instead we
+ * return EXDEV to the user-space utility that caused this, and let the
+ * user-space recurse and ask us to copy up each file separately.
  */
 static int may_rename_dir(struct dentry *dentry)
 {

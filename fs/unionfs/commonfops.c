@@ -238,6 +238,7 @@ out:
 	return err;
 }
 
+/* perform a delayed copyup of a read-write file on a read-only branch */
 static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 {
 	int bindex, bstart, bend, err = 0;
@@ -309,9 +310,9 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 
 	/*
 	 * There are two cases we are interested in.  The first is if the
-	 * generation is lower than the super-block.  The second is if someone
-	 * has copied up this file from underneath us, we also need to refresh
-	 * things.
+	 * generation is lower than the super-block.  The second is if
+	 * someone has copied up this file from underneath us, we also need
+	 * to refresh things.
 	 */
 	if (!d_deleted(dentry) &&
 	    (sbgen > fgen || dbstart(dentry) != fbstart(file))) {

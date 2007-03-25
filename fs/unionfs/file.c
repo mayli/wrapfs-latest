@@ -77,6 +77,7 @@ out:
 	return err;
 }
 
+/* helper function to unionfs_write */
 static ssize_t __unionfs_write(struct file * file, const char __user * buf,
 			       size_t count, loff_t * ppos)
 {

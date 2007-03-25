@@ -70,6 +70,7 @@ out:
 	return err;
 }
 
+/* main (and complex) driver function for Unionfs's lookup */
 struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				      struct nameidata *nd, int lookupmode)
 {
@@ -404,7 +405,7 @@ out:
 	return ERR_PTR(err);
 }
 
-/* This is a utility function that fills in a unionfs dentry.*/
+/* This is a utility function that fills in a unionfs dentry */
 int unionfs_partial_lookup(struct dentry *dentry)
 {
 	struct dentry *tmp;
