@@ -205,6 +205,7 @@ static inline void unionfs_unlock_dentry(struct dentry *d)
 
 static inline void verify_locked(struct dentry *d)
 {
+	BUG_ON(!mutex_is_locked(&UNIONFS_D(d)->lock));
 }
 
 #endif	/* _FANOUT_H */
