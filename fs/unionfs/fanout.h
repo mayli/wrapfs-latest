@@ -221,7 +221,7 @@ static inline struct vfsmount *unionfs_lower_mnt_idx(
 
 static inline struct vfsmount *unionfs_lower_mnt(const struct dentry *dent)
 {
-	return unionfs_lower_mnt_idx(dent,dbstart(dent));
+	return unionfs_lower_mnt_idx(dent, dbstart(dent));
 }
 
 /* Macros for locking a dentry. */

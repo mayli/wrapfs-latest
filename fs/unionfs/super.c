@@ -112,7 +112,7 @@ static void unionfs_put_super(struct super_block *sb)
 	for (bindex = bstart; bindex <= bend; bindex++)
 		if (branch_count(sb, bindex) != 0) {
 			printk("unionfs: branch %d has %d references left!\n",
-			       bindex, branch_count(sb,bindex));
+			       bindex, branch_count(sb, bindex));
 			leaks = 1;
 		}
 	BUG_ON(leaks != 0);
