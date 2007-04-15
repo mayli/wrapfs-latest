@@ -265,7 +265,7 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 	BUG_ON(!is_valid_dentry(new_dentry));
 	BUG_ON(!is_valid_dentry(old_dentry));
 
-	double_lock_dentry(new_dentry, old_dentry);
+	unionfs_double_lock_dentry(new_dentry, old_dentry);
 
 	hidden_new_dentry = unionfs_lower_dentry(new_dentry);
 

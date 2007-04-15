@@ -223,7 +223,8 @@ static inline off_t rdstate2offset(struct unionfs_dir_state *buf)
 #define unionfs_write_lock(sb)	 down_write(&UNIONFS_SB(sb)->rwsem)
 #define unionfs_write_unlock(sb) up_write(&UNIONFS_SB(sb)->rwsem)
 
-static inline void double_lock_dentry(struct dentry *d1, struct dentry *d2)
+static inline void unionfs_double_lock_dentry(struct dentry *d1,
+					      struct dentry *d2)
 {
 	if (d2 < d1) {
 		struct dentry *tmp = d1;

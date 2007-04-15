@@ -400,7 +400,7 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	BUG_ON(!is_valid_dentry(old_dentry));
 	BUG_ON(!is_valid_dentry(new_dentry));
 
-	double_lock_dentry(old_dentry, new_dentry);
+	unionfs_double_lock_dentry(old_dentry, new_dentry);
 
 	if (!S_ISDIR(old_dentry->d_inode->i_mode))
 		err = unionfs_partial_lookup(old_dentry);
