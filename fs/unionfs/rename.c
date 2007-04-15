@@ -18,9 +18,9 @@
 
 #include "union.h"
 
-static int do_rename(struct inode *old_dir, struct dentry *old_dentry,
-		     struct inode *new_dir, struct dentry *new_dentry,
-		     int bindex, struct dentry **wh_old)
+static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+			    struct inode *new_dir, struct dentry *new_dentry,
+			    int bindex, struct dentry **wh_old)
 {
 	int err = 0;
 	struct dentry *hidden_old_dentry;
@@ -144,7 +144,7 @@ out:
 /*
  * Main rename code.  This is sufficienly complex, that it's documented in
  * Docmentation/filesystems/unionfs/rename.txt.  This routine calls
- * do_rename() above to perform some of the work.
+ * __unionfs_rename() above to perform some of the work.
  */
 static int do_unionfs_rename(struct inode *old_dir,
 			     struct dentry *old_dentry,
@@ -171,8 +171,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 	new_bend = dbend(new_dentry);
 
 	/* Rename source to destination. */
-	err = do_rename(old_dir, old_dentry, new_dir, new_dentry, old_bstart,
-			&wh_old);
+	err = __unionfs_rename(old_dir, old_dentry, new_dir, new_dentry,
+			       old_bstart, &wh_old);
 	if (err) {
 		if (!IS_COPYUP_ERR(err))
 			goto out;
@@ -230,8 +230,9 @@ static int do_unionfs_rename(struct inode *old_dir,
 			if (!err) {
 				dput(wh_old);
 				bwh_old = bindex;
-				err = do_rename(old_dir, old_dentry, new_dir,
-						new_dentry, bindex, &wh_old);
+				err = __unionfs_rename(old_dir, old_dentry,
+						       new_dir, new_dentry,
+						       bindex, &wh_old);
 				break;
 			}
 		}
@@ -306,8 +307,8 @@ revert:
 		goto revert_out;
 	}
 
-	local_err = do_rename(new_dir, new_dentry,
-			      old_dir, old_dentry, old_bstart, NULL);
+	local_err = __unionfs_rename(new_dir, new_dentry,
+				     old_dir, old_dentry, old_bstart, NULL);
 
 	/* If we can't fix it, then we cop-out with -EIO. */
 	if (local_err) {
