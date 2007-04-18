@@ -464,7 +464,7 @@ int new_dentry_private_data(struct dentry *dentry)
 			goto out;
 
 		mutex_init(&info->lock);
-		mutex_lock(&info->lock);
+		unionfs_lock_dentry(dentry);
 		unlock_on_err = 1;
 
 		info->lower_paths = NULL;
@@ -500,7 +500,7 @@ int new_dentry_private_data(struct dentry *dentry)
 out_free:
 	kfree(info->lower_paths);
 	if (unlock_on_err)
-		mutex_unlock(&info->lock);
+		unionfs_unlock_dentry(dentry);
 
 out:
 	free_dentry_private_data(info);
