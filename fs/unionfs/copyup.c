@@ -631,7 +631,7 @@ static struct dentry *create_parents_named(struct inode *dir,
 	const char *childname;
 	unsigned int childnamelen;
 	int nr_dentry;
-	int count;
+	int count = 0;
 	int old_bstart;
 	int old_bend;
 	struct dentry **path = NULL;
@@ -658,7 +658,6 @@ static struct dentry *create_parents_named(struct inode *dir,
 	/* assume the negative dentry of unionfs as the parent dentry */
 	parent_dentry = dentry;
 
-	count = 0;
 	/*
 	 * This loop finds the first parent that exists in the given branch.
 	 * We start building the directory structure from there.  At the end
@@ -762,6 +761,22 @@ begin:
 						 hidden_dentry);
 		unlock_dir(hidden_parent_dentry);
 		if (err) {
+			struct inode *inode = hidden_dentry->d_inode;
+			/*
+			 * If we get here, it means that we created a new
+			 * dentry+inode, but copying permissions failed.
+			 * Therefore, we should delete this inode and dput
+			 * the dentry so as not to leave cruft behind.
+			 *
+			 * XXX: call dentry_iput() instead, but then we have
+			 * to export that symbol.
+			 */
+			if (hidden_dentry->d_op && hidden_dentry->d_op->d_iput)
+				hidden_dentry->d_op->d_iput(hidden_dentry,
+							    inode);
+			else
+				iput(inode);
+			hidden_dentry->d_inode = NULL;
 			dput(hidden_dentry);
 			hidden_dentry = ERR_PTR(err);
 			goto out;
@@ -776,6 +791,10 @@ begin:
 	child_dentry = path[--count];
 	goto begin;
 out:
+	/* cleanup any leftover locks from the do/while loop above */
+	if (IS_ERR(hidden_dentry))
+		while (count)
+			unionfs_unlock_dentry(path[count--]);
 	kfree(path);
 	return hidden_dentry;
 }
