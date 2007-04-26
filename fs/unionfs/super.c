@@ -442,7 +442,7 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 	 * the union to a "ro" or "rw" and the VFS took care of it.  So
 	 * nothing to do and we're done.
 	 */
-	if (options[0] == '\0')
+	if (!options || options[0] == '\0')
 		goto out_error;
 
 	/*
