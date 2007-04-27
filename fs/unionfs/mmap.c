@@ -162,6 +162,9 @@ int unionfs_readpage(struct file *file, struct page *page)
 {
 	int err;
 
+	if ((err = unionfs_file_revalidate(file, 0)))
+		goto out_err;
+
 	err = unionfs_do_readpage(file, page);
 
 	/*
@@ -170,6 +173,7 @@ int unionfs_readpage(struct file *file, struct page *page)
 	 * it
 	 */
 
+out_err:
 	unlock_page(page);
 
 	return err;
@@ -178,7 +182,7 @@ int unionfs_readpage(struct file *file, struct page *page)
 int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
 			  unsigned to)
 {
-	return 0;
+	return unionfs_file_revalidate(file, 1);
 }
 
 int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
@@ -193,6 +197,9 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 	mm_segment_t old_fs;
 
 	BUG_ON(file == NULL);
+
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
 
 	inode = page->mapping->host;	/* CPW: Moved below print_entry_location */
 	lower_inode = unionfs_lower_inode(inode);
