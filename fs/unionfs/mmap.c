@@ -201,7 +201,7 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
-	inode = page->mapping->host;	/* CPW: Moved below print_entry_location */
+	inode = page->mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
 
 	if (UNIONFS_F(file) != NULL)
@@ -272,7 +272,7 @@ void unionfs_sync_page(struct page *page)
 	struct page *lower_page;
 	struct address_space *mapping = page->mapping;
 
-	inode = page->mapping->host;	/* CPW: Moved below print_entry_location */
+	inode = page->mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
 
 	/* find lower page (returns a locked page) */
