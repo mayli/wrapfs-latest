@@ -1126,6 +1126,10 @@ static int fastcall do_path_lookup(int dfd, const char *name,
 		nd->mnt = mntget(fs->rootmnt);
 		nd->dentry = dget(fs->root);
 		read_unlock(&fs->lock);
+	} else if (flags & LOOKUP_ONE) {
+		/* nd->mnt and nd->dentry already set, just grab references */
+		mntget(nd->mnt);
+		dget(nd->dentry);
 	} else if (dfd == AT_FDCWD) {
 		read_lock(&fs->lock);
 		nd->mnt = mntget(fs->pwdmnt);
