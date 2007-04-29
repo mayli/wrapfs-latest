@@ -725,7 +725,8 @@ out_no_change:
 	i = atomic_inc_return(&UNIONFS_SB(sb)->generation);
 	atomic_set(&UNIONFS_D(sb->s_root)->generation, i);
 	atomic_set(&UNIONFS_I(sb->s_root->d_inode)->generation, i);
-	printk("unionfs: new generation number %d\n", i);
+	if (!(*flags & MS_SILENT))
+		printk("unionfs: new generation number %d\n", i);
 	err = 0;		/* reset to success */
 
 	/*
