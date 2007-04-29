@@ -220,7 +220,8 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 	 */
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
-	err = vfs_write(lower_file, page_data + from, bytes, &lower_file->f_pos);
+	err = vfs_write(lower_file, page_data + from, bytes,
+			&lower_file->f_pos);
 	set_fs(old_fs);
 
 	kunmap(page);
