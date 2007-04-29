@@ -1358,7 +1358,8 @@ static inline int __lookup_one_len(const char *name, struct qstr *this, struct d
 	return 0;
 }
 
-struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
+struct dentry *lookup_one_len_nd(const char *name, struct dentry *base, 
+				 int len, struct nameidata *nd)
 {
 	int err;
 	struct qstr this;
@@ -1366,7 +1367,7 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 	err = __lookup_one_len(name, &this, base, len);
 	if (err)
 		return ERR_PTR(err);
-	return __lookup_hash(&this, base, NULL);
+	return __lookup_hash(&this, base, nd);
 }
 
 struct dentry *lookup_one_len_kern(const char *name, struct dentry *base, int len)
@@ -2799,7 +2800,7 @@ EXPORT_SYMBOL(follow_up);
 EXPORT_SYMBOL(get_write_access); /* binfmt_aout */
 EXPORT_SYMBOL(getname);
 EXPORT_SYMBOL(lock_rename);
-EXPORT_SYMBOL(lookup_one_len);
+EXPORT_SYMBOL(lookup_one_len_nd);
 EXPORT_SYMBOL(page_follow_link_light);
 EXPORT_SYMBOL(page_put_link);
 EXPORT_SYMBOL(page_readlink);
