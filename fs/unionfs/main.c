@@ -350,7 +350,21 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 
 	BUG_ON(branches != (hidden_root_info->bend + 1));
 
-	/* ensure that no overlaps exist in the branches */
+	/*
+	 * Ensure that no overlaps exist in the branches.
+	 *
+	 * This test is required because the Linux kernel has no support
+	 * currently for ensuring coherency between stackable layers and
+	 * branches.  If we were to allow overlapping branches, it would be
+	 * possible, for example, to delete a file via one branch, which
+	 * would not be reflected in another branch.  Such incoherency could
+	 * lead to inconsistencies and even kernel oopses.  Rather than
+	 * implement hacks to work around some of these cache-coherency
+	 * problems, we prevent branch overlapping, for now.  A complete
+	 * solution will involve proper kernel/VFS support for cache
+	 * coherency, at which time we could safely remove this
+	 * branch-overlapping test.
+	 */
 	for (i = 0; i < branches; i++) {
 		for (j = i + 1; j < branches; j++) {
 			dent1 = hidden_root_info->lower_paths[i].dentry;
