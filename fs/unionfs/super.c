@@ -626,11 +626,19 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 out_no_change:
 
 	/******************************************************************
-	 * WE'RE ALMOST DONE: see if we need to allocate a small-sized new
-	 * vector, copy the vectors to their correct place, release the
-	 * refcnt of the older ones, and return.
-	 * Also handle invalidating any pages that will have to be re-read.
+	 * WE'RE ALMOST DONE: check if leftmost branch might be read-only,
+	 * see if we need to allocate a small-sized new vector, copy the
+	 * vectors to their correct place, release the refcnt of the older
+	 * ones, and return.  Also handle invalidating any pages that will
+	 * have to be re-read.
 	 *******************************************************************/
+
+	if (!(tmp_data[0].branchperms & MAY_WRITE)) {
+		printk("unionfs: leftmost branch cannot be read-only "
+		       "(use \"remount,ro\" to create a read-only union)\n");
+		err = -EINVAL;
+		goto out_release;
+	}
 
 	/*
 	 * Allocate space for actual pointers, if needed.  By the time we
