@@ -31,12 +31,14 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
-	err = do_sync_read(unionfs_lower_file(file), buf, count, ppos);
+	err = do_sync_read(file, buf, count, ppos);
 
-	/* FIXME: why? */
+/*
+	FIXME: do_sync_read updates a time
 	if (err >= 0)
 		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
 				unionfs_lower_dentry(file->f_path.dentry));
+*/
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
@@ -55,10 +57,11 @@ static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
 	if (err == -EIOCBQUEUED)
 		err = wait_on_sync_kiocb(iocb);
 
-	/* FIXME: why? */
+/*	XXX: is this needed?
 	if (err >= 0)
 		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
 				unionfs_lower_dentry(file->f_path.dentry));
+*/
 
 #if 0
 out:
