@@ -366,10 +366,9 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 	 * branch-overlapping test.
 	 */
 	for (i = 0; i < branches; i++) {
+		dent1 = hidden_root_info->lower_paths[i].dentry;
 		for (j = i + 1; j < branches; j++) {
-			dent1 = hidden_root_info->lower_paths[i].dentry;
 			dent2 = hidden_root_info->lower_paths[j].dentry;
-
 			if (is_branch_overlap(dent1, dent2)) {
 				printk(KERN_WARNING "unionfs: branches %d and "
 				       "%d overlap\n", i, j);
