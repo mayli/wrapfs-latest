@@ -62,25 +62,6 @@ static void unionfs_read_inode(struct inode *inode)
 	inode->i_mapping->a_ops = &unionfs_empty_aops;
 }
 
-static void unionfs_put_inode(struct inode *inode)
-{
-	/*
-	 * This is really funky stuff:
-	 *
-	 * Basically, if i_count == 1, iput will then decrement it and this
-	 * inode will be destroyed.  It is currently holding a reference to
-	 * the hidden inode.  Therefore, it needs to release that reference
-	 * by calling iput on the hidden inode.  iput() _will_ do it for us
-	 * (by calling our clear_inode), but _only_ if i_nlink == 0.  The
-	 * problem is, NFS keeps i_nlink == 1 for silly_rename'd files.  So
-	 * we must force our i_nlink to 0 here to trick iput() into calling
-	 * our clear_inode.
-	 */
-
-	if (atomic_read(&inode->i_count) == 1)
-		inode->i_nlink = 0;
-}
-
 /*
  * we now define delete_inode, because there are two VFS paths that may
  * destroy an inode: one of them calls clear inode before doing everything
@@ -963,7 +944,6 @@ out:
 
 struct super_operations unionfs_sops = {
 	.read_inode	= unionfs_read_inode,
-	.put_inode	= unionfs_put_inode,
 	.delete_inode	= unionfs_delete_inode,
 	.put_super	= unionfs_put_super,
 	.statfs		= unionfs_statfs,
