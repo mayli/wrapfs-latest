@@ -250,21 +250,6 @@ out:
 	return err;		/* assume all is ok */
 }
 
-/* FIXME: does this make sense? */
-sector_t unionfs_bmap(struct address_space * mapping, sector_t block)
-{
-	int err = 0;
-	struct inode *inode, *lower_inode;
-	sector_t (*bmap)(struct address_space *, sector_t);
-
-	inode = (struct inode *)mapping->host;
-	lower_inode = unionfs_lower_inode(inode);
-	bmap = lower_inode->i_mapping->a_ops->bmap;
-	if (bmap)
-		err = bmap(lower_inode->i_mapping, block);
-	return err;
-}
-
 void unionfs_sync_page(struct page *page)
 {
 	struct inode *inode;
@@ -297,6 +282,5 @@ struct address_space_operations unionfs_aops = {
 	.readpage	= unionfs_readpage,
 	.prepare_write	= unionfs_prepare_write,
 	.commit_write	= unionfs_commit_write,
-	.bmap		= unionfs_bmap,
 	.sync_page	= unionfs_sync_page,
 };
