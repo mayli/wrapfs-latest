@@ -33,12 +33,9 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 
 	err = do_sync_read(file, buf, count, ppos);
 
-#if 0
-	FIXME: do_sync_read updates a time
 	if (err >= 0)
 		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
-				unionfs_lower_dentry(file->f_path.dentry));
-#endif
+			    unionfs_lower_dentry(file->f_path.dentry));
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
@@ -56,12 +53,9 @@ static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
 	if (err == -EIOCBQUEUED)
 		err = wait_on_sync_kiocb(iocb);
 
-#if 0
-	XXX: is this needed?
 	if (err >= 0)
 		touch_atime(unionfs_lower_mnt(iocb->ki_filp->f_path.dentry),
-				unionfs_lower_dentry(iocb->ki_filp->f_path.dentry));
-#endif
+			    unionfs_lower_dentry(iocb->ki_filp->f_path.dentry));
 
 #if 0
 out:

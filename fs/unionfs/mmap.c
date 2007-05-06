@@ -168,6 +168,10 @@ int unionfs_readpage(struct file *file, struct page *page)
 
 	err = unionfs_do_readpage(file, page);
 
+	if (!err)
+		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
+			    unionfs_lower_dentry(file->f_path.dentry));
+
 	/*
 	 * we have to unlock our page, b/c we _might_ have gotten a locked
 	 * page.  but we no longer have to wakeup on our page here, b/c
