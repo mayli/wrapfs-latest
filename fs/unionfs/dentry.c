@@ -257,14 +257,22 @@ out_this:
 	/* finally, lock this dentry and revalidate it */
 	verify_locked(dentry);
 	dgen = atomic_read(&UNIONFS_D(dentry)->generation);
-	saved_bstart = dbstart(dentry);
-	saved_bend = dbend(dentry);
 	valid = __unionfs_d_revalidate_one(dentry, nd);
 
-	if (valid && chain_len > 0 && sbgen != dgen) {
-		for (bindex = saved_bstart; bindex <= saved_bend; bindex++)
+	/*
+	 * If __unionfs_d_revalidate_one() succeeded above, then it will
+	 * have incremented the refcnt of the mnt's, but also the branch
+	 * indices of the dentry will have been updated (to take into
+	 * account any branch insertions/deletion.  So the current
+	 * dbstart/dbend match the current, and new, indices of the mnts
+	 * which __unionfs_d_revalidate_one has incremented.  Note: the "if"
+	 * test below does not depend on whether chain_len was 0 or greater.
+	 */
+	if (valid && sbgen != dgen)
+		for (bindex = dbstart(dentry);
+		     bindex <= dbend(dentry);
+		     bindex++)
 			unionfs_mntput(dentry, bindex);
-	}
 
 out_free:
 	/* unlock/dput all dentries in chain and return status */

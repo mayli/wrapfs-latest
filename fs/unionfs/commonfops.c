@@ -134,14 +134,21 @@ static void cleanup_file(struct file *file)
 				       "file %p\n", file);
 			else {
 				unionfs_read_lock(sb);
+				/* decrement count of open files */
 				branchput(sb, i);
 				unionfs_read_unlock(sb);
-				/* XXX: is it OK to use sb->s_root here? */
-				unionfs_mntput(sb->s_root, i);
-				/* mntget b/c fput below will call mntput */
-				unionfs_mntget(sb->s_root, bindex);
+				/*
+				 * fput will perform an mntput for us on the
+				 * correct branch.  Although we're using the
+				 * file's old branch configuration, bindex,
+				 * which is the old index, correctly points
+				 * to the right branch in the file's branch
+				 * list.  In other words, we're going to
+				 * mntput the correct branch even if
+				 * branches have been added/removed.
+				 */
+				fput(unionfs_lower_file_idx(file, bindex));
 			}
-			fput(unionfs_lower_file_idx(file, bindex));
 		}
 	}
 
