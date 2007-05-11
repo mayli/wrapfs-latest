@@ -480,13 +480,13 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 	if (!dentry) {
 		if (bindex < 0)
 			return;
-		BUG_ON(dentry && bindex < 0);
+		BUG_ON(!dentry && bindex >= 0);
 	}
 	mnt = unionfs_lower_mnt_idx(dentry, bindex);
 	if (!mnt) {
 		if (bindex < 0)
 			return;
-		BUG_ON(mnt && bindex < 0);
+		BUG_ON(!mnt && bindex >= 0);
 	}
 	mntput(mnt);
 }
