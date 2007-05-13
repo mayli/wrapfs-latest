@@ -1046,7 +1046,7 @@ config ECRYPT_FS
 
 config UNION_FS
 	tristate "Union file system (EXPERIMENTAL)"
-	depends on SLAB && EXPERIMENTAL
+	depends on EXPERIMENTAL
 	help
 	  Unionfs is a stackable unification file system, which appears to
 	  merge the contents of several directories (branches), while keeping

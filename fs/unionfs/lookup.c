@@ -432,8 +432,8 @@ void free_dentry_private_data(struct unionfs_dentry_info *udi)
 /* allocate new dentry private data, free old one if necessary */
 int new_dentry_private_data(struct dentry *dentry)
 {
-	int newsize;
-	int oldsize = 0;
+	int new_size;
+	int size;
 	struct unionfs_dentry_info *info = UNIONFS_D(dentry);
 	int unlock_on_err = 0;
 
@@ -451,8 +451,9 @@ int new_dentry_private_data(struct dentry *dentry)
 		unlock_on_err = 1;
 
 		info->lower_paths = NULL;
+		size = 0;
 	} else
-		oldsize = sizeof(struct path) * info->bcount;
+		size = sizeof(struct path) * info->bcount;
 
 	info->bstart = -1;
 	info->bend = -1;
@@ -460,28 +461,21 @@ int new_dentry_private_data(struct dentry *dentry)
 	info->bcount = sbmax(dentry->d_sb);
 	atomic_set(&info->generation,
 		   atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
-	newsize = sizeof(struct path) * sbmax(dentry->d_sb);
+
+	new_size = sizeof(struct path) * sbmax(dentry->d_sb);
 
 	/* Don't reallocate when we already have enough space. */
-	/* It would be ideal if we could actually use the slab macros to
-	 * determine what our object sizes is, but those are not exported.
-	 */
-	if (oldsize) {
-		int minsize = malloc_sizes[0].cs_size;
+	if (new_size > size) {
+		void *p;
 
-		if (!newsize || ((oldsize < newsize) && (newsize > minsize))) {
-			kfree(info->lower_paths);
-			info->lower_paths = NULL;
-		}
-	}
-
-	if (!info->lower_paths && newsize) {
-		info->lower_paths = kmalloc(newsize, GFP_ATOMIC);
-		if (!info->lower_paths)
+		p = krealloc(info->lower_paths, new_size, GFP_ATOMIC);
+		if (!p)
 			goto out_free;
-	}
 
-	memset(info->lower_paths, 0, (oldsize > newsize ? oldsize : newsize));
+		info->lower_paths = p;
+		size = new_size;
+	}
+	memset(info->lower_paths, 0, size);
 
 	spin_unlock(&dentry->d_lock);
 	return 0;
