@@ -483,6 +483,25 @@ out_free:
 		dput(old_hidden_dentry);
 	kfree(symbuf);
 
+	if (err)
+		goto out;
+	if (!S_ISDIR(dentry->d_inode->i_mode)) {
+		unionfs_purge_extras(dentry);
+		if (!unionfs_lower_inode(dentry->d_inode)) {
+			/*
+			 * If we got here, then we copied up to an
+			 * unlinked-open file, whose name is .unionfsXXXXX.
+			 */
+			struct inode *inode = new_hidden_dentry->d_inode;
+			atomic_inc(&inode->i_count);
+			unionfs_set_lower_inode_idx(dentry->d_inode,
+						    ibstart(dentry->d_inode),
+						    inode);
+		}
+	}
+	unionfs_inherit_mnt(dentry);
+	unionfs_check_inode(dir);
+	unionfs_check_dentry(dentry);
 out:
 	return err;
 }

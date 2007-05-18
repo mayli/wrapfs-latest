@@ -449,18 +449,46 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		}
 	}
 	err = do_unionfs_rename(old_dir, old_dentry, new_dir, new_dentry);
-
 out:
 	if (err)
 		/* clear the new_dentry stuff created */
 		d_drop(new_dentry);
-	else
+	else {
 		/*
 		 * force re-lookup since the dir on ro branch is not renamed,
 		 * and hidden dentries still indicate the un-renamed ones.
 		 */
 		if (S_ISDIR(old_dentry->d_inode->i_mode))
 			atomic_dec(&UNIONFS_D(old_dentry)->generation);
+		else
+			unionfs_purge_extras(old_dentry);
+		if (new_dentry->d_inode &&
+		    !S_ISDIR(new_dentry->d_inode->i_mode)) {
+			unionfs_purge_extras(new_dentry);
+			unionfs_inherit_mnt(new_dentry);
+			if (!unionfs_lower_inode(new_dentry->d_inode)) {
+				/*
+				 * If we get here, it means that no copyup
+				 * was needed, and that a file by the old
+				 * name already existing on the destination
+				 * branch; that file got renamed earlier in
+				 * this function, so all we need to do here
+				 * is set the lower inode.
+				 */
+				struct inode *inode;
+				inode = unionfs_lower_inode(old_dentry->d_inode);
+				atomic_inc(&inode->i_count);
+				unionfs_set_lower_inode_idx(
+					new_dentry->d_inode,
+					dbstart(new_dentry), inode);
+			}
+
+		}
+		unionfs_check_inode(old_dir);
+		unionfs_check_inode(new_dir);
+		unionfs_check_dentry(old_dentry);
+		unionfs_check_dentry(new_dentry);
+	}
 
 	unionfs_unlock_dentry(new_dentry);
 	unionfs_unlock_dentry(old_dentry);

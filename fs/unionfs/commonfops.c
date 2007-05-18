@@ -78,11 +78,18 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 
 	/* bring it to the same state as an unlinked file */
 	hidden_dentry = unionfs_lower_dentry_idx(dentry, dbstart(dentry));
+	if (!unionfs_lower_inode_idx(dentry->d_inode, bindex)) {
+		atomic_inc(&hidden_dentry->d_inode->i_count);
+		unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
+					    hidden_dentry->d_inode);
+	}
 	hidden_dir_dentry = lock_parent(hidden_dentry);
 	err = vfs_unlink(hidden_dir_dentry->d_inode, hidden_dentry);
 	unlock_dir(hidden_dir_dentry);
 
 out:
+	if (!err)
+		unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -257,6 +264,8 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 
 	BUG_ON(!S_ISREG(file->f_dentry->d_inode->i_mode));
 
+	unionfs_check_file(file);
+	unionfs_check_dentry(dentry);
 	for (bindex = bstart - 1; bindex >= 0; bindex--) {
 		if (!d_deleted(file->f_dentry))
 			err = copyup_file(parent_inode, file, bstart,
@@ -278,9 +287,25 @@ static int do_delayed_copyup(struct file *file, struct dentry *dentry)
 				fput(unionfs_lower_file_idx(file, bindex));
 				unionfs_set_lower_file_idx(file, bindex, NULL);
 			}
+			if (unionfs_lower_mnt_idx(dentry, bindex)) {
+				unionfs_mntput(dentry, bindex);
+				unionfs_set_lower_mnt_idx(dentry, bindex, NULL);
+			}
+			if (unionfs_lower_dentry_idx(dentry, bindex)) {
+				BUG_ON(!dentry->d_inode);
+				iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
+				unionfs_set_lower_inode_idx(dentry->d_inode, bindex, NULL);
+				dput(unionfs_lower_dentry_idx(dentry, bindex));
+				unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
+			}
 		}
-		fbend(file) = bend;
+		/* for reg file, we only open it "once" */
+		fbend(file) = fbstart(file);
+		set_dbend(dentry, dbstart(dentry));
+		ibend(dentry->d_inode) = ibstart(dentry->d_inode);
 	}
+	unionfs_check_file(file);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -374,6 +399,8 @@ out:
 		kfree(UNIONFS_F(file)->saved_branch_ids);
 	}
 out_nofree:
+	if (!err)
+		unionfs_check_file(file);
 	unionfs_unlock_dentry(dentry);
 	return err;
 }
@@ -556,6 +583,8 @@ out:
 	}
 out_nofree:
 	unionfs_read_unlock(inode->i_sb);
+	unionfs_check_inode(inode);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -565,10 +594,19 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	struct file *hidden_file = NULL;
 	struct unionfs_file_info *fileinfo = UNIONFS_F(file);
 	struct unionfs_inode_info *inodeinfo = UNIONFS_I(inode);
+	struct super_block *sb = inode->i_sb;
 	int bindex, bstart, bend;
-	int fgen;
+	int fgen, err = 0;
 
-	unionfs_read_lock(inode->i_sb);
+	unionfs_check_file(file);
+	unionfs_read_lock(sb);
+	/*
+	 * Yes, we have to revalidate this file even if it's being released.
+	 * This is important for open-but-unlinked files, as well as mmap
+	 * support.
+	 */
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
 	/* fput all the hidden files */
 	fgen = atomic_read(&fileinfo->generation);
 	bstart = fbstart(file);
@@ -579,9 +617,9 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 
 		if (hidden_file) {
 			fput(hidden_file);
-			unionfs_read_lock(inode->i_sb);
-			branchput(inode->i_sb, bindex);
-			unionfs_read_unlock(inode->i_sb);
+			unionfs_read_lock(sb);
+			branchput(sb, bindex);
+			unionfs_read_unlock(sb);
 		}
 	}
 	kfree(fileinfo->lower_files);
@@ -603,8 +641,10 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 		fileinfo->rdstate = NULL;
 	}
 	kfree(fileinfo);
-	unionfs_read_unlock(inode->i_sb);
-	return 0;
+
+out:
+	unionfs_read_unlock(sb);
+	return err;
 }
 
 /* pass the ioctl to the lower fs */
@@ -705,6 +745,7 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 out:
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -719,6 +760,7 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
+	unionfs_check_file(file);
 
 	if (!atomic_dec_and_test(&UNIONFS_I(dentry->d_inode)->totalopens))
 		goto out;
@@ -750,5 +792,6 @@ out_lock:
 	unionfs_unlock_dentry(dentry);
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }

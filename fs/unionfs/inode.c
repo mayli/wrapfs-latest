@@ -222,8 +222,14 @@ out:
 	dput(wh_dentry);
 	kfree(name);
 
+	if (!err)
+		unionfs_inherit_mnt(dentry);
 	unionfs_unlock_dentry(dentry);
 	unionfs_read_unlock(dentry->d_sb);
+
+	unionfs_check_inode(parent);
+	unionfs_check_dentry(dentry->d_parent);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -248,7 +254,11 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 		nd->dentry = path_save.dentry;
 		nd->mnt = path_save.mnt;
 	}
+	if (!IS_ERR(ret))
+		unionfs_inherit_mnt(dentry);
 
+	unionfs_check_inode(parent);
+	unionfs_check_dentry(dentry);
 	return ret;
 }
 
@@ -374,10 +384,15 @@ out:
 		d_drop(new_dentry);
 
 	kfree(name);
+	if (!err)
+		unionfs_inherit_mnt(new_dentry);
 
 	unionfs_unlock_dentry(new_dentry);
 	unionfs_unlock_dentry(old_dentry);
 
+	unionfs_check_inode(dir);
+	unionfs_check_dentry(new_dentry);
+	unionfs_check_dentry(old_dentry);
 	return err;
 }
 
@@ -520,7 +535,12 @@ out:
 		d_drop(dentry);
 
 	kfree(name);
+	if (!err)
+		unionfs_inherit_mnt(dentry);
 	unionfs_unlock_dentry(dentry);
+
+	unionfs_check_inode(dir);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -654,6 +674,8 @@ out:
 	kfree(name);
 
 	unionfs_unlock_dentry(dentry);
+	unionfs_check_inode(parent);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -763,7 +785,12 @@ out:
 
 	kfree(name);
 
+	if (!err)
+		unionfs_inherit_mnt(dentry);
 	unionfs_unlock_dentry(dentry);
+
+	unionfs_check_inode(dir);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -792,6 +819,7 @@ static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 
 out:
 	unionfs_unlock_dentry(dentry);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
@@ -826,12 +854,14 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	err = 0;
 
 out:
+	unionfs_check_dentry(dentry);
 	return ERR_PTR(err);
 }
 
 static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 			     void *cookie)
 {
+	unionfs_check_dentry(dentry);
 	kfree(nd_get_link(nd));
 }
 
@@ -955,6 +985,7 @@ static int unionfs_permission(struct inode *inode, int mask,
 
 out:
 	unionfs_read_unlock(inode->i_sb);
+	unionfs_check_inode(inode);
 	return err;
 }
 
@@ -1021,9 +1052,9 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	hidden_inode = unionfs_lower_inode(dentry->d_inode);
 	fsstack_copy_attr_all(inode, hidden_inode, unionfs_get_nlinks);
 	fsstack_copy_inode_size(inode, hidden_inode);
-
 out:
 	unionfs_unlock_dentry(dentry);
+	unionfs_check_dentry(dentry);
 	return err;
 }
 

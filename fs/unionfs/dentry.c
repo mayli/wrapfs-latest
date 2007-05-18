@@ -289,9 +289,11 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	int err;
 
+	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
 	err = __unionfs_d_revalidate_chain(dentry, nd);
 	unionfs_unlock_dentry(dentry);
+	unionfs_check_dentry(dentry);
 
 	return err;
 }
@@ -304,6 +306,7 @@ static void unionfs_d_release(struct dentry *dentry)
 {
 	int bindex, bstart, bend;
 
+	unionfs_check_dentry(dentry);
 	/* this could be a negative dentry, so check first */
 	if (!UNIONFS_D(dentry)) {
 		printk(KERN_DEBUG "unionfs: dentry without private data: %.*s",

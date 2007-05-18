@@ -50,6 +50,7 @@ static loff_t unionfs_llseek(struct file *file, loff_t offset, int origin)
 	}
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -74,6 +75,7 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -126,6 +128,7 @@ static ssize_t unionfs_write(struct file *file, const char __user *buf,
 		inode->i_size = pos;
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -156,6 +159,7 @@ static unsigned int unionfs_poll(struct file *file, poll_table *wait)
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return mask;
 }
 
@@ -193,6 +197,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -219,6 +224,7 @@ static int unionfs_fsync(struct file *file, struct dentry *dentry,
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
@@ -238,6 +244,7 @@ static int unionfs_fasync(int fd, struct file *file, int flag)
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;
 }
 
