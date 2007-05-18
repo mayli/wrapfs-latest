@@ -344,7 +344,8 @@ docopyup:
 		for (bindex = old_bstart - 1; bindex >= 0; bindex--) {
 			err = copyup_dentry(old_dentry->d_parent->d_inode,
 					    old_dentry, old_bstart,
-					    bindex, NULL,
+					    bindex, old_dentry->d_name.name,
+					    old_dentry->d_name.len, NULL,
 					    old_dentry->d_inode->i_size);
 			if (!err) {
 				hidden_new_dentry =
@@ -1024,8 +1025,10 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 				if (ia->ia_valid & ATTR_SIZE)
 					size = ia->ia_size;
 				err = copyup_dentry(dentry->d_parent->d_inode,
-						    dentry, bstart, i, NULL,
-						    size);
+						    dentry, bstart, i,
+						    dentry->d_name.name,
+						    dentry->d_name.len,
+						    NULL, size);
 
 				if (!err) {
 					copyup = 1;

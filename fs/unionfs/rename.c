@@ -226,6 +226,8 @@ static int do_unionfs_rename(struct inode *old_dir,
 			 */
 			err = copyup_dentry(old_dentry->d_parent->d_inode,
 					    old_dentry, old_bstart, bindex,
+					    old_dentry->d_name.name,
+					    old_dentry->d_name.len,
 					    NULL, old_dentry->d_inode->i_size);
 			if (!err) {
 				dput(wh_old);

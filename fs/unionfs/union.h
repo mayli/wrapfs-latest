@@ -262,9 +262,9 @@ extern int copyup_named_file(struct inode *dir, struct file *file,
 			     char *name, int bstart, int new_bindex,
 			     loff_t len);
 /* copies a dentry from dbstart to newbindex branch */
-extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
-			 int new_bindex, struct file **copyup_file,
-			 loff_t len);
+extern int copyup_dentry(struct inode *dir, struct dentry *dentry,
+			 int bstart, int new_bindex, const char *name,
+			 int namelen, struct file **copyup_file, loff_t len);
 /* helper functions for post-copyup cleanup */
 extern void unionfs_inherit_mnt(struct dentry *dentry);
 extern void unionfs_purge_extras(struct dentry *dentry);

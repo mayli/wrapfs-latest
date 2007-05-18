@@ -24,10 +24,6 @@
  */
 
 /* forward definitions */
-static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
-			       int bstart, int new_bindex, const char *name,
-			       int namelen, struct file **copyup_file,
-			       loff_t len);
 static struct dentry *create_parents_named(struct inode *dir,
 					   struct dentry *dentry,
 					   const char *name, int bindex);
@@ -126,15 +122,6 @@ static int copyup_permissions(struct super_block *sb,
 	err = notify_change(new_hidden_dentry, &newattrs);
 
 	return err;
-}
-
-int copyup_dentry(struct inode *dir, struct dentry *dentry,
-		  int bstart, int new_bindex,
-		  struct file **copyup_file, loff_t len)
-{
-	return copyup_named_dentry(dir, dentry, bstart, new_bindex,
-				   dentry->d_name.name,
-				   dentry->d_name.len, copyup_file, len);
 }
 
 /*
@@ -347,10 +334,9 @@ static void __clear(struct dentry *dentry, struct dentry *old_hidden_dentry,
  * @copyup_file: the "struct file" to return (optional)
  * @len: how many bytes to copy-up?
  */
-static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
-			       int bstart, int new_bindex, const char *name,
-			       int namelen, struct file **copyup_file,
-			       loff_t len)
+int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
+		  int new_bindex, const char *name, int namelen,
+		  struct file **copyup_file, loff_t len)
 {
 	struct dentry *new_hidden_dentry;
 	struct dentry *old_hidden_dentry = NULL;
@@ -529,9 +515,8 @@ int copyup_named_file(struct inode *dir, struct file *file, char *name,
 	int err = 0;
 	struct file *output_file = NULL;
 
-	err = copyup_named_dentry(dir, file->f_dentry, bstart,
-				  new_bindex, name, strlen(name), &output_file,
-				  len);
+	err = copyup_dentry(dir, file->f_dentry, bstart, new_bindex,
+			    name, strlen(name), &output_file, len);
 	if (!err) {
 		fbstart(file) = new_bindex;
 		unionfs_set_lower_file_idx(file, new_bindex, output_file);
@@ -549,8 +534,10 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 {
 	int err = 0;
 	struct file *output_file = NULL;
+	struct dentry *dentry = file->f_dentry;
 
-	err = copyup_dentry(dir, file->f_dentry, bstart, new_bindex,
+	err = copyup_dentry(dir, dentry, bstart, new_bindex,
+			    dentry->d_name.name, dentry->d_name.len,
 			    &output_file, len);
 	if (!err) {
 		fbstart(file) = new_bindex;
