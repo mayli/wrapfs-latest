@@ -23,11 +23,6 @@
  * Documentation/filesystems/unionfs/concepts.txt
  */
 
-/* forward definitions */
-static struct dentry *create_parents_named(struct inode *dir,
-					   struct dentry *dentry,
-					   const char *name, int bindex);
-
 #ifdef CONFIG_UNION_FS_XATTR
 /* copyup all extended attrs for a given dentry */
 static int copyup_xattrs(struct dentry *old_hidden_dentry,
@@ -364,8 +359,7 @@ int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 		goto out;
 
 	/* Create the directory structure above this dentry. */
-	new_hidden_dentry =
-		create_parents_named(dir, dentry, name, new_bindex);
+	new_hidden_dentry = create_parents(dir, dentry, name, new_bindex);
 	if (IS_ERR(new_hidden_dentry)) {
 		err = PTR_ERR(new_hidden_dentry);
 		goto out;
@@ -547,17 +541,6 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 	return err;
 }
 
-/*
- * This function replicates the directory structure up-to given dentry in the
- * bindex branch. Can create directory structure recursively to the right
- * also.
- */
-struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
-			      int bindex)
-{
-	return create_parents_named(dir, dentry, dentry->d_name.name, bindex);
-}
-
 /* purge a dentry's lower-branch states (dput/mntput, etc.) */
 static void __cleanup_dentry(struct dentry *dentry, int bindex,
 			     int old_bstart, int old_bend)
@@ -637,9 +620,8 @@ static void __set_dentry(struct dentry *upper, struct dentry *lower,
  * This function replicates the directory structure up-to given dentry
  * in the bindex branch.
  */
-static struct dentry *create_parents_named(struct inode *dir,
-					   struct dentry *dentry,
-					   const char *name, int bindex)
+struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
+			      const char *name, int bindex)
 {
 	int err;
 	struct dentry *child_dentry;

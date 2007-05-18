@@ -37,7 +37,8 @@ static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (!hidden_new_dentry) {
 		hidden_new_dentry =
 			create_parents(new_dentry->d_parent->d_inode,
-				       new_dentry, bindex);
+				       new_dentry, new_dentry->d_name.name,
+				       bindex);
 		if (IS_ERR(hidden_new_dentry)) {
 			printk(KERN_DEBUG "unionfs: error creating directory "
 			       "tree for rename, bindex = %d, err = %ld\n",

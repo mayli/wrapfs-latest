@@ -177,7 +177,9 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 			 * because lookup passed as a negative unionfs dentry
 			 * pointing to a lone negative underlying dentry.
 			 */
-			hidden_dentry = create_parents(parent, dentry, bindex);
+			hidden_dentry = create_parents(parent, dentry,
+						       dentry->d_name.name,
+						       bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
 				if (IS_ERR(hidden_dentry))
 					err = PTR_ERR(hidden_dentry);
@@ -318,8 +320,9 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 	}
 
 	if (dbstart(old_dentry) != dbstart(new_dentry)) {
-		hidden_new_dentry =
-			create_parents(dir, new_dentry, dbstart(old_dentry));
+		hidden_new_dentry = create_parents(dir, new_dentry,
+						   new_dentry->d_name.name,
+						   dbstart(old_dentry));
 		err = PTR_ERR(hidden_new_dentry);
 		if (IS_COPYUP_ERR(err))
 			goto docopyup;
@@ -350,6 +353,7 @@ docopyup:
 			if (!err) {
 				hidden_new_dentry =
 					create_parents(dir, new_dentry,
+						       new_dentry->d_name.name,
 						       bindex);
 				hidden_old_dentry =
 					unionfs_lower_dentry(old_dentry);
@@ -483,7 +487,9 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 			 * unionfs dentry pointing to a lone negative
 			 * underlying dentry
 			 */
-			hidden_dentry = create_parents(dir, dentry, bindex);
+			hidden_dentry = create_parents(dir, dentry,
+						       dentry->d_name.name,
+						       bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
 				if (IS_ERR(hidden_dentry))
 					err = PTR_ERR(hidden_dentry);
@@ -614,7 +620,9 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		if (!hidden_dentry) {
-			hidden_dentry = create_parents(parent, dentry, bindex);
+			hidden_dentry = create_parents(parent, dentry,
+						       dentry->d_name.name,
+						       bindex);
 			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
 				printk(KERN_DEBUG "unionfs: hidden dentry "
 				       " NULL for bindex = %d\n", bindex);
@@ -743,7 +751,9 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		if (!hidden_dentry) {
-			hidden_dentry = create_parents(dir, dentry, bindex);
+			hidden_dentry = create_parents(dir, dentry,
+						       dentry->d_name.name,
+						       bindex);
 			if (IS_ERR(hidden_dentry)) {
 				printk(KERN_DEBUG "unionfs: failed to create "
 				       "parents on %d, err = %ld\n",
