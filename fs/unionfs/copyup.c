@@ -213,6 +213,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 	unionfs_read_lock(sb);
 	branchget(sb, old_bindex);
 	unionfs_read_unlock(sb);
+	/* dentry_open calls dput and mntput if it returns an error */
 	input_file = dentry_open(old_hidden_dentry,
 				 unionfs_lower_mnt_idx(dentry, old_bindex),
 				 O_RDONLY | O_LARGEFILE);
@@ -334,7 +335,18 @@ static void __clear(struct dentry *dentry, struct dentry *old_hidden_dentry,
 	dput(old_hidden_dentry);
 }
 
-/* copy up a dentry to a file of specified name */
+/*
+ * Copy up a dentry to a file of specified name.
+ *
+ * @dir: used to pull the ->i_sb to access other branches
+ * @dentry: the non-negative dentry whose lower_inode we should copy
+ * @bstart: the branch of the lower_inode to copy from
+ * @new_bindex: the branch to create the new file in
+ * @name: the name of the file to create
+ * @namelen: length of @name
+ * @copyup_file: the "struct file" to return (optional)
+ * @len: how many bytes to copy-up?
+ */
 static int copyup_named_dentry(struct inode *dir, struct dentry *dentry,
 			       int bstart, int new_bindex, const char *name,
 			       int namelen, struct file **copyup_file,
@@ -786,9 +798,6 @@ begin:
 			 * dentry+inode, but copying permissions failed.
 			 * Therefore, we should delete this inode and dput
 			 * the dentry so as not to leave cruft behind.
-			 *
-			 * XXX: call dentry_iput() instead, but then we have
-			 * to export that symbol.
 			 */
 			if (hidden_dentry->d_op && hidden_dentry->d_op->d_iput)
 				hidden_dentry->d_op->d_iput(hidden_dentry,
