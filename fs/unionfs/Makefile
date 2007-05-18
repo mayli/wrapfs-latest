@@ -5,3 +5,11 @@ unionfs-y := subr.o dentry.o file.o inode.o main.o super.o \
 	unlink.o lookup.o commonfops.o dirfops.o sioq.o
 
 unionfs-$(CONFIG_UNION_FS_XATTR) += xattr.o
+
+# If you want debugging output, please uncomment the following line
+#CONFIG_UNIONFS_DEBUG=y
+
+ifeq ($(CONFIG_UNIONFS_DEBUG),y)
+unionfs-y += debug.o
+EXTRA_CFLAGS += -DUNIONFS_DDEBU=1
+endif

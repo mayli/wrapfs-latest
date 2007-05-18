@@ -461,13 +461,27 @@ static inline struct vfsmount *unionfs_mntget(struct dentry *dentry,
 	if (!dentry) {
 		if (bindex < 0)
 			return NULL;
-		BUG_ON(bindex < 0);
+		if (!dentry && bindex >= 0) {
+#ifdef UNIONFS_DEBUG
+			printk(KERN_DEBUG
+			       "unionfs_mntget: dentry=%p bindex=%d\n",
+			       dentry, bindex);
+#endif /* UNIONFS_DEBUG */
+			return NULL;
+		}
 	}
 	mnt = unionfs_lower_mnt_idx(dentry, bindex);
 	if (!mnt) {
 		if (bindex < 0)
 			return NULL;
-		BUG_ON(mnt && bindex < 0);
+		if (!mnt && bindex >= 0) {
+#ifdef UNIONFS_DEBUG
+			printk(KERN_DEBUG
+			       "unionfs_mntget: mnt=%p bindex=%d\n",
+			       mnt, bindex);
+#endif /* UNIONFS_DEBUG */
+			return NULL;
+		}
 	}
 	mnt = mntget(mnt);
 	return mnt;
@@ -480,14 +494,57 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 	if (!dentry) {
 		if (bindex < 0)
 			return;
-		BUG_ON(!dentry && bindex >= 0);
+		if (!dentry && bindex >= 0) {
+#ifdef UNIONFS_DEBUG
+			printk(KERN_DEBUG
+			       "unionfs_mntput: dentry=%p bindex=%d\n",
+			       dentry, bindex);
+#endif /* UNIONFS_DEBUG */
+			return;
+		}
 	}
 	mnt = unionfs_lower_mnt_idx(dentry, bindex);
 	if (!mnt) {
 		if (bindex < 0)
 			return;
-		BUG_ON(!mnt && bindex >= 0);
+		if (!mnt && bindex >= 0) {
+#ifdef UNIONFS_DEBUG
+			printk(KERN_DEBUG
+			       "unionfs_mntput: mnt=%p bindex=%d\n",
+			       mnt, bindex);
+#endif /* UNIONFS_DEBUG */
+			return;
+		}
 	}
 	mntput(mnt);
 }
+
+#ifdef UNIONFS_DEBUG
+
+/* useful for tracking code reachability */
+#define UDBG printk("DBG:%s:%s:%d\n",__FILE__,__FUNCTION__,__LINE__)
+
+#define unionfs_check_inode(i)	__unionfs_check_inode((i),__FILE__,__FUNCTION__,__LINE__)
+#define unionfs_check_dentry(d)	__unionfs_check_dentry((d),__FILE__,__FUNCTION__,__LINE__)
+#define unionfs_check_file(f)	__unionfs_check_file((f),__FILE__,__FUNCTION__,__LINE__)
+#define show_branch_counts(sb)	__show_branch_counts((sb),__FILE__,__FUNCTION__,__LINE__)
+extern void __unionfs_check_inode(const struct inode *inode,
+				  const char *fname, const char *fxn, int line);
+extern void __unionfs_check_dentry(const struct dentry *dentry,
+				   const char *fname, const char *fxn, int line);
+extern void __unionfs_check_file(const struct file *file,
+				 const char *fname, const char *fxn, int line);
+extern void __show_branch_counts(const struct super_block *sb,
+				 const char *file, const char *fxn, int line);
+
+#else /* not UNIONFS_DEBUG */
+
+/* we leave useful hooks for these check functions throughout the code */
+#define unionfs_check_inode(i)
+#define unionfs_check_dentry(d)
+#define unionfs_check_file(f)
+#define show_branch_counts(sb)
+
+#endif /* not UNIONFS_DEBUG */
+
 #endif	/* not _UNION_H_ */
