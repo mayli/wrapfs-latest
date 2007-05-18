@@ -11,5 +11,5 @@ unionfs-$(CONFIG_UNION_FS_XATTR) += xattr.o
 
 ifeq ($(CONFIG_UNIONFS_DEBUG),y)
 unionfs-y += debug.o
-EXTRA_CFLAGS += -DUNIONFS_DDEBU=1
+EXTRA_CFLAGS += -DUNIONFS_DEBUG=1
 endif
