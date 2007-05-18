@@ -331,9 +331,12 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	unionfs_lock_dentry(dentry);
 	sb = dentry->d_sb;
 
-	/* first revalidate the dentry inside struct file */
-	if (!__unionfs_d_revalidate_chain(dentry, NULL) &&
-	    !d_deleted(dentry)) {
+	/*
+	 * First revalidate the dentry inside struct file,
+	 * but not unhashed dentries.
+	 */
+	if (!d_deleted(dentry) &&
+	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
 		err = -ESTALE;
 		goto out_nofree;
 	}
