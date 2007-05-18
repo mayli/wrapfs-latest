@@ -50,6 +50,7 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 	 * the name exists in the dest branch, but it'd be nice to catch it
 	 * sooner than later.
 	 */
+retry:
 	tmp_dentry = NULL;
 	do {
 		char *suffix = name + nlen - countersize;
@@ -73,8 +74,11 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 
 	err = copyup_named_file(dentry->d_parent->d_inode, file, name, bstart,
 				bindex, file->f_dentry->d_inode->i_size);
-	if (err)
+	if (err) {
+		if (err == -EEXIST)
+			goto retry;
 		goto out;
+	}
 
 	/* bring it to the same state as an unlinked file */
 	hidden_dentry = unionfs_lower_dentry_idx(dentry, dbstart(dentry));
