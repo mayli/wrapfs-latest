@@ -63,7 +63,7 @@ retry:
 		       dentry->d_name.name, name);
 
 		tmp_dentry = lookup_one_len(name, hidden_dentry->d_parent,
-					    UNIONFS_TMPNAM_LEN);
+					    nlen);
 		if (IS_ERR(tmp_dentry)) {
 			err = PTR_ERR(tmp_dentry);
 			goto out;

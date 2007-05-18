@@ -54,9 +54,6 @@
 /* unionfs root inode number */
 #define UNIONFS_ROOT_INO     1
 
-/* number of characters while generating unique temporary file names */
-#define	UNIONFS_TMPNAM_LEN	12
-
 /* number of times we try to get a unique temporary file name */
 #define GET_TMPNAM_MAX_RETRY	5
 
