@@ -798,3 +798,51 @@ out:
 	kfree(path);
 	return hidden_dentry;
 }
+
+/* set lower mnt of dentry+parents to the first parent node that has an mnt */
+void unionfs_inherit_mnt(struct dentry *dentry)
+{
+	struct dentry *parent, *hasone;
+	int bindex = dbstart(dentry);
+
+	if (unionfs_lower_mnt_idx(dentry, bindex))
+		return;
+	hasone = dentry->d_parent;
+	/* this loop should stop at root dentry */
+	while (!unionfs_lower_mnt_idx(hasone, bindex)) {
+		hasone = hasone->d_parent;
+	}
+	parent = dentry;
+	while (!unionfs_lower_mnt_idx(parent, bindex)) {
+		unionfs_set_lower_mnt_idx(parent, bindex,
+					  unionfs_mntget(hasone, bindex));
+		parent = parent->d_parent;
+	}
+}
+
+/*
+ * Regular files should have only one lower object(s).  On copyup, we may
+ * have leftover objects from previous branches.  So purge all such extra
+ * objects and keep only the most recent, leftmost, copied-up one.
+ */
+void unionfs_purge_extras(struct dentry *dentry)
+{
+	int bindex;
+
+	BUG_ON(S_ISDIR(dentry->d_inode->i_mode));
+	for (bindex=dbstart(dentry)+1; bindex<=dbend(dentry); bindex++) {
+		if (unionfs_lower_mnt_idx(dentry, bindex)) {
+			unionfs_mntput(dentry, bindex);
+			unionfs_set_lower_mnt_idx(dentry, bindex, NULL);
+		}
+		if (unionfs_lower_dentry_idx(dentry, bindex)) {
+			dput(unionfs_lower_dentry_idx(dentry, bindex));
+			unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
+			iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
+			unionfs_set_lower_inode_idx(dentry->d_inode, bindex, NULL);
+		}
+	}
+	bindex = dbstart(dentry);
+	set_dbend(dentry, bindex);
+	ibend(dentry->d_inode) = ibstart(dentry->d_inode) = bindex;
+}

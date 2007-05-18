@@ -268,6 +268,9 @@ extern int copyup_named_file(struct inode *dir, struct file *file,
 extern int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 			 int new_bindex, struct file **copyup_file,
 			 loff_t len);
+/* helper functions for post-copyup cleanup */
+extern void unionfs_inherit_mnt(struct dentry *dentry);
+extern void unionfs_purge_extras(struct dentry *dentry);
 
 extern int remove_whiteouts(struct dentry *dentry,
 			    struct dentry *hidden_dentry, int bindex);
