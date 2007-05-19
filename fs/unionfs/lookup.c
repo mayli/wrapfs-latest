@@ -79,6 +79,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 	struct dentry *wh_hidden_dentry = NULL;
 	struct dentry *hidden_dir_dentry = NULL;
 	struct dentry *parent_dentry = NULL;
+	struct dentry *d_interposed = NULL;
 	int bindex, bstart, bend, bopaque;
 	int dentry_count = 0;	/* Number of positive dentries. */
 	int first_dentry_offset = -1; /* -1 is uninitialized */
@@ -366,7 +367,16 @@ out_positive:
 		bend = dbend(dentry);
 	}
 
-	err = unionfs_interpose(dentry, dentry->d_sb, lookupmode);
+	/*
+	 * Interpose can return a dentry if d_splice returned a different
+	 * dentry.
+	 */
+	d_interposed = unionfs_interpose(dentry, dentry->d_sb, lookupmode);
+	if (IS_ERR(d_interposed))
+		err = PTR_ERR(d_interposed);
+	else if (d_interposed)
+		dentry = d_interposed;
+
 	if (err)
 		goto out_drop;
 
@@ -402,6 +412,8 @@ out:
 	dput(parent_dentry);
 	if (locked_child || (err && allocated_new_info))
 		unionfs_unlock_dentry(dentry);
+	if (!err && d_interposed)
+		return d_interposed;
 	return ERR_PTR(err);
 }
 

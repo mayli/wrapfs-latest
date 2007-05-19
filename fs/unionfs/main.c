@@ -26,7 +26,8 @@
  *
  * @sb: unionfs's super_block
  */
-int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
+struct dentry *unionfs_interpose(struct dentry *dentry, struct super_block *sb,
+				 int flag)
 {
 	struct inode *hidden_inode;
 	struct dentry *hidden_dentry;
@@ -34,6 +35,8 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 	struct inode *inode;
 	int is_negative_dentry = 1;
 	int bindex, bstart, bend;
+	int skipped = 1;
+	struct dentry *spliced = NULL;
 
 	verify_locked(dentry);
 
@@ -80,11 +83,12 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 			err = -EACCES;
 			goto out;
 		}
-
 		if (atomic_read(&inode->i_count) > 1)
 			goto skip;
 	}
 
+fill_i_info:
+	skipped = 0;
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		if (!hidden_dentry) {
@@ -132,6 +136,8 @@ int unionfs_interpose(struct dentry *dentry, struct super_block *sb, int flag)
 	fsstack_copy_attr_all(inode, hidden_inode, unionfs_get_nlinks);
 	fsstack_copy_inode_size(inode, hidden_inode);
 
+	if (spliced)
+		goto out_spliced;
 skip:
 	/* only (our) lookup wants to do a d_add */
 	switch (flag) {
@@ -140,7 +146,25 @@ skip:
 		d_instantiate(dentry, inode);
 		break;
 	case INTERPOSE_LOOKUP:
-		err = PTR_ERR(d_splice_alias(inode, dentry));
+		spliced = d_splice_alias(inode, dentry);
+		if (IS_ERR(spliced))
+			err = PTR_ERR(spliced);
+
+		/*
+		 * d_splice can return a dentry if it was disconnected and
+		 * had to be moved.  We must ensure that the private data of
+		 * the new dentry is correct and that the inode info was
+		 * filled properly.  Finally we must return this new dentry.
+		 */
+		else if (spliced && spliced != dentry) {
+			spliced->d_op = &unionfs_dops;
+			spliced->d_fsdata = dentry->d_fsdata;
+			dentry->d_fsdata = NULL;
+			dentry = spliced;
+			if (skipped)
+				goto fill_i_info;
+			goto out_spliced;
+		}
 		break;
 	case INTERPOSE_REVAL:
 		/* Do nothing. */
@@ -149,9 +173,13 @@ skip:
 		printk(KERN_ERR "unionfs: invalid interpose flag passed!");
 		BUG();
 	}
+	goto out;
 
+out_spliced:
+	if (!err)
+		return spliced;
 out:
-	return err;
+	return ERR_PTR(err);
 }
 
 /* like interpose above, but for an already existing dentry */
@@ -625,8 +653,11 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	/* Set the generation number to one, since this is for the mount. */
 	atomic_set(&UNIONFS_D(sb->s_root)->generation, 1);
 
-	/* call interpose to create the upper level inode */
-	err = unionfs_interpose(sb->s_root, sb, 0);
+	/*
+	 * Call interpose to create the upper level inode.  Only
+	 * INTERPOSE_LOOKUP can return a value other than 0 on err.
+	 */
+	err = PTR_ERR(unionfs_interpose(sb->s_root, sb, 0));
 	unionfs_unlock_dentry(sb->s_root);
 	if (!err)
 		goto out;

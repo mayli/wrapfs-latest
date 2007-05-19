@@ -162,7 +162,12 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 						     wh_dentry);
 			wh_dentry = NULL;
 
-			err = unionfs_interpose(dentry, parent->i_sb, 0);
+			/*
+			 * Only INTERPOSE_LOOKUP can return a value other
+			 * than 0 on err.
+			 */
+			err = PTR_ERR(unionfs_interpose(dentry,
+							parent->i_sb, 0));
 			goto out;
 		}
 	}
@@ -204,7 +209,12 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 			if (!IS_COPYUP_ERR(err))
 				break;
 		} else {
-			err = unionfs_interpose(dentry, parent->i_sb, 0);
+			/*
+			 * Only INTERPOSE_LOOKUP can return a value other
+			 * than 0 on err.
+			 */
+			err = PTR_ERR(unionfs_interpose(dentry,
+							parent->i_sb, 0));
 			if (!err) {
 				fsstack_copy_attr_times(parent,
 							hidden_parent_dentry->
@@ -519,7 +529,12 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 			if (!IS_COPYUP_ERR(err))
 				break;
 		} else {
-			err = unionfs_interpose(dentry, dir->i_sb, 0);
+			/*
+			 * Only INTERPOSE_LOOKUP can return a value other
+			 * than 0 on err.
+			 */
+			err = PTR_ERR(unionfs_interpose(dentry,
+							dir->i_sb, 0));
 			if (!err) {
 				fsstack_copy_attr_times(dir,
 							hidden_dir_dentry->
@@ -654,7 +669,11 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 		}
 		set_dbend(dentry, bindex);
 
-		err = unionfs_interpose(dentry, parent->i_sb, 0);
+		/*
+		 * Only INTERPOSE_LOOKUP can return a value other than 0 on
+		 * err.
+		 */
+		err = PTR_ERR(unionfs_interpose(dentry, parent->i_sb, 0));
 		if (!err) {
 			fsstack_copy_attr_times(parent,
 						hidden_parent_dentry->d_inode);
@@ -776,7 +795,11 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 			break;
 		}
 
-		err = unionfs_interpose(dentry, dir->i_sb, 0);
+		/*
+		 * Only INTERPOSE_LOOKUP can return a value other than 0 on
+		 * err.
+		 */
+		err = PTR_ERR(unionfs_interpose(dentry, dir->i_sb, 0));
 		if (!err) {
 			fsstack_copy_attr_times(dir,
 						hidden_parent_dentry->d_inode);

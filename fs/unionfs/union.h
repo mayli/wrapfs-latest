@@ -318,8 +318,8 @@ extern int __unionfs_d_revalidate_chain(struct dentry *dentry,
 #define INTERPOSE_REVAL_NEG	3
 #define INTERPOSE_PARTIAL	4
 
-extern int unionfs_interpose(struct dentry *this_dentry,
-			     struct super_block *sb, int flag);
+extern struct dentry *unionfs_interpose(struct dentry *this_dentry,
+					struct super_block *sb, int flag);
 
 #ifdef CONFIG_UNION_FS_XATTR
 /* Extended attribute functions. */
