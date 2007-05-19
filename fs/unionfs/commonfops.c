@@ -603,11 +603,18 @@ out_nofree:
 int unionfs_file_release(struct inode *inode, struct file *file)
 {
 	struct file *hidden_file = NULL;
-	struct unionfs_file_info *fileinfo = UNIONFS_F(file);
-	struct unionfs_inode_info *inodeinfo = UNIONFS_I(inode);
+	struct unionfs_file_info *fileinfo;
+	struct unionfs_inode_info *inodeinfo;
 	struct super_block *sb = inode->i_sb;
 	int bindex, bstart, bend;
 	int fgen, err = 0;
+
+	unionfs_read_lock(sb);
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
+	fileinfo = UNIONFS_F(file);
+	BUG_ON(file->f_dentry->d_inode != inode);
+	inodeinfo = UNIONFS_I(inode);
 
 	unionfs_check_file(file);
 	unionfs_read_lock(sb);
@@ -618,6 +625,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	 */
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
+
 	/* fput all the hidden files */
 	fgen = atomic_read(&fileinfo->generation);
 	bstart = fbstart(file);
