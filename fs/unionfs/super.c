@@ -821,8 +821,7 @@ static void init_once(void *v, struct kmem_cache * cachep, unsigned long flags)
 {
 	struct unionfs_inode_info *i = v;
 
-	if (flags & SLAB_CTOR_CONSTRUCTOR)
-		inode_init_once(&i->vfs_inode);
+	inode_init_once(&i->vfs_inode);
 }
 
 int unionfs_init_inode_cache(void)
