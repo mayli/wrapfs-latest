@@ -43,8 +43,6 @@ void __unionfs_check_inode(const struct inode *inode,
   struct super_block *sb;
   int printed_caller = 0;
 
-  printk("_PCi(%ld:%o):%p:%s:%s:%d\n",
-	 inode->i_ino,inode->i_mode,inode,fname,fxn,line);
   /* for inodes now */
   BUG_ON(!inode);
   sb = inode->i_sb;
@@ -114,8 +112,6 @@ void __unionfs_check_dentry(const struct dentry *dentry,
   struct vfsmount *lower_mnt;
   int printed_caller = 0;
 
-  printk("_PCd(%s):%p:%p:%s:%s:%d\n",dentry->d_name.name,dentry,dentry->d_inode,
-	 fname,fxn,line);
   BUG_ON(!dentry);
   sb = dentry->d_sb;
   inode = dentry->d_inode;
@@ -274,7 +270,6 @@ void __unionfs_check_file(const struct file *file,
   struct super_block *sb;
   int printed_caller = 0;
 
-  printk("_PCf(%s):%p:%s:%s:%d\n",file->f_dentry->d_name.name,file,fname,fxn,line);
   BUG_ON(!file);
   dentry = file->f_dentry;
   sb = dentry->d_sb;
