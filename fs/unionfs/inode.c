@@ -1084,6 +1084,7 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 		break;
 	}
 
+	/* for mmap */
 	if (ia->ia_valid & ATTR_SIZE) {
 		if (ia->ia_size != i_size_read(inode)) {
 			err = vmtruncate(inode, ia->ia_size);

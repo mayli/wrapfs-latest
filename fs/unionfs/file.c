@@ -28,6 +28,7 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 	int err;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
@@ -46,30 +47,35 @@ out:
 static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
 				unsigned long nr_segs, loff_t pos)
 {
-	int err;
-#error fixme fxn check_file? read_unlock?
+	int err = 0;
+	struct file *file = iocb->ki_filp;
+
+	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
+	if ((err = unionfs_file_revalidate(file, 0)))
+		goto out;
+
 	err = generic_file_aio_read(iocb, iov, nr_segs, pos);
 
 	if (err == -EIOCBQUEUED)
 		err = wait_on_sync_kiocb(iocb);
 
 	if (err >= 0)
-		touch_atime(unionfs_lower_mnt(iocb->ki_filp->f_path.dentry),
-			    unionfs_lower_dentry(iocb->ki_filp->f_path.dentry));
+		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
+			    unionfs_lower_dentry(file->f_path.dentry));
 
-#if 0
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
 	unionfs_check_file(file);
-#endif
 	return err;
 }
 static ssize_t unionfs_write(struct file * file, const char __user * buf,
-			size_t count, loff_t * ppos)
+			     size_t count, loff_t *ppos)
 {
 	int err = 0;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -93,6 +99,10 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	int willwrite;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
+
 	/* This might be deferred to mmap's writepage */
 	willwrite = ((vma->vm_flags | VM_SHARED | VM_WRITE) == vma->vm_flags);
 	if ((err = unionfs_file_revalidate(file, willwrite)))

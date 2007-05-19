@@ -163,8 +163,9 @@ int unionfs_readpage(struct file *file, struct page *page)
 	int err;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	if ((err = unionfs_file_revalidate(file, 0)))
-		goto out_err;
+		goto out;
 
 	err = unionfs_do_readpage(file, page);
 
@@ -177,9 +178,9 @@ int unionfs_readpage(struct file *file, struct page *page)
 	 * page.  but we no longer have to wakeup on our page here, b/c
 	 * UnlockPage does it
 	 */
-
-out_err:
+out:
 	unlock_page(page);
+	unionfs_check_file(file);
 	unionfs_read_unlock(file->f_dentry->d_sb);
 
 	return err;
@@ -191,7 +192,9 @@ int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
 	int err;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	err = unionfs_file_revalidate(file, 1);
+	unionfs_check_file(file);
 	unionfs_read_unlock(file->f_dentry->d_sb);
 
 	return err;
@@ -211,6 +214,7 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 	BUG_ON(file == NULL);
 
 	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -220,7 +224,8 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 	if (UNIONFS_F(file) != NULL)
 		lower_file = unionfs_lower_file(file);
 
-	BUG_ON(lower_file == NULL);	/* FIXME: is this assertion right here? */
+	/* FIXME: is this assertion right here? */
+	BUG_ON(lower_file == NULL);
 
 	page_data = (char *)kmap(page);
 	lower_file->f_pos = (page->index << PAGE_CACHE_SHIFT) + from;
@@ -261,6 +266,7 @@ out:
 		ClearPageUptodate(page);
 
 	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
 	return err;		/* assume all is ok */
 }
 
@@ -281,6 +287,10 @@ void unionfs_sync_page(struct page *page)
 
 	/* do the actual sync */
 	mapping = lower_page->mapping;
+	/*
+	 * XXX: can we optimize ala RAIF and set the lower page to be
+	 * discarded after a successful sync_page?
+	 */
 	if (mapping && mapping->a_ops && mapping->a_ops->sync_page)
 		mapping->a_ops->sync_page(lower_page);
 
