@@ -114,10 +114,10 @@ int unionfs_do_readpage(struct file *file, struct page *page)
 	wait_on_page_locked(lower_page);
 	if (!PageUptodate(lower_page)) {
 		/*
-		 * call readpage() again if we returned from wait_on_page with a
-		 * page that's not up-to-date; that can happen when a partial
-		 * page has a few buffers which are ok, but not the whole
-		 * page.
+		 * call readpage() again if we returned from wait_on_page
+		 * with a page that's not up-to-date; that can happen when a
+		 * partial page has a few buffers which are ok, but not the
+		 * whole page.
 		 */
 		lock_page(lower_page);
 		err = lower_inode->i_mapping->a_ops->readpage(lower_file,
@@ -168,9 +168,9 @@ int unionfs_readpage(struct file *file, struct page *page)
 	err = unionfs_do_readpage(file, page);
 
 	/*
-	 * we have to unlock our page, b/c we _might_ have gotten a locked page.
-	 * but we no longer have to wakeup on our page here, b/c UnlockPage does
-	 * it
+	 * we have to unlock our page, b/c we _might_ have gotten a locked
+	 * page.  but we no longer have to wakeup on our page here, b/c
+	 * UnlockPage does it
 	 */
 
 out_err:
@@ -255,14 +255,13 @@ sector_t unionfs_bmap(struct address_space * mapping, sector_t block)
 {
 	int err = 0;
 	struct inode *inode, *lower_inode;
+	sector_t (*bmap)(struct address_space *, sector_t);
 
 	inode = (struct inode *)mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
-
-	if (lower_inode->i_mapping->a_ops->bmap)
-		err =
-		    lower_inode->i_mapping->a_ops->bmap(lower_inode->i_mapping,
-							block);
+	bmap = lower_inode->i_mapping->a_ops->bmap;
+	if (bmap)
+		err = bmap(lower_inode->i_mapping, block);
 	return err;
 }
 
@@ -301,4 +300,3 @@ struct address_space_operations unionfs_aops = {
 	.bmap		= unionfs_bmap,
 	.sync_page	= unionfs_sync_page,
 };
-

@@ -93,109 +93,20 @@ static int unionfs_file_readdir(struct file *file, void *dirent,
 	return -ENOTDIR;
 }
 
-static unsigned int unionfs_poll(struct file *file, poll_table *wait)
-{
-	unsigned int mask = DEFAULT_POLLMASK;
-	struct file *hidden_file = NULL;
-
-	unionfs_read_lock(file->f_dentry->d_sb);
-	if (unionfs_file_revalidate(file, 0)) {
-		/* We should pretend an error happened. */
-		mask = POLLERR | POLLIN | POLLOUT;
-		goto out;
-	}
-
-	hidden_file = unionfs_lower_file(file);
-
-	if (!hidden_file->f_op || !hidden_file->f_op->poll)
-		goto out;
-
-	mask = hidden_file->f_op->poll(hidden_file, wait);
-
-out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
-	unionfs_check_file(file);
-	return mask;
-}
-
-static int __do_mmap(struct file *file, struct vm_area_struct *vma)
-{
-	int err;
-	struct file *hidden_file;
-
-	hidden_file = unionfs_lower_file(file);
-
-	err = -ENODEV;
-	if (!hidden_file->f_op || !hidden_file->f_op->mmap)
-		goto out;
-
-	vma->vm_file = hidden_file;
-	err = hidden_file->f_op->mmap(hidden_file, vma);
-	get_file(hidden_file);	/* make sure it doesn't get freed on us */
-	fput(file);		/* no need to keep extra ref on ours */
-out:
-	return err;
-}
-
 static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	int err = 0;
 	int willwrite;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
-	/* This might could be deferred to mmap's writepage. */
+	/* This might be deferred to mmap's writepage */
 	willwrite = ((vma->vm_flags | VM_SHARED | VM_WRITE) == vma->vm_flags);
 	if ((err = unionfs_file_revalidate(file, willwrite)))
 		goto out;
 
-	err = __do_mmap(file, vma);
-
-out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
-	unionfs_check_file(file);
-	return err;
-}
-
-static int unionfs_fsync(struct file *file, struct dentry *dentry,
-			 int datasync)
-{
-	int err;
-	struct file *hidden_file = NULL;
-
-	unionfs_read_lock(file->f_dentry->d_sb);
-	if ((err = unionfs_file_revalidate(file, 1)))
-		goto out;
-
-	hidden_file = unionfs_lower_file(file);
-
-	err = -EINVAL;
-	if (!hidden_file->f_op || !hidden_file->f_op->fsync)
-		goto out;
-
-	mutex_lock(&hidden_file->f_dentry->d_inode->i_mutex);
-	err = hidden_file->f_op->fsync(hidden_file, hidden_file->f_dentry,
-				       datasync);
-	mutex_unlock(&hidden_file->f_dentry->d_inode->i_mutex);
-
-out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
-	unionfs_check_file(file);
-	return err;
-}
-
-static int unionfs_fasync(int fd, struct file *file, int flag)
-{
-	int err = 0;
-	struct file *hidden_file = NULL;
-
-	unionfs_read_lock(file->f_dentry->d_sb);
-	if ((err = unionfs_file_revalidate(file, 1)))
-		goto out;
-
-	hidden_file = unionfs_lower_file(file);
-
-	if (hidden_file->f_op && hidden_file->f_op->fasync)
-		err = hidden_file->f_op->fasync(fd, hidden_file, flag);
+	err = generic_file_mmap(file, vma);
+	if (err)
+		printk("unionfs: generic_file_mmap failed %d\n", err);
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
