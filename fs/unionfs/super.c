@@ -26,7 +26,7 @@ static struct kmem_cache *unionfs_inode_cachep;
 
 static void unionfs_read_inode(struct inode *inode)
 {
-	static struct address_space_operations unionfs_empty_aops;
+	extern struct address_space_operations unionfs_aops;
 	int size;
 	struct unionfs_inode_info *info = UNIONFS_I(inode);
 
@@ -58,8 +58,7 @@ static void unionfs_read_inode(struct inode *inode)
 	inode->i_op = &unionfs_main_iops;
 	inode->i_fop = &unionfs_main_fops;
 
-	/* I don't think ->a_ops is ever allowed to be NULL */
-	inode->i_mapping->a_ops = &unionfs_empty_aops;
+	inode->i_mapping->a_ops = &unionfs_aops;
 }
 
 /*
@@ -72,6 +71,10 @@ static void unionfs_read_inode(struct inode *inode)
 static void unionfs_delete_inode(struct inode *inode)
 {
 	inode->i_size = 0;	/* every f/s seems to do that */
+
+	if (inode->i_data.nrpages)
+		truncate_inode_pages(&inode->i_data, 0);
+
 	clear_inode(inode);
 }
 

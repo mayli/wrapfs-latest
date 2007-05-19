@@ -22,56 +22,21 @@
  * File Operations *
  *******************/
 
-static loff_t unionfs_llseek(struct file *file, loff_t offset, int origin)
-{
-	loff_t err;
-	struct file *hidden_file = NULL;
-
-	unionfs_read_lock(file->f_dentry->d_sb);
-	if ((err = unionfs_file_revalidate(file, 0)))
-		goto out;
-
-	hidden_file = unionfs_lower_file(file);
-	/* always set hidden position to this one */
-	hidden_file->f_pos = file->f_pos;
-
-	memcpy(&hidden_file->f_ra, &file->f_ra, sizeof(struct file_ra_state));
-
-	if (hidden_file->f_op && hidden_file->f_op->llseek)
-		err = hidden_file->f_op->llseek(hidden_file, offset, origin);
-	else
-		err = generic_file_llseek(hidden_file, offset, origin);
-
-	if (err < 0)
-		goto out;
-	if (err != file->f_pos) {
-		file->f_pos = err;
-		file->f_version++;
-	}
-out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
-	unionfs_check_file(file);
-	return err;
-}
-
 static ssize_t unionfs_read(struct file *file, char __user *buf,
 			    size_t count, loff_t *ppos)
 {
-	struct file *hidden_file;
-	loff_t pos = *ppos;
 	int err;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
-	err = -EINVAL;
-	hidden_file = unionfs_lower_file(file);
-	if (!hidden_file->f_op || !hidden_file->f_op->read)
-		goto out;
+	err = do_sync_read(unionfs_lower_file(file), buf, count, ppos);
 
-	err = hidden_file->f_op->read(hidden_file, buf, count, &pos);
-	*ppos = pos;
+	/* FIXME: why? */
+	if (err >= 0)
+		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
+				unionfs_lower_dentry(file->f_path.dentry));
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
@@ -79,53 +44,40 @@ out:
 	return err;
 }
 
-static ssize_t unionfs_write(struct file *file, const char __user *buf,
-			     size_t count, loff_t *ppos)
+static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
+				unsigned long nr_segs, loff_t pos)
 {
+	struct file *file = iocb->ki_filp;
 	int err;
-	struct file *hidden_file = NULL;
-	struct inode *inode;
-	struct inode *hidden_inode;
-	loff_t pos = *ppos;
-	int bstart, bend;
+#error fixme fxn check_file? read_unlock?
+	err = generic_file_aio_read(iocb, iov, nr_segs, pos);
+
+	if (err == -EIOCBQUEUED)
+		err = wait_on_sync_kiocb(iocb);
+
+	/* FIXME: why? */
+	if (err >= 0)
+		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
+				unionfs_lower_dentry(file->f_path.dentry));
+
+#if 0
+out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_check_file(file);
+#endif
+	return err;
+}
+static ssize_t unionfs_write(struct file * file, const char __user * buf,
+			size_t count, loff_t * ppos)
+{
+	int err = 0;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
-	inode = file->f_dentry->d_inode;
+	err = do_sync_write(file, buf, count, ppos);
 
-	bstart = fbstart(file);
-	bend = fbend(file);
-
-	BUG_ON(bstart == -1);
-
-	hidden_file = unionfs_lower_file(file);
-	hidden_inode = hidden_file->f_dentry->d_inode;
-
-	if (!hidden_file->f_op || !hidden_file->f_op->write) {
-		err = -EINVAL;
-		goto out;
-	}
-
-	/* adjust for append -- seek to the end of the file */
-	if (file->f_flags & O_APPEND)
-		pos = inode->i_size;
-
-	err = hidden_file->f_op->write(hidden_file, buf, count, &pos);
-
-	/*
-	 * copy ctime and mtime from lower layer attributes
-	 * atime is unchanged for both layers
-	 */
-	if (err >= 0)
-		fsstack_copy_attr_times(inode, hidden_inode);
-
-	*ppos = pos;
-
-	/* update this inode's size */
-	if (pos > inode->i_size)
-		inode->i_size = pos;
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
 	unionfs_check_file(file);
@@ -249,16 +201,16 @@ out:
 }
 
 struct file_operations unionfs_main_fops = {
-	.llseek		= unionfs_llseek,
+	.llseek		= generic_file_llseek,
 	.read		= unionfs_read,
+	.aio_read       = unionfs_aio_read,
 	.write		= unionfs_write,
+	.aio_write      = generic_file_aio_write,
 	.readdir	= unionfs_file_readdir,
-	.poll		= unionfs_poll,
 	.unlocked_ioctl	= unionfs_ioctl,
 	.mmap		= unionfs_mmap,
 	.open		= unionfs_open,
 	.flush		= unionfs_flush,
 	.release	= unionfs_file_release,
-	.fsync		= unionfs_fsync,
-	.fasync		= unionfs_fasync,
+	.fsync		= file_fsync,
 };

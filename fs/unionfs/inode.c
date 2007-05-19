@@ -1084,6 +1084,14 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 		break;
 	}
 
+	if (ia->ia_valid & ATTR_SIZE) {
+		if (ia->ia_size != i_size_read(inode)) {
+			err = vmtruncate(inode, ia->ia_size);
+			if (err)
+				printk("unionfs_setattr: vmtruncate failed\n");
+		}
+	}
+
 	/* get the size from the first hidden inode */
 	hidden_inode = unionfs_lower_inode(dentry->d_inode);
 	fsstack_copy_attr_all(inode, hidden_inode, unionfs_get_nlinks);

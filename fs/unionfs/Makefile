@@ -2,7 +2,8 @@ obj-$(CONFIG_UNION_FS) += unionfs.o
 
 unionfs-y := subr.o dentry.o file.o inode.o main.o super.o \
 	rdstate.o copyup.o dirhelper.o rename.o \
-	unlink.o lookup.o commonfops.o dirfops.o sioq.o
+	unlink.o lookup.o commonfops.o dirfops.o sioq.o \
+	mmap.o
 
 unionfs-$(CONFIG_UNION_FS_XATTR) += xattr.o
 

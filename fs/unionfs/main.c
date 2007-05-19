@@ -125,12 +125,6 @@ fill_i_info:
 	    S_ISFIFO(hidden_inode->i_mode) || S_ISSOCK(hidden_inode->i_mode))
 		init_special_inode(inode, hidden_inode->i_mode,
 				   hidden_inode->i_rdev);
-	/*
-	 * Fix our inode's address operations to that of the lower inode
-	 * (Unionfs is FiST-Lite)
-	 */
-	if (inode->i_mapping->a_ops != hidden_inode->i_mapping->a_ops)
-		inode->i_mapping->a_ops = hidden_inode->i_mapping->a_ops;
 
 	/* all well, copy inode attributes */
 	fsstack_copy_attr_all(inode, hidden_inode, unionfs_get_nlinks);

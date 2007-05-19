@@ -38,6 +38,7 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/writeback.h>
+#include <linux/buffer_head.h>
 #include <linux/xattr.h>
 #include <linux/fs_stack.h>
 #include <linux/magic.h>
