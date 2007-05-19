@@ -269,7 +269,7 @@ void unionfs_sync_page(struct page *page)
 	struct inode *inode;
 	struct inode *lower_inode;
 	struct page *lower_page;
-	struct address_space *mapping = page->mapping;
+	struct address_space *mapping;
 
 	inode = page->mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
@@ -280,8 +280,9 @@ void unionfs_sync_page(struct page *page)
 		goto out;
 
 	/* do the actual sync */
+	mapping = lower_page->mapping;
 	if (mapping && mapping->a_ops && mapping->a_ops->sync_page)
-		mapping->a_ops->sync_page(page);
+		mapping->a_ops->sync_page(lower_page);
 
 	unlock_page(lower_page);	/* b/c grab_cache_page locked it */
 	page_cache_release(lower_page);	/* b/c grab_cache_page increased refcnt */
