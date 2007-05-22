@@ -114,23 +114,37 @@ static void unionfs_put_super(struct super_block *sb)
 static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	int err	= 0;
-	struct super_block *sb, *hidden_sb;
+	struct super_block *sb;
+	struct dentry *lower_dentry;
 
 	BUG_ON(!is_valid_dentry(dentry));
+	unionfs_check_dentry(dentry);
 
 	sb = dentry->d_sb;
 
 	unionfs_read_lock(sb);
-	hidden_sb = unionfs_lower_super_idx(sb, sbstart(sb));
+	lower_dentry = unionfs_lower_dentry(sb->s_root);
 	unionfs_read_unlock(sb);
-	err = vfs_statfs(hidden_sb->s_root, buf);
+	err = vfs_statfs(lower_dentry, buf);
 
+	/* set return buf to our f/s to avoid confusing user-level utils */
 	buf->f_type = UNIONFS_SUPER_MAGIC;
+	/*
+	 * Our maximum file name can is shorter bya few bytes because every
+	 * file name could potentially be whited-out.
+	 *
+	 * XXX: this restriction goes away with ODF.
+	 */
 	buf->f_namelen -= UNIONFS_WHLEN;
 
+	/*
+	 * reset two fields to avoid confusing user-land.
+	 * XXX: is this still necessary?
+	 */
 	memset(&buf->f_fsid, 0, sizeof(__kernel_fsid_t));
 	memset(&buf->f_spare, 0, sizeof(buf->f_spare));
 
+	unionfs_check_dentry(dentry);
 	return err;
 }
 
