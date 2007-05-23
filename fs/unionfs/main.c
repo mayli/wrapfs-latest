@@ -215,6 +215,7 @@ void unionfs_reinterpose(struct dentry *dentry)
  */
 int check_branch(struct nameidata *nd)
 {
+	/* XXX: remove in ODF code -- stacking unions allowed there */
 	if (!strcmp(nd->dentry->d_sb->s_type->name, "unionfs"))
 		return -EINVAL;
 	if (!nd->dentry->d_inode)
