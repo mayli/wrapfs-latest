@@ -967,7 +967,23 @@ static int unionfs_permission(struct inode *inode, int mask,
 	const int is_file = !S_ISDIR(inode->i_mode);
 	const int write_mask = (mask & MAY_WRITE) && !(mask & MAY_READ);
 
-	unionfs_read_lock(inode->i_sb);
+	/*
+	 * If the same process which is pivot_root'ed on a unionfs, tries to
+	 * insert a new branch, then the caller (remount code) already has
+	 * the write lock on this rwsem.  It then calls here to check the
+	 * permission of a new branch to add.  It could get into a self
+	 * deadlock with this attempt to get the read lock (which is crucial
+	 * for dynamic branch-management) unless no one else is waiting on
+	 * this lock.  Essentially this test tries to figure out if the same
+	 * process which also holds a write lock on the rwsem, also tries to
+	 * grab a read lock, and then skip trying to grab this "harmless"
+	 * read lock; otherwise we DO want to grab the read lock, and block
+	 * as needed (dynamic branch management).  (BTW, if there's a better
+	 * way to find out who is the lock owner compared to "current", that
+	 * should be used instead.)
+	 */
+	if (!list_empty(&UNIONFS_SB(inode->i_sb)->rwsem.wait_list))
+		unionfs_read_lock(inode->i_sb);
 
 	bstart = ibstart(inode);
 	bend = ibend(inode);
@@ -1021,7 +1037,8 @@ static int unionfs_permission(struct inode *inode, int mask,
 	}
 
 out:
-	unionfs_read_unlock(inode->i_sb);
+	if (!list_empty(&UNIONFS_SB(inode->i_sb)->rwsem.wait_list))
+		unionfs_read_unlock(inode->i_sb);
 	unionfs_check_inode(inode);
 	return err;
 }
