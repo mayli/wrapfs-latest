@@ -84,6 +84,10 @@ void __unionfs_check_inode(const struct inode *inode,
 	PRINT_CALLER;
 	printk(" Ci5: inode/linode=%p:%p bindex=%d istart/end=%d:%d\n",
 	       inode, lower_inode, bindex, istart, iend);
+      } else if ((int)lower_inode == 0x5a5a5a5a) { /* freed inode! */
+	PRINT_CALLER;
+	printk(" Ci6: inode/linode=%p:%p bindex=%d istart/end=%d:%d\n",
+	       inode, lower_inode, bindex, istart, iend);
       }
     } else {	/* lower_inode == NULL */
       if (bindex >= istart && bindex <= iend) {
@@ -93,7 +97,7 @@ void __unionfs_check_inode(const struct inode *inode,
 	 */
 	if (!(S_ISDIR(inode->i_mode) && bindex > istart && bindex < iend)) {
 	  PRINT_CALLER;
-	  printk(" Ci6: inode/linode=%p:%p bindex=%d istart/end=%d:%d\n",
+	  printk(" Ci7: inode/linode=%p:%p bindex=%d istart/end=%d:%d\n",
 		 inode, lower_inode, bindex, istart, iend);
 	}
       }
@@ -227,6 +231,10 @@ void __unionfs_check_dentry(const struct dentry *dentry,
 	PRINT_CALLER;
 	printk(" CI5: dentry/linode=%p:%p bindex=%d istart/end=%d:%d\n",
 	       dentry, lower_inode, bindex, istart, iend);
+      } else if ((int)lower_inode == 0x5a5a5a5a) { /* freed inode! */
+	PRINT_CALLER;
+	printk(" CI6: dentry/linode=%p:%p bindex=%d istart/end=%d:%d\n",
+	       dentry, lower_inode, bindex, istart, iend);
       }
     } else {	/* lower_inode == NULL */
       if (bindex >= istart && bindex <= iend) {
@@ -236,7 +244,7 @@ void __unionfs_check_dentry(const struct dentry *dentry,
 	 */
 	if (!(S_ISDIR(inode->i_mode) && bindex > istart && bindex < iend)) {
 	  PRINT_CALLER;
-	  printk(" CI6: dentry/linode=%p:%p bindex=%d istart/end=%d:%d\n",
+	  printk(" CI7: dentry/linode=%p:%p bindex=%d istart/end=%d:%d\n",
 		 dentry, lower_inode, bindex, istart, iend);
 	}
       }
