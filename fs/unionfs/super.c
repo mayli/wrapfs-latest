@@ -432,6 +432,7 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 	struct inode **new_lower_inodes = NULL;
 	int new_high_branch_id;	/* new high branch ID */
 	int old_ibstart, old_ibend;
+	int size;		/* memory allocation size, temp var */
 
 	unionfs_write_lock(sb);
 
@@ -646,47 +647,20 @@ out_no_change:
 		goto out_release;
 	}
 
-	/*
-	 * Allocate space for actual pointers, if needed.  By the time we
-	 * finish this block of code, new_branches and new_lower_paths will
-	 * have the correct size.  None of this code below would be needed
-	 * if the kernel had a realloc() function, at least one capable of
-	 * shrinking/truncating an allocation's size (hint, hint).
-	 */
-	if (new_branches < max_branches) {
-
-		/* allocate space for new pointers to hidden dentry */
-		new_data = kcalloc(new_branches,
-				   sizeof(struct unionfs_data), GFP_KERNEL);
-		if (!new_data) {
-			err = -ENOMEM;
-			goto out_release;
-		}
-		/* allocate space for new pointers to lower paths */
-		new_lower_paths = kcalloc(new_branches,
-					  sizeof(struct path), GFP_KERNEL);
-		if (!new_lower_paths) {
-			err = -ENOMEM;
-			goto out_release;
-		}
-		/* copy current info into new placeholders */
-		memcpy(new_data, tmp_data,
-		       new_branches * sizeof(struct unionfs_data));
-		memcpy(new_lower_paths, tmp_lower_paths,
-		       new_branches * sizeof(struct path));
-		/*
-		 * Since we already hold various refcnts on the objects, we
-		 * don't need to redo it here.  Just free the older memory
-		 * and re-point the pointers.
-		 */
-		kfree(tmp_data);
-		kfree(tmp_lower_paths);
-		/* no need to nullify pointers here (they get reused below) */
-	} else {
-		/* number of branches didn't change, no need to re-alloc */
-		new_data = tmp_data;
-		new_lower_paths = tmp_lower_paths;
+	/* (re)allocate space for new pointers to hidden dentry */
+	size = new_branches * sizeof(struct unionfs_data);
+	new_data = krealloc(tmp_data, size, GFP_KERNEL);
+	if (!new_data) {
+		err = -ENOMEM;
+		goto out_release;
 	}
+	/* allocate space for new pointers to lower paths */
+	size = new_branches * sizeof(struct path);
+	new_lower_paths = krealloc(tmp_lower_paths, size, GFP_KERNEL);
+	if (!new_lower_paths) {
+		err = -ENOMEM;
+		goto out_release;
+ 	}
 	/* allocate space for new pointers to lower inodes */
 	new_lower_inodes = kcalloc(new_branches,
 				   sizeof(struct inode *), GFP_KERNEL);

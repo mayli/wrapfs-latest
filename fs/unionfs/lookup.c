@@ -461,9 +461,9 @@ void free_dentry_private_data(struct unionfs_dentry_info *udi)
 /* allocate new dentry private data, free old one if necessary */
 int new_dentry_private_data(struct dentry *dentry)
 {
-	int new_size;
 	int size;
 	struct unionfs_dentry_info *info = UNIONFS_D(dentry);
+	void *p;
 	int unlock_on_err = 0;
 
 	spin_lock(&dentry->d_lock);
@@ -471,7 +471,6 @@ int new_dentry_private_data(struct dentry *dentry)
 		dentry->d_fsdata = kmem_cache_alloc(unionfs_dentry_cachep,
 						    GFP_ATOMIC);
 		info = UNIONFS_D(dentry);
-
 		if (!info)
 			goto out;
 
@@ -480,9 +479,7 @@ int new_dentry_private_data(struct dentry *dentry)
 		unlock_on_err = 1;
 
 		info->lower_paths = NULL;
-		size = 0;
-	} else
-		size = sizeof(struct path) * info->bcount;
+	}
 
 	info->bstart = -1;
 	info->bend = -1;
@@ -491,19 +488,13 @@ int new_dentry_private_data(struct dentry *dentry)
 	atomic_set(&info->generation,
 		   atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
 
-	new_size = sizeof(struct path) * sbmax(dentry->d_sb);
+	size = sizeof(struct path) * sbmax(dentry->d_sb);
 
-	/* Don't reallocate when we already have enough space. */
-	if (new_size > size) {
-		void *p;
+	p = krealloc(info->lower_paths, size, GFP_ATOMIC);
+	if (!p)
+		goto out_free;
 
-		p = krealloc(info->lower_paths, new_size, GFP_ATOMIC);
-		if (!p)
-			goto out_free;
-
-		info->lower_paths = p;
-		size = new_size;
-	}
+	info->lower_paths = p;
 	memset(info->lower_paths, 0, size);
 
 	spin_unlock(&dentry->d_lock);
