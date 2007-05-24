@@ -97,6 +97,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	int err = 0;
 	int willwrite;
+	struct file *lower_file;
 
 	unionfs_read_lock(file->f_dentry->d_sb);
 	unionfs_check_file(file);
@@ -108,9 +109,26 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	if ((err = unionfs_file_revalidate(file, willwrite)))
 		goto out;
 
-	err = generic_file_mmap(file, vma);
-	if (err)
-		printk("unionfs: generic_file_mmap failed %d\n", err);
+	/*
+	 * File systems which do not implement ->writepage may use
+	 * generic_file_readonly_mmap as their ->mmap op.  If you call
+	 * generic_file_readonly_mmap with VM_WRITE, you'd get an -EINVAL.
+	 * But we cannot call the lower ->mmap op, so we can't tell that
+	 * writeable mappings won't work.  Therefore, our only choice is to
+	 * check if the lower file system supports the ->writepage, and if
+	 * not, return EINVAL (the same error that
+	 * generic_file_readonly_mmap returns in that case).
+	 */
+	lower_file = unionfs_lower_file(file);
+	if (willwrite && !lower_file->f_mapping->a_ops->writepage) {
+		err = -EINVAL;
+		printk("unionfs: branch %d file system does not support "
+		       "writeable mmap\n", fbstart(file));
+	} else {
+		err = generic_file_mmap(file, vma);
+		if (err)
+			printk("unionfs: generic_file_mmap failed %d\n", err);
+	}
 
 out:
 	unionfs_read_unlock(file->f_dentry->d_sb);
