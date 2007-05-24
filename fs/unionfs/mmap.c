@@ -26,6 +26,7 @@ int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 	struct inode *lower_inode;
 	struct page *lower_page;
 	char *kaddr, *lower_kaddr;
+	struct writeback_control lower_wbc;
 
 	inode = page->mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
@@ -44,8 +45,21 @@ int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 	kunmap(page);
 	kunmap(lower_page);
 
+	BUG_ON(!lower_inode->i_mapping->a_ops->writepage);
+	memcpy(&lower_wbc, wbc, sizeof(struct writeback_control));
+	/*
+	 * This condition should never occur, but if it does, it causes NFS
+	 * (if used a s lower branch) to deference wbc->fs_private,
+	 * resulting in a NULL deref oops.
+	 * XXX: Maybe it's an NFS/VFS bug?
+	 */
+	if (lower_wbc.for_writepages && !lower_wbc.fs_private) {
+		printk("unionfs: setting wbc.for_writepages to 0\n");
+		lower_wbc.for_writepages = 0;
+	}
+
 	/* call lower writepage (expects locked page) */
-	err = lower_inode->i_mapping->a_ops->writepage(lower_page, wbc);
+	err = lower_inode->i_mapping->a_ops->writepage(lower_page, &lower_wbc);
 
 	/*
 	 * update mtime and ctime of lower level file system
@@ -298,7 +312,6 @@ void unionfs_sync_page(struct page *page)
 	page_cache_release(lower_page);	/* b/c grab_cache_page increased refcnt */
 
 out:
-
 	return;
 }
 
