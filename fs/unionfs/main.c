@@ -320,8 +320,12 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		int perms;
 		char *mode = strchr(name, '=');
 
-		if (!name || !*name)
+		if (!name)
 			continue;
+		if (!*name) {	/* bad use of ':' (extra colons) */
+			err = -EINVAL;
+			goto out;
+		}
 
 		branches++;
 
