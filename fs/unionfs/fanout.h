@@ -55,6 +55,30 @@ static inline void new_branch_id(struct super_block *sb, int index)
 	set_branch_id(sb, index, ++UNIONFS_SB(sb)->high_branch_id);
 }
 
+/*
+ * Find new index of matching branch with an existing superblock a a known
+ * (possibly old) id.  This is needed because branches could have been
+ * added/deleted causing the branchs of any open files to shift.
+ *
+ * @sb: the new superblock which may have new/different branch IDs
+ * @id: the old/existing id we're looking for
+ * Returns index of newly found branch (0 or greater), -1 otherwise.
+ */
+static inline int branch_id_to_idx(struct super_block *sb, int id)
+{
+	int i;
+	for (i = 0; i < sbmax(sb); i++) {
+		if (branch_id(sb, i) == id)
+			return i;
+	}
+	/*
+	 * XXX: maybe we should BUG_ON if not found new branch index?
+	 * (really that should never happen).
+	 */
+	printk(KERN_WARNING "unionfs: cannot find branch with id %d\n", id);
+	return -1;
+}
+
 /* File to lower file. */
 static inline struct file *unionfs_lower_file(const struct file *f)
 {
