@@ -458,7 +458,10 @@ void free_dentry_private_data(struct unionfs_dentry_info *udi)
 	kmem_cache_free(unionfs_dentry_cachep, udi);
 }
 
-/* allocate new dentry private data, free old one if necessary */
+/*
+ * Allocate new dentry private data, free old one if necessary.
+ * On success, returns a dentry whose ->info node is locked already.
+ */
 int new_dentry_private_data(struct dentry *dentry)
 {
 	int size;
@@ -476,9 +479,7 @@ int new_dentry_private_data(struct dentry *dentry)
 
 	mutex_lock(&info->lock);
 
-	info->bstart = -1;
-	info->bend = -1;
-	info->bopaque = -1;
+	info->bstart = info->bend = info->bopaque = -1;
 	info->bcount = sbmax(dentry->d_sb);
 	atomic_set(&info->generation,
 		   atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
