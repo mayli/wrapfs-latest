@@ -464,22 +464,17 @@ int new_dentry_private_data(struct dentry *dentry)
 	int size;
 	struct unionfs_dentry_info *info = UNIONFS_D(dentry);
 	void *p;
-	int unlock_on_err = 0;
 
-	spin_lock(&dentry->d_lock);
 	if (!info) {
-		dentry->d_fsdata = kmem_cache_alloc(unionfs_dentry_cachep,
-						    GFP_ATOMIC);
-		info = UNIONFS_D(dentry);
+		info = kmem_cache_alloc(unionfs_dentry_cachep, GFP_ATOMIC);
 		if (!info)
 			goto out;
 
 		mutex_init(&info->lock);
-		unionfs_lock_dentry(dentry);
-		unlock_on_err = 1;
-
 		info->lower_paths = NULL;
 	}
+
+	mutex_lock(&info->lock);
 
 	info->bstart = -1;
 	info->bend = -1;
@@ -497,18 +492,17 @@ int new_dentry_private_data(struct dentry *dentry)
 	info->lower_paths = p;
 	memset(info->lower_paths, 0, size);
 
-	spin_unlock(&dentry->d_lock);
+	/* ok, set the dentry private data pointer */
+	dentry->d_fsdata = info;
 	return 0;
 
 out_free:
 	kfree(info->lower_paths);
-	if (unlock_on_err)
-		unionfs_unlock_dentry(dentry);
+	mutex_unlock(&info->lock);
 
 out:
 	free_dentry_private_data(info);
 	dentry->d_fsdata = NULL;
-	spin_unlock(&dentry->d_lock);
 	return -ENOMEM;
 }
 
