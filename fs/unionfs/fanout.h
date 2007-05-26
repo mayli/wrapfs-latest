@@ -71,10 +71,7 @@ static inline int branch_id_to_idx(struct super_block *sb, int id)
 		if (branch_id(sb, i) == id)
 			return i;
 	}
-	/*
-	 * XXX: maybe we should BUG_ON if not found new branch index?
-	 * (really that should never happen).
-	 */
+	/* in the non-ODF code, this  should really never happen */
 	printk(KERN_WARNING "unionfs: cannot find branch with id %d\n", id);
 	return -1;
 }
