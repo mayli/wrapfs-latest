@@ -70,7 +70,12 @@ out:
 	return err;
 }
 
-/* main (and complex) driver function for Unionfs's lookup */
+/*
+ * Main (and complex) driver function for Unionfs's lookup
+ *
+ * Returns: NULL (ok), ERR_PTR if an error occurred, or a non-null non-error
+ * PTR if d_splice returned a different dentry.
+ */
 struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				      struct nameidata *nd, int lookupmode)
 {
