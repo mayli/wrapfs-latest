@@ -510,19 +510,9 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 			return;
 		if (!mnt && bindex >= 0) {
 #ifdef UNIONFS_DEBUG
-			/*
-			 * Directories can have NULL lower objects in
-			 * between start/end, but NOT if at the start/end
-			 * range.  We cannot verify that this dentry is a
-			 * type=DIR, because it may already be a negative
-			 * dentry.  But if dbstart is greater than dbend, we
-			 * know that this couldn't have been a regular file:
-			 * it had to have been a directory.
-			 */
-			if (!(bindex > dbstart(dentry) && bindex < dbend(dentry)))
-				printk(KERN_WARNING
-				       "unionfs_mntput: mnt=%p bindex=%d (%s:%d)\n",
-				       mnt, bindex, fxn, line);
+			printk(KERN_DEBUG
+			       "unionfs_mntput: mnt=%p bindex=%d\n",
+			       mnt, bindex);
 #endif /* UNIONFS_DEBUG */
 			return;
 		}
