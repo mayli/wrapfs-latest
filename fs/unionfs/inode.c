@@ -269,7 +269,6 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 	if (!IS_ERR(ret)) {
 		if (ret)
 			dentry = ret;
-		unionfs_inherit_mnt(dentry);
 	}
 
 	unionfs_check_inode(parent);
