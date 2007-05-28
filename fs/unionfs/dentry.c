@@ -325,9 +325,11 @@ static void unionfs_d_release(struct dentry *dentry)
 	bend = dbend(dentry);
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		dput(unionfs_lower_dentry_idx(dentry, bindex));
-		unionfs_mntput(dentry, bindex);
-
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
+		/* NULL lower mnt is ok if this is a negative dentry */
+		if (!dentry->d_inode && !unionfs_lower_mnt_idx(dentry,bindex))
+			continue;
+		unionfs_mntput(dentry, bindex);
 		unionfs_set_lower_mnt_idx(dentry, bindex, NULL);
 	}
 	/* free private data (unionfs_dentry_info) here */
