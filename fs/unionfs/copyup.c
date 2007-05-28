@@ -184,6 +184,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 	struct super_block *sb = dentry->d_sb;
 	struct file *input_file;
 	struct file *output_file;
+	struct vfsmount *output_mnt;
 	mm_segment_t old_fs;
 	char *buf = NULL;
 	ssize_t read_bytes, write_bytes;
@@ -211,12 +212,11 @@ static int __copyup_reg_data(struct dentry *dentry,
 
 	/* open new file */
 	dget(new_hidden_dentry);
-	unionfs_mntget(dentry, new_bindex);
+	output_mnt = unionfs_mntget(sb->s_root, new_bindex);
 	unionfs_read_lock(sb);
 	branchget(sb, new_bindex);
 	unionfs_read_unlock(sb);
-	output_file = dentry_open(new_hidden_dentry,
-				  unionfs_lower_mnt_idx(dentry, new_bindex),
+	output_file = dentry_open(new_hidden_dentry, output_mnt,
 				  O_WRONLY | O_LARGEFILE);
 	if (IS_ERR(output_file)) {
 		err = PTR_ERR(output_file);
