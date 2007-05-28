@@ -328,7 +328,7 @@ out_negative:
 		 * mount-point crossing
 		 */
 		first_dentry = dentry;
-		first_hidden_mnt = unionfs_mntget(dentry, bindex);
+		first_hidden_mnt = unionfs_mntget(dentry->d_sb->s_root, bindex);
 	}
 	unionfs_set_lower_dentry_idx(dentry, first_dentry_offset,
 				     first_hidden_dentry);
