@@ -422,20 +422,30 @@ out:
 	return ERR_PTR(err);
 }
 
-/* This is a utility function that fills in a unionfs dentry */
+/*
+ * This is a utility function that fills in a unionfs dentry.
+ *
+ * Returns: 0 (ok), or -ERRNO if an error occurred.
+ */
 int unionfs_partial_lookup(struct dentry *dentry)
 {
 	struct dentry *tmp;
 	struct nameidata nd = { .flags = 0 };
+	int err = -ENOSYS;
 
 	tmp = unionfs_lookup_backend(dentry, &nd, INTERPOSE_PARTIAL);
-	if (!tmp)
-		return 0;
-	if (IS_ERR(tmp))
-		return PTR_ERR(tmp);
+	if (!tmp) {
+		err = 0;
+		goto out;
+	}
+	if (IS_ERR(tmp)) {
+		err = PTR_ERR(tmp);
+		goto out;
+	}
 	/* need to change the interface */
 	BUG_ON(tmp != dentry);
-	return -ENOSYS;
+out:
+	return err;
 }
 
 /* The dentry cache is just so we have properly sized dentries. */
