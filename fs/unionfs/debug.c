@@ -148,9 +148,10 @@ void __unionfs_check_dentry(const struct dentry *dentry,
 	/*
 	 * Directories can have NULL lower inodes in b/t start/end, but NOT
 	 * if at the start/end range.  Ignore this rule, however, if this is
-	 * a NULL dentry.
+	 * a NULL dentry or a deleted dentry.
 	 */
-	if (inode && !(inode && S_ISDIR(inode->i_mode) &&
+	if (!d_deleted((struct dentry *) dentry) &&
+	    inode && !(inode && S_ISDIR(inode->i_mode) &&
 		       bindex > dstart && bindex < dend)) {
 	  PRINT_CALLER;
 	  printk(" CD2: dentry/lower=%p:%p(%p) bindex=%d dstart/end=%d:%d\n",
