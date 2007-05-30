@@ -433,7 +433,7 @@ int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 	/* Selinux uses extended attributes for permissions. */
 	if ((err = copyup_xattrs(old_hidden_dentry, new_hidden_dentry)))
 		goto out_unlink;
-#endif
+#endif /* CONFIG_UNION_FS_XATTR */
 
 	/* do not allow files getting deleted to be re-interposed */
 	if (!d_deleted(dentry))

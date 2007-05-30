@@ -1147,7 +1147,7 @@ struct inode_operations unionfs_dir_iops = {
 	.getxattr	= unionfs_getxattr,
 	.removexattr	= unionfs_removexattr,
 	.listxattr	= unionfs_listxattr,
-#endif
+#endif /* CONFIG_UNION_FS_XATTR */
 };
 
 struct inode_operations unionfs_main_iops = {
@@ -1158,5 +1158,5 @@ struct inode_operations unionfs_main_iops = {
 	.getxattr	= unionfs_getxattr,
 	.removexattr	= unionfs_removexattr,
 	.listxattr	= unionfs_listxattr,
-#endif
+#endif /* CONFIG_UNION_FS_XATTR */
 };

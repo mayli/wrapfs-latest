@@ -426,7 +426,7 @@ static inline int is_valid_dentry(struct dentry *dentry)
 
 #ifndef DEFAULT_POLLMASK
 #define DEFAULT_POLLMASK (POLLIN | POLLOUT | POLLRDNORM | POLLWRNORM)
-#endif
+#endif /* not DEFAULT_POLLMASK */
 
 /*
  * EXTERNALS:
