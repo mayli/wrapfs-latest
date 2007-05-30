@@ -401,19 +401,6 @@ static inline int is_robranch(const struct dentry *dentry)
 	return is_robranch_idx(dentry, index);
 }
 
-/*
- * Check if dentry is valid or not, as per our generation numbers.
- * @dentry: dentry to check.
- * Returns 1 (valid) or 0 (invalid/stale).
- */
-static inline int is_valid_dentry(struct dentry *dentry)
-{
-	BUG_ON(!UNIONFS_D(dentry));
-	BUG_ON(!UNIONFS_SB(dentry->d_sb));
-	return (atomic_read(&UNIONFS_D(dentry)->generation) ==
-		atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
-}
-
 /* What do we use for whiteouts. */
 #define UNIONFS_WHPFX ".wh."
 #define UNIONFS_WHLEN 4

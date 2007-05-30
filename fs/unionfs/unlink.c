@@ -73,10 +73,13 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	err = unionfs_unlink_whiteout(dir, dentry);
 	/* call d_drop so the system "forgets" about us */
@@ -87,6 +90,7 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 		d_drop(dentry);
 	}
 
+out:
 	unionfs_unlock_dentry(dentry);
 	return err;
 }
@@ -128,10 +132,13 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int err = 0;
 	struct unionfs_dir_state *namelist = NULL;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	/* check if this unionfs directory is empty or not */
 	err = check_empty(dentry, &namelist);

@@ -117,8 +117,13 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct super_block *sb;
 	struct dentry *lower_dentry;
 
-	BUG_ON(!is_valid_dentry(dentry));
 	unionfs_check_dentry(dentry);
+	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	sb = dentry->d_sb;
 
@@ -144,6 +149,8 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	memset(&buf->f_fsid, 0, sizeof(__kernel_fsid_t));
 	memset(&buf->f_spare, 0, sizeof(buf->f_spare));
 
+out:
+	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return err;
 }

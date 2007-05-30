@@ -401,10 +401,17 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	int err = 0;
 	struct dentry *wh_dentry;
 
-	BUG_ON(!is_valid_dentry(old_dentry));
-	BUG_ON(!is_valid_dentry(new_dentry));
-
 	unionfs_double_lock_dentry(old_dentry, new_dentry);
+
+	if (!__unionfs_d_revalidate_chain(old_dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+	if (!d_deleted(new_dentry) && new_dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(new_dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	if (!S_ISDIR(old_dentry->d_inode->i_mode))
 		err = unionfs_partial_lookup(old_dentry);

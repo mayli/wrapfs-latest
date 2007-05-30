@@ -57,14 +57,18 @@ ssize_t unionfs_getxattr(struct dentry *dentry, const char *name, void *value,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_getxattr(hidden_dentry, (char*) name, value, size);
 
+out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return err;
@@ -80,14 +84,19 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_setxattr(hidden_dentry, (char*) name, (void*) value,
 			   size, flags);
 
+out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return err;
@@ -102,13 +111,18 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 	struct dentry *hidden_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	err = vfs_removexattr(hidden_dentry, (char*) name);
 
+out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return err;
@@ -124,15 +138,19 @@ ssize_t unionfs_listxattr(struct dentry *dentry, char *list, size_t size)
 	int err = -EOPNOTSUPP;
 	char *encoded_list = NULL;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	encoded_list = list;
 	err = vfs_listxattr(hidden_dentry, encoded_list, size);
 
+out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return err;

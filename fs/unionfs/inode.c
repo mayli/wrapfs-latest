@@ -47,7 +47,7 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	valid = __unionfs_d_revalidate_chain(dentry->d_parent, nd);
 	unionfs_unlock_dentry(dentry->d_parent);
 	if (!valid) {
-		err = -ENOENT;	/* same as what real_lookup does */
+		err = -ESTALE;	/* same as what real_lookup does */
 		goto out;
 	}
 	valid = __unionfs_d_revalidate_chain(dentry, nd);
@@ -252,6 +252,12 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 	struct path path_save;
 	struct dentry *ret;
 
+	/*
+	 * lookup is the only special function which takes a dentry, yet we
+	 * do NOT want to call __unionfs_d_revalidate_chain because by
+	 * definition, we don't have a valid dentry here yet.
+	 */
+
 	/* save the dentry & vfsmnt from namei */
 	if (nd) {
 		path_save.dentry = nd->dentry;
@@ -286,10 +292,17 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 	struct dentry *whiteout_dentry;
 	char *name = NULL;
 
-	BUG_ON(!is_valid_dentry(new_dentry));
-	BUG_ON(!is_valid_dentry(old_dentry));
-
 	unionfs_double_lock_dentry(new_dentry, old_dentry);
+
+	if (!__unionfs_d_revalidate_chain(old_dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+	if (new_dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(new_dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	hidden_new_dentry = unionfs_lower_dentry(new_dentry);
 
@@ -424,9 +437,13 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 	int bindex = 0, bstart;
 	char *name = NULL;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	/* We start out in the leftmost branch. */
 	bstart = dbstart(dentry);
@@ -578,9 +595,14 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 	int whiteout_unlinked = 0;
 	struct sioq_args args;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	bstart = dbstart(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -719,9 +741,14 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	char *name = NULL;
 	int whiteout_unlinked = 0;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	bstart = dbstart(dentry);
 
 	hidden_dentry = unionfs_lower_dentry(dentry);
@@ -836,9 +863,13 @@ static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 	int err;
 	struct dentry *hidden_dentry;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	hidden_dentry = unionfs_lower_dentry(dentry);
 
 	if (!hidden_dentry->d_inode->i_op ||
@@ -866,7 +897,13 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	int len = PAGE_SIZE, err;
 	mm_segment_t old_fs;
 
-	BUG_ON(!is_valid_dentry(dentry));
+	unionfs_lock_dentry(dentry);
+
+	if (dentry->d_inode &&
+	    !__unionfs_d_revalidate_chain(dentry, nd)) {
+		err = -ESTALE;
+		goto out;
+	}
 
 	/* This is freed by the put_link method assuming a successful call. */
 	buf = kmalloc(len, GFP_KERNEL);
@@ -890,6 +927,7 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	err = 0;
 
 out:
+	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	return ERR_PTR(err);
 }
@@ -897,6 +935,11 @@ out:
 static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 			     void *cookie)
 {
+	unionfs_lock_dentry(dentry);
+	if (!__unionfs_d_revalidate_chain(dentry, nd))
+		printk("unionfs: put_link failed to revalidate dentry\n");
+	unionfs_unlock_dentry(dentry);
+
 	unionfs_check_dentry(dentry);
 	kfree(nd_get_link(nd));
 }
@@ -1052,9 +1095,13 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	int i;
 	int copyup = 0;
 
-	BUG_ON(!is_valid_dentry(dentry));
-
 	unionfs_lock_dentry(dentry);
+
+	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+		err = -ESTALE;
+		goto out;
+	}
+
 	bstart = dbstart(dentry);
 	bend = dbend(dentry);
 	inode = dentry->d_inode;
