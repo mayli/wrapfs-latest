@@ -743,6 +743,7 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 out:
+	unionfs_read_unlock(file->f_dentry->d_sb);
 	unionfs_check_file(file);
 	return err;
 }
