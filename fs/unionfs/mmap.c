@@ -21,7 +21,7 @@
 
 /*
  * Unionfs doesn't implement ->writepages, which is OK with the VFS and
- * nkeeps our code simpler and smaller.  Nevertheless, somehow, our own
+ * keeps our code simpler and smaller.  Nevertheless, somehow, our own
  * ->writepage must be called so we can sync the upper pages with the lower
  * pages: otherwise data changed at the upper layer won't get written to the
  * lower layer.

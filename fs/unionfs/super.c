@@ -135,7 +135,7 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	/* set return buf to our f/s to avoid confusing user-level utils */
 	buf->f_type = UNIONFS_SUPER_MAGIC;
 	/*
-	 * Our maximum file name can is shorter bya few bytes because every
+	 * Our maximum file name can is shorter by a few bytes because every
 	 * file name could potentially be whited-out.
 	 *
 	 * XXX: this restriction goes away with ODF.

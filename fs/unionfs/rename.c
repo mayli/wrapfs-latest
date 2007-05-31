@@ -143,8 +143,8 @@ out:
 }
 
 /*
- * Main rename code.  This is sufficienly complex, that it's documented in
- * Docmentation/filesystems/unionfs/rename.txt.  This routine calls
+ * Main rename code.  This is sufficiently complex, that it's documented in
+ * Documentation/filesystems/unionfs/rename.txt.  This routine calls
  * __unionfs_rename() above to perform some of the work.
  */
 static int do_unionfs_rename(struct inode *old_dir,

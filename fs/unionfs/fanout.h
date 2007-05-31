@@ -58,7 +58,7 @@ static inline void new_branch_id(struct super_block *sb, int index)
 /*
  * Find new index of matching branch with an existing superblock a a known
  * (possibly old) id.  This is needed because branches could have been
- * added/deleted causing the branchs of any open files to shift.
+ * added/deleted causing the branches of any open files to shift.
  *
  * @sb: the new superblock which may have new/different branch IDs
  * @id: the old/existing id we're looking for
