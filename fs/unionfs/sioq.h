@@ -93,4 +93,4 @@ extern void __unionfs_unlink(struct work_struct *work);
 extern void __delete_whiteouts(struct work_struct *work);
 extern void __is_opaque_dir(struct work_struct *work);
 
-#endif /* _SIOQ_H */
+#endif /* not _SIOQ_H */

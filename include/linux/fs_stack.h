@@ -40,4 +40,4 @@ static inline void fsstack_copy_attr_times(struct inode *dest,
 	dest->i_ctime = src->i_ctime;
 }
 
-#endif /* _LINUX_FS_STACK_H */
+#endif /* not _LINUX_FS_STACK_H */

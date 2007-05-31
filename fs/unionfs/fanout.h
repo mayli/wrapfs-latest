@@ -261,4 +261,4 @@ static inline void verify_locked(struct dentry *d)
 	BUG_ON(!mutex_is_locked(&UNIONFS_D(d)->lock));
 }
 
-#endif	/* _FANOUT_H */
+#endif	/* not _FANOUT_H */
