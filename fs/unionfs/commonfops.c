@@ -686,10 +686,14 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	int err = 0;
 	fd_set branchlist;
 	int bstart = 0, bend = 0, bindex = 0;
+	int orig_bstart, orig_bend;
 	struct dentry *dentry, *hidden_dentry;
+	struct vfsmount *mnt;
 
 	dentry = file->f_dentry;
 	unionfs_lock_dentry(dentry);
+	orig_bstart = dbstart(dentry);
+	orig_bend = dbend(dentry);
 	if ((err = unionfs_partial_lookup(dentry)))
 		goto out;
 	bstart = dbstart(dentry);
@@ -703,7 +707,24 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 			continue;
 		if (hidden_dentry->d_inode)
 			FD_SET(bindex, &branchlist);
+		/* purge any lower objects after partial_lookup */
+		if (bindex < orig_bstart || bindex > orig_bend) {
+			dput(hidden_dentry);
+			unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
+			iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
+			unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
+						    NULL);
+			mnt = unionfs_lower_mnt_idx(dentry, bindex);
+			if (!mnt)
+				continue;
+			unionfs_mntput(dentry, bindex);
+			unionfs_set_lower_mnt_idx(dentry, bindex, NULL);
+		}
 	}
+	/* restore original dentry's offsets */
+	set_dbstart(dentry, orig_bstart);
+	set_dbend(dentry, orig_bend);
+	ibstart(dentry->d_inode) = ibend(dentry->d_inode) = orig_bend;
 
 	err = copy_to_user((void __user *)arg, &branchlist, sizeof(fd_set));
 	if (err)
