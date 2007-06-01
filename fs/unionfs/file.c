@@ -18,10 +18,6 @@
 
 #include "union.h"
 
-/*******************
- * File Operations *
- *******************/
-
 static ssize_t unionfs_read(struct file *file, char __user *buf,
 			    size_t count, loff_t *ppos)
 {
