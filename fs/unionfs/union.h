@@ -191,11 +191,14 @@ extern void unionfs_destroy_dentry_cache(void);
 
 /* Initialize and free readdir-specific  state. */
 extern int init_rdstate(struct file *file);
-extern struct unionfs_dir_state *alloc_rdstate(struct inode *inode, int bindex);
-extern struct unionfs_dir_state *find_rdstate(struct inode *inode, loff_t fpos);
+extern struct unionfs_dir_state *alloc_rdstate(struct inode *inode,
+					       int bindex);
+extern struct unionfs_dir_state *find_rdstate(struct inode *inode,
+					      loff_t fpos);
 extern void free_rdstate(struct unionfs_dir_state *state);
-extern int add_filldir_node(struct unionfs_dir_state *rdstate, const char *name,
-			    int namelen, int bindex, int whiteout);
+extern int add_filldir_node(struct unionfs_dir_state *rdstate,
+			    const char *name, int namelen, int bindex,
+			    int whiteout);
 extern struct filldir_node *find_filldir_node(struct unionfs_dir_state *rdstate,
 					      const char *name, int namelen);
 
@@ -522,14 +525,19 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 /* useful for tracking code reachability */
 #define UDBG printk("DBG:%s:%s:%d\n",__FILE__,__FUNCTION__,__LINE__)
 
-#define unionfs_check_inode(i)	__unionfs_check_inode((i),__FILE__,__FUNCTION__,__LINE__)
-#define unionfs_check_dentry(d)	__unionfs_check_dentry((d),__FILE__,__FUNCTION__,__LINE__)
-#define unionfs_check_file(f)	__unionfs_check_file((f),__FILE__,__FUNCTION__,__LINE__)
-#define show_branch_counts(sb)	__show_branch_counts((sb),__FILE__,__FUNCTION__,__LINE__)
-extern void __unionfs_check_inode(const struct inode *inode,
-				  const char *fname, const char *fxn, int line);
+#define unionfs_check_inode(i)	__unionfs_check_inode((i),\
+	__FILE__,__FUNCTION__,__LINE__)
+#define unionfs_check_dentry(d)	__unionfs_check_dentry((d),\
+	__FILE__,__FUNCTION__,__LINE__)
+#define unionfs_check_file(f)	__unionfs_check_file((f),\
+	__FILE__,__FUNCTION__,__LINE__)
+#define show_branch_counts(sb)	__show_branch_counts((sb),\
+	__FILE__,__FUNCTION__,__LINE__)
+extern void __unionfs_check_inode(const struct inode *inode, const char *fname,
+				  const char *fxn, int line);
 extern void __unionfs_check_dentry(const struct dentry *dentry,
-				   const char *fname, const char *fxn, int line);
+				   const char *fname, const char *fxn,
+				   int line);
 extern void __unionfs_check_file(const struct file *file,
 				 const char *fname, const char *fxn, int line);
 extern void __show_branch_counts(const struct super_block *sb,
