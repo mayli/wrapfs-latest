@@ -93,8 +93,8 @@ int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 	 * unionfs' mtime and ctime are updated by generic_file_write
 	 */
 	lower_inode->i_mtime = lower_inode->i_ctime = CURRENT_TIME;
-
-	page_cache_release(lower_page);	/* b/c grab_cache_page increased refcnt */
+	/* b/c grab_cache_page increased refcnt */
+	page_cache_release(lower_page);
 
 	if (err)
 		ClearPageUptodate(page);
@@ -335,7 +335,8 @@ void unionfs_sync_page(struct page *page)
 		mapping->a_ops->sync_page(lower_page);
 
 	unlock_page(lower_page);	/* b/c grab_cache_page locked it */
-	page_cache_release(lower_page);	/* b/c grab_cache_page increased refcnt */
+	/* b/c grab_cache_page increased refcnt */
+	page_cache_release(lower_page);
 
 out:
 	return;

@@ -688,7 +688,8 @@ struct dentry *create_parents(struct inode *dir, struct dentry *dentry,
 			void *p;
 
 			nr_dentry *= 2;
-			p = krealloc(path, nr_dentry * sizeof(struct dentry *), GFP_KERNEL);
+			p = krealloc(path, nr_dentry * sizeof(struct dentry *),
+				     GFP_KERNEL);
 			if (!p) {
 				hidden_dentry = ERR_PTR(-ENOMEM);
 				goto out;
@@ -841,7 +842,8 @@ void unionfs_purge_extras(struct dentry *dentry)
 			dput(unionfs_lower_dentry_idx(dentry, bindex));
 			unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 			iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
-			unionfs_set_lower_inode_idx(dentry->d_inode, bindex, NULL);
+			unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
+						    NULL);
 		}
 	}
 	bindex = dbstart(dentry);

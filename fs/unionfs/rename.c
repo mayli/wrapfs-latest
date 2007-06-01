@@ -486,7 +486,8 @@ out:
 				 * is set the lower inode.
 				 */
 				struct inode *inode;
-				inode = unionfs_lower_inode(old_dentry->d_inode);
+				inode = unionfs_lower_inode(
+					old_dentry->d_inode);
 				atomic_inc(&inode->i_count);
 				unionfs_set_lower_inode_idx(
 					new_dentry->d_inode,

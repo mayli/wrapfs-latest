@@ -359,7 +359,8 @@ void __unionfs_check_file(const struct file *file,
 		if (lower_file) {
 			if (bindex < fstart || bindex > fend) {
 				PRINT_CALLER();
-				printk(" CF5: file/lower=%p:%p bindex=%d fstart/end=%d:%d\n",
+				printk(" CF5: file/lower=%p:%p bindex=%d "
+				       "fstart/end=%d:%d\n",
 				       file, lower_file, bindex, fstart, fend);
 			}
 		} else {	/* lower_file == NULL */
