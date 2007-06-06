@@ -723,7 +723,8 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	/* restore original dentry's offsets */
 	set_dbstart(dentry, orig_bstart);
 	set_dbend(dentry, orig_bend);
-	ibstart(dentry->d_inode) = ibend(dentry->d_inode) = orig_bend;
+	ibstart(dentry->d_inode) = orig_bstart;
+	ibend(dentry->d_inode) = orig_bend;
 
 	err = copy_to_user((void __user *)arg, &branchlist, sizeof(fd_set));
 	if (err)
