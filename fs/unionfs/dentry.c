@@ -456,8 +456,7 @@ static void unionfs_d_release(struct dentry *dentry)
 
 out_free:
 	/* No need to unlock it, because it is disappeared. */
-	free_dentry_private_data(UNIONFS_D(dentry));
-	dentry->d_fsdata = NULL;	/* just to be safe */
+	free_dentry_private_data(dentry);
 
 out:
 	return;

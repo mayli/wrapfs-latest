@@ -665,7 +665,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 out_freedpd:
 	if (UNIONFS_D(sb->s_root)) {
 		kfree(UNIONFS_D(sb->s_root)->lower_paths);
-		free_dentry_private_data(UNIONFS_D(sb->s_root));
+		free_dentry_private_data(sb->s_root);
 	}
 	dput(sb->s_root);
 

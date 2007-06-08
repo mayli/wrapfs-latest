@@ -478,11 +478,12 @@ void unionfs_destroy_dentry_cache(void)
 		kmem_cache_destroy(unionfs_dentry_cachep);
 }
 
-void free_dentry_private_data(struct unionfs_dentry_info *udi)
+void free_dentry_private_data(struct dentry *dentry)
 {
-	if (!udi)
+	if (!dentry || !dentry->d_fsdata)
 		return;
-	kmem_cache_free(unionfs_dentry_cachep, udi);
+	kmem_cache_free(unionfs_dentry_cachep, dentry->d_fsdata);
+	dentry->d_fsdata = NULL;
 }
 
 static inline int __realloc_dentry_private_data(struct dentry *dentry)
@@ -519,8 +520,7 @@ int realloc_dentry_private_data(struct dentry *dentry)
 		return 0;
 
 	kfree(UNIONFS_D(dentry)->lower_paths);
-	free_dentry_private_data(UNIONFS_D(dentry));
-	dentry->d_fsdata = NULL;
+	free_dentry_private_data(dentry);
 	return -ENOMEM;
 }
 
