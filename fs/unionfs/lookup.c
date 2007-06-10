@@ -490,7 +490,7 @@ int new_dentry_private_data(struct dentry *dentry)
 					    GFP_ATOMIC);
 	info = UNIONFS_D(dentry);
 	if (!info)
-	  goto out;
+		goto out;
 
 	mutex_init(&info->lock);
 	info->lower_paths = NULL;
