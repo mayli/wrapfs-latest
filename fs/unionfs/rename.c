@@ -23,27 +23,27 @@ static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 			    int bindex, struct dentry **wh_old)
 {
 	int err = 0;
-	struct dentry *hidden_old_dentry;
-	struct dentry *hidden_new_dentry;
-	struct dentry *hidden_old_dir_dentry;
-	struct dentry *hidden_new_dir_dentry;
-	struct dentry *hidden_wh_dentry;
-	struct dentry *hidden_wh_dir_dentry;
+	struct dentry *lower_old_dentry;
+	struct dentry *lower_new_dentry;
+	struct dentry *lower_old_dir_dentry;
+	struct dentry *lower_new_dir_dentry;
+	struct dentry *lower_wh_dentry;
+	struct dentry *lower_wh_dir_dentry;
 	char *wh_name = NULL;
 
-	hidden_new_dentry = unionfs_lower_dentry_idx(new_dentry, bindex);
-	hidden_old_dentry = unionfs_lower_dentry_idx(old_dentry, bindex);
+	lower_new_dentry = unionfs_lower_dentry_idx(new_dentry, bindex);
+	lower_old_dentry = unionfs_lower_dentry_idx(old_dentry, bindex);
 
-	if (!hidden_new_dentry) {
-		hidden_new_dentry =
+	if (!lower_new_dentry) {
+		lower_new_dentry =
 			create_parents(new_dentry->d_parent->d_inode,
 				       new_dentry, new_dentry->d_name.name,
 				       bindex);
-		if (IS_ERR(hidden_new_dentry)) {
+		if (IS_ERR(lower_new_dentry)) {
 			printk(KERN_DEBUG "unionfs: error creating directory "
 			       "tree for rename, bindex = %d, err = %ld\n",
-			       bindex, PTR_ERR(hidden_new_dentry));
-			err = PTR_ERR(hidden_new_dentry);
+			       bindex, PTR_ERR(lower_new_dentry));
+			err = PTR_ERR(lower_new_dentry);
 			goto out;
 		}
 	}
@@ -55,42 +55,42 @@ static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		goto out;
 	}
 
-	hidden_wh_dentry = lookup_one_len(wh_name, hidden_new_dentry->d_parent,
-					  new_dentry->d_name.len +
-					  UNIONFS_WHLEN);
-	if (IS_ERR(hidden_wh_dentry)) {
-		err = PTR_ERR(hidden_wh_dentry);
+	lower_wh_dentry = lookup_one_len(wh_name, lower_new_dentry->d_parent,
+					 new_dentry->d_name.len +
+					 UNIONFS_WHLEN);
+	if (IS_ERR(lower_wh_dentry)) {
+		err = PTR_ERR(lower_wh_dentry);
 		goto out;
 	}
 
-	if (hidden_wh_dentry->d_inode) {
+	if (lower_wh_dentry->d_inode) {
 		/* get rid of the whiteout that is existing */
-		if (hidden_new_dentry->d_inode) {
+		if (lower_new_dentry->d_inode) {
 			printk(KERN_WARNING "unionfs: both a whiteout and a "
 			       "dentry exist when doing a rename!\n");
 			err = -EIO;
 
-			dput(hidden_wh_dentry);
+			dput(lower_wh_dentry);
 			goto out;
 		}
 
-		hidden_wh_dir_dentry = lock_parent(hidden_wh_dentry);
+		lower_wh_dir_dentry = lock_parent(lower_wh_dentry);
 		if (!(err = is_robranch_super(old_dentry->d_sb, bindex)))
-			err = vfs_unlink(hidden_wh_dir_dentry->d_inode,
-					 hidden_wh_dentry);
+			err = vfs_unlink(lower_wh_dir_dentry->d_inode,
+					 lower_wh_dentry);
 
-		dput(hidden_wh_dentry);
-		unlock_dir(hidden_wh_dir_dentry);
+		dput(lower_wh_dentry);
+		unlock_dir(lower_wh_dir_dentry);
 		if (err)
 			goto out;
 	} else
-		dput(hidden_wh_dentry);
+		dput(lower_wh_dentry);
 
-	dget(hidden_old_dentry);
-	hidden_old_dir_dentry = dget_parent(hidden_old_dentry);
-	hidden_new_dir_dentry = dget_parent(hidden_new_dentry);
+	dget(lower_old_dentry);
+	lower_old_dir_dentry = dget_parent(lower_old_dentry);
+	lower_new_dir_dentry = dget_parent(lower_new_dentry);
 
-	lock_rename(hidden_old_dir_dentry, hidden_new_dir_dentry);
+	lock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
 
 	err = is_robranch_super(old_dentry->d_sb, bindex);
 	if (err)
@@ -107,7 +107,7 @@ static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		err = PTR_ERR(whname);
 		if (IS_ERR(whname))
 			goto out_unlock;
-		*wh_old = lookup_one_len(whname, hidden_old_dir_dentry,
+		*wh_old = lookup_one_len(whname, lower_old_dir_dentry,
 					 old_dentry->d_name.len +
 					 UNIONFS_WHLEN);
 		kfree(whname);
@@ -118,15 +118,15 @@ static int __unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		}
 	}
 
-	err = vfs_rename(hidden_old_dir_dentry->d_inode, hidden_old_dentry,
-			 hidden_new_dir_dentry->d_inode, hidden_new_dentry);
+	err = vfs_rename(lower_old_dir_dentry->d_inode, lower_old_dentry,
+			 lower_new_dir_dentry->d_inode, lower_new_dentry);
 
 out_unlock:
-	unlock_rename(hidden_old_dir_dentry, hidden_new_dir_dentry);
+	unlock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
 
-	dput(hidden_old_dir_dentry);
-	dput(hidden_new_dir_dentry);
-	dput(hidden_old_dentry);
+	dput(lower_old_dir_dentry);
+	dput(lower_new_dir_dentry);
+	dput(lower_old_dentry);
 
 out:
 	if (!err) {
@@ -254,12 +254,12 @@ static int do_unionfs_rename(struct inode *old_dir,
 	 * (2) We did a copy_up
 	 */
 	if ((old_bstart != old_bend) || (do_copyup != -1)) {
-		struct dentry *hidden_parent;
+		struct dentry *lower_parent;
 		BUG_ON(!wh_old || wh_old->d_inode || bwh_old < 0);
-		hidden_parent = lock_parent(wh_old);
-		local_err = vfs_create(hidden_parent->d_inode, wh_old, S_IRUGO,
+		lower_parent = lock_parent(wh_old);
+		local_err = vfs_create(lower_parent->d_inode, wh_old, S_IRUGO,
 				       NULL);
-		unlock_dir(hidden_parent);
+		unlock_dir(lower_parent);
 		if (!local_err)
 			set_dbopaque(old_dentry, bwh_old);
 		else {
@@ -279,14 +279,14 @@ out:
 
 revert:
 	/* Do revert here. */
-	local_err = unionfs_refresh_hidden_dentry(new_dentry, old_bstart);
+	local_err = unionfs_refresh_lower_dentry(new_dentry, old_bstart);
 	if (local_err) {
 		printk(KERN_WARNING "unionfs: revert failed in rename: "
 		       "the new refresh failed.\n");
 		eio = -EIO;
 	}
 
-	local_err = unionfs_refresh_hidden_dentry(old_dentry, old_bstart);
+	local_err = unionfs_refresh_lower_dentry(old_dentry, old_bstart);
 	if (local_err) {
 		printk(KERN_WARNING "unionfs: revert failed in rename: "
 		       "the old refresh failed.\n");
@@ -319,10 +319,10 @@ revert:
 		eio = -EIO;
 	}
 
-	local_err = unionfs_refresh_hidden_dentry(new_dentry, bindex);
+	local_err = unionfs_refresh_lower_dentry(new_dentry, bindex);
 	if (local_err)
 		eio = -EIO;
-	local_err = unionfs_refresh_hidden_dentry(old_dentry, bindex);
+	local_err = unionfs_refresh_lower_dentry(old_dentry, bindex);
 	if (local_err)
 		eio = -EIO;
 
@@ -336,7 +336,7 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 {
 	char *whname;
 	int bindex = -1, bstart = -1, bend = -1;
-	struct dentry *parent, *hidden_parent, *wh_dentry;
+	struct dentry *parent, *lower_parent, *wh_dentry;
 
 	whname = alloc_whname(dentry->d_name.name, dentry->d_name.len);
 	if (IS_ERR(whname))
@@ -348,10 +348,10 @@ static struct dentry *lookup_whiteout(struct dentry *dentry)
 	bend = dbend(parent);
 	wh_dentry = ERR_PTR(-ENOENT);
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_parent = unionfs_lower_dentry_idx(parent, bindex);
-		if (!hidden_parent)
+		lower_parent = unionfs_lower_dentry_idx(parent, bindex);
+		if (!lower_parent)
 			continue;
-		wh_dentry = lookup_one_len(whname, hidden_parent,
+		wh_dentry = lookup_one_len(whname, lower_parent,
 					   dentry->d_name.len + UNIONFS_WHLEN);
 		if (IS_ERR(wh_dentry))
 			continue;
@@ -426,7 +426,7 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		goto out;
 
 	/*
-	 * if new_dentry is already hidden because of whiteout,
+	 * if new_dentry is already lower because of whiteout,
 	 * simply override it even if the whited-out dir is not empty.
 	 */
 	wh_dentry = lookup_whiteout(new_dentry);
@@ -466,7 +466,7 @@ out:
 	else {
 		/*
 		 * force re-lookup since the dir on ro branch is not renamed,
-		 * and hidden dentries still indicate the un-renamed ones.
+		 * and lower dentries still indicate the un-renamed ones.
 		 */
 		if (S_ISDIR(old_dentry->d_inode->i_mode))
 			atomic_dec(&UNIONFS_D(old_dentry)->generation);

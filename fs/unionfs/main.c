@@ -29,8 +29,8 @@
 struct dentry *unionfs_interpose(struct dentry *dentry, struct super_block *sb,
 				 int flag)
 {
-	struct inode *hidden_inode;
-	struct dentry *hidden_dentry;
+	struct inode *lower_inode;
+	struct dentry *lower_dentry;
 	int err = 0;
 	struct inode *inode;
 	int is_negative_dentry = 1;
@@ -90,45 +90,45 @@ struct dentry *unionfs_interpose(struct dentry *dentry, struct super_block *sb,
 fill_i_info:
 	skipped = 0;
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry) {
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry) {
 			unionfs_set_lower_inode_idx(inode, bindex, NULL);
 			continue;
 		}
 
-		/* Initialize the hidden inode to the new hidden inode. */
-		if (!hidden_dentry->d_inode)
+		/* Initialize the lower inode to the new lower inode. */
+		if (!lower_dentry->d_inode)
 			continue;
 
 		unionfs_set_lower_inode_idx(inode, bindex,
-					    igrab(hidden_dentry->d_inode));
+					    igrab(lower_dentry->d_inode));
 	}
 
 	ibstart(inode) = dbstart(dentry);
 	ibend(inode) = dbend(dentry);
 
 	/* Use attributes from the first branch. */
-	hidden_inode = unionfs_lower_inode(inode);
+	lower_inode = unionfs_lower_inode(inode);
 
 	/* Use different set of inode ops for symlinks & directories */
-	if (S_ISLNK(hidden_inode->i_mode))
+	if (S_ISLNK(lower_inode->i_mode))
 		inode->i_op = &unionfs_symlink_iops;
-	else if (S_ISDIR(hidden_inode->i_mode))
+	else if (S_ISDIR(lower_inode->i_mode))
 		inode->i_op = &unionfs_dir_iops;
 
 	/* Use different set of file ops for directories */
-	if (S_ISDIR(hidden_inode->i_mode))
+	if (S_ISDIR(lower_inode->i_mode))
 		inode->i_fop = &unionfs_dir_fops;
 
 	/* properly initialize special inodes */
-	if (S_ISBLK(hidden_inode->i_mode) || S_ISCHR(hidden_inode->i_mode) ||
-	    S_ISFIFO(hidden_inode->i_mode) || S_ISSOCK(hidden_inode->i_mode))
-		init_special_inode(inode, hidden_inode->i_mode,
-				   hidden_inode->i_rdev);
+	if (S_ISBLK(lower_inode->i_mode) || S_ISCHR(lower_inode->i_mode) ||
+	    S_ISFIFO(lower_inode->i_mode) || S_ISSOCK(lower_inode->i_mode))
+		init_special_inode(inode, lower_inode->i_mode,
+				   lower_inode->i_rdev);
 
 	/* all well, copy inode attributes */
-	fsstack_copy_attr_all(inode, hidden_inode, unionfs_get_nlinks);
-	fsstack_copy_inode_size(inode, hidden_inode);
+	fsstack_copy_attr_all(inode, lower_inode, unionfs_get_nlinks);
+	fsstack_copy_inode_size(inode, lower_inode);
 
 	if (spliced)
 		goto out_spliced;
@@ -179,7 +179,7 @@ out:
 /* like interpose above, but for an already existing dentry */
 void unionfs_reinterpose(struct dentry *dentry)
 {
-	struct dentry *hidden_dentry;
+	struct dentry *lower_dentry;
 	struct inode *inode;
 	int bindex, bstart, bend;
 
@@ -191,16 +191,16 @@ void unionfs_reinterpose(struct dentry *dentry)
 	bstart = dbstart(dentry);
 	bend = dbend(dentry);
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry)
 			continue;
 
-		if (!hidden_dentry->d_inode)
+		if (!lower_dentry->d_inode)
 			continue;
 		if (unionfs_lower_inode_idx(inode, bindex))
 			continue;
 		unionfs_set_lower_inode_idx(inode, bindex,
-					    igrab(hidden_dentry->d_inode));
+					    igrab(lower_dentry->d_inode));
 	}
 	ibstart(inode) = dbstart(dentry);
 	ibend(inode) = dbend(dentry);
@@ -225,7 +225,7 @@ int check_branch(struct nameidata *nd)
 	return 0;
 }
 
-/* checks if two hidden_dentries have overlapping branches */
+/* checks if two lower_dentries have overlapping branches */
 static int is_branch_overlap(struct dentry *dent1, struct dentry *dent2)
 {
 	struct dentry *dent = NULL;
@@ -273,7 +273,7 @@ int parse_branch_mode(const char *name)
 
 /* parse the dirs= mount argument */
 static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
-			     *hidden_root_info, char *options)
+			     *lower_root_info, char *options)
 {
 	struct nameidata nd;
 	char *name;
@@ -299,7 +299,7 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		if (options[i] == ':')
 			branches++;
 
-	/* allocate space for underlying pointers to hidden dentry */
+	/* allocate space for underlying pointers to lower dentry */
 	UNIONFS_SB(sb)->data =
 		kcalloc(branches, sizeof(struct unionfs_data), GFP_KERNEL);
 	if (!UNIONFS_SB(sb)->data) {
@@ -307,9 +307,9 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		goto out;
 	}
 
-	hidden_root_info->lower_paths =
+	lower_root_info->lower_paths =
 		kcalloc(branches, sizeof(struct path), GFP_KERNEL);
-	if (!hidden_root_info->lower_paths) {
+	if (!lower_root_info->lower_paths) {
 		err = -ENOMEM;
 		goto out;
 	}
@@ -342,20 +342,20 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		err = path_lookup(name, LOOKUP_FOLLOW, &nd);
 		if (err) {
 			printk(KERN_WARNING "unionfs: error accessing "
-			       "hidden directory '%s' (error %d)\n",
+			       "lower directory '%s' (error %d)\n",
 			       name, err);
 			goto out;
 		}
 
 		if ((err = check_branch(&nd))) {
-			printk(KERN_WARNING "unionfs: hidden directory "
+			printk(KERN_WARNING "unionfs: lower directory "
 			       "'%s' is not a valid branch\n", name);
 			path_release(&nd);
 			goto out;
 		}
 
-		hidden_root_info->lower_paths[bindex].dentry = nd.dentry;
-		hidden_root_info->lower_paths[bindex].mnt = nd.mnt;
+		lower_root_info->lower_paths[bindex].dentry = nd.dentry;
+		lower_root_info->lower_paths[bindex].mnt = nd.mnt;
 
 		unionfs_write_lock(sb);
 		set_branchperms(sb, bindex, perms);
@@ -363,9 +363,9 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		new_branch_id(sb, bindex);
 		unionfs_write_unlock(sb);
 
-		if (hidden_root_info->bstart < 0)
-			hidden_root_info->bstart = bindex;
-		hidden_root_info->bend = bindex;
+		if (lower_root_info->bstart < 0)
+			lower_root_info->bstart = bindex;
+		lower_root_info->bend = bindex;
 		bindex++;
 	}
 
@@ -375,7 +375,7 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		goto out;
 	}
 
-	BUG_ON(branches != (hidden_root_info->bend + 1));
+	BUG_ON(branches != (lower_root_info->bend + 1));
 
 	/*
 	 * Ensure that no overlaps exist in the branches.
@@ -393,9 +393,9 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 	 * branch-overlapping test.
 	 */
 	for (i = 0; i < branches; i++) {
-		dent1 = hidden_root_info->lower_paths[i].dentry;
+		dent1 = lower_root_info->lower_paths[i].dentry;
 		for (j = i + 1; j < branches; j++) {
-			dent2 = hidden_root_info->lower_paths[j].dentry;
+			dent2 = lower_root_info->lower_paths[j].dentry;
 			if (is_branch_overlap(dent1, dent2)) {
 				printk(KERN_WARNING "unionfs: branches %d and "
 				       "%d overlap\n", i, j);
@@ -408,20 +408,20 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 out:
 	if (err) {
 		for (i = 0; i < branches; i++)
-			if (hidden_root_info->lower_paths[i].dentry) {
-				dput(hidden_root_info->lower_paths[i].dentry);
+			if (lower_root_info->lower_paths[i].dentry) {
+				dput(lower_root_info->lower_paths[i].dentry);
 				/* initialize: can't use unionfs_mntput here */
-				mntput(hidden_root_info->lower_paths[i].mnt);
+				mntput(lower_root_info->lower_paths[i].mnt);
 			}
 
-		kfree(hidden_root_info->lower_paths);
+		kfree(lower_root_info->lower_paths);
 		kfree(UNIONFS_SB(sb)->data);
 
 		/*
 		 * MUST clear the pointers to prevent potential double free if
 		 * the caller dies later on
 		 */
-		hidden_root_info->lower_paths = NULL;
+		lower_root_info->lower_paths = NULL;
 		UNIONFS_SB(sb)->data = NULL;
 	}
 	return err;
@@ -430,14 +430,14 @@ out:
 /*
  * Parse mount options.  See the manual page for usage instructions.
  *
- * Returns the dentry object of the lower-level (hidden) directory;
- * We want to mount our stackable file system on top of that hidden directory.
+ * Returns the dentry object of the lower-level (lower) directory;
+ * We want to mount our stackable file system on top of that lower directory.
  */
 static struct unionfs_dentry_info *unionfs_parse_options(
-					struct super_block *sb,
-					char *options)
+	struct super_block *sb,
+	char *options)
 {
-	struct unionfs_dentry_info *hidden_root_info;
+	struct unionfs_dentry_info *lower_root_info;
 	char *optname;
 	int err = 0;
 	int bindex;
@@ -445,13 +445,13 @@ static struct unionfs_dentry_info *unionfs_parse_options(
 
 	/* allocate private data area */
 	err = -ENOMEM;
-	hidden_root_info =
+	lower_root_info =
 		kzalloc(sizeof(struct unionfs_dentry_info), GFP_KERNEL);
-	if (!hidden_root_info)
+	if (!lower_root_info)
 		goto out_error;
-	hidden_root_info->bstart = -1;
-	hidden_root_info->bend = -1;
-	hidden_root_info->bopaque = -1;
+	lower_root_info->bstart = -1;
+	lower_root_info->bend = -1;
+	lower_root_info->bopaque = -1;
 
 	while ((optname = strsep(&options, ",")) != NULL) {
 		char *optarg;
@@ -482,7 +482,7 @@ static struct unionfs_dentry_info *unionfs_parse_options(
 				err = -EINVAL;
 				goto out_error;
 			}
-			err = parse_dirs_option(sb, hidden_root_info, optarg);
+			err = parse_dirs_option(sb, lower_root_info, optarg);
 			if (err)
 				goto out_error;
 			continue;
@@ -511,15 +511,15 @@ static struct unionfs_dentry_info *unionfs_parse_options(
 	goto out;
 
 out_error:
-	if (hidden_root_info && hidden_root_info->lower_paths) {
-		for (bindex = hidden_root_info->bstart;
-		     bindex >= 0 && bindex <= hidden_root_info->bend;
+	if (lower_root_info && lower_root_info->lower_paths) {
+		for (bindex = lower_root_info->bstart;
+		     bindex >= 0 && bindex <= lower_root_info->bend;
 		     bindex++) {
 			struct dentry *d;
 			struct vfsmount *m;
 
-			d = hidden_root_info->lower_paths[bindex].dentry;
-			m = hidden_root_info->lower_paths[bindex].mnt;
+			d = lower_root_info->lower_paths[bindex].dentry;
+			m = lower_root_info->lower_paths[bindex].mnt;
 
 			dput(d);
 			/* initializing: can't use unionfs_mntput here */
@@ -527,15 +527,15 @@ out_error:
 		}
 	}
 
-	kfree(hidden_root_info->lower_paths);
-	kfree(hidden_root_info);
+	kfree(lower_root_info->lower_paths);
+	kfree(lower_root_info);
 
 	kfree(UNIONFS_SB(sb)->data);
 	UNIONFS_SB(sb)->data = NULL;
 
-	hidden_root_info = ERR_PTR(err);
+	lower_root_info = ERR_PTR(err);
 out:
-	return hidden_root_info;
+	return lower_root_info;
 }
 
 /*
@@ -565,7 +565,7 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 			      int silent)
 {
 	int err = 0;
-	struct unionfs_dentry_info *hidden_root_info = NULL;
+	struct unionfs_dentry_info *lower_root_info = NULL;
 	int bindex, bstart, bend;
 
 	if (!raw_data) {
@@ -588,28 +588,28 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	init_rwsem(&UNIONFS_SB(sb)->rwsem);
 	UNIONFS_SB(sb)->high_branch_id = -1; /* -1 == invalid branch ID */
 
-	hidden_root_info = unionfs_parse_options(sb, raw_data);
-	if (IS_ERR(hidden_root_info)) {
+	lower_root_info = unionfs_parse_options(sb, raw_data);
+	if (IS_ERR(lower_root_info)) {
 		printk(KERN_WARNING
 		       "unionfs: read_super: error while parsing options "
-		       "(err = %ld)\n", PTR_ERR(hidden_root_info));
-		err = PTR_ERR(hidden_root_info);
-		hidden_root_info = NULL;
+		       "(err = %ld)\n", PTR_ERR(lower_root_info));
+		err = PTR_ERR(lower_root_info);
+		lower_root_info = NULL;
 		goto out_free;
 	}
-	if (hidden_root_info->bstart == -1) {
+	if (lower_root_info->bstart == -1) {
 		err = -ENOENT;
 		goto out_free;
 	}
 
-	/* set the hidden superblock field of upper superblock */
-	bstart = hidden_root_info->bstart;
+	/* set the lower superblock field of upper superblock */
+	bstart = lower_root_info->bstart;
 	BUG_ON(bstart != 0);
-	sbend(sb) = bend = hidden_root_info->bend;
+	sbend(sb) = bend = lower_root_info->bend;
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		struct dentry *d;
 
-		d = hidden_root_info->lower_paths[bindex].dentry;
+		d = lower_root_info->lower_paths[bindex].dentry;
 
 		unionfs_write_lock(sb);
 		unionfs_set_lower_super_idx(sb, bindex, d->d_sb);
@@ -635,13 +635,13 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	if ((err = new_dentry_private_data(sb->s_root)))
 		goto out_freedpd;
 
-	/* Set the hidden dentries for s_root */
+	/* Set the lower dentries for s_root */
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		struct dentry *d;
 		struct vfsmount *m;
 
-		d = hidden_root_info->lower_paths[bindex].dentry;
-		m = hidden_root_info->lower_paths[bindex].mnt;
+		d = lower_root_info->lower_paths[bindex].dentry;
+		m = lower_root_info->lower_paths[bindex].mnt;
 
 		unionfs_set_lower_dentry_idx(sb->s_root, bindex, d);
 		unionfs_set_lower_mnt_idx(sb->s_root, bindex, m);
@@ -670,22 +670,22 @@ out_freedpd:
 	dput(sb->s_root);
 
 out_dput:
-	if (hidden_root_info && !IS_ERR(hidden_root_info)) {
-		for (bindex = hidden_root_info->bstart;
-		     bindex <= hidden_root_info->bend; bindex++) {
+	if (lower_root_info && !IS_ERR(lower_root_info)) {
+		for (bindex = lower_root_info->bstart;
+		     bindex <= lower_root_info->bend; bindex++) {
 			struct dentry *d;
 			struct vfsmount *m;
 
-			d = hidden_root_info->lower_paths[bindex].dentry;
-			m = hidden_root_info->lower_paths[bindex].mnt;
+			d = lower_root_info->lower_paths[bindex].dentry;
+			m = lower_root_info->lower_paths[bindex].mnt;
 
 			dput(d);
 			/* initializing: can't use unionfs_mntput here */
 			mntput(m);
 		}
-		kfree(hidden_root_info->lower_paths);
-		kfree(hidden_root_info);
-		hidden_root_info = NULL;
+		kfree(lower_root_info->lower_paths);
+		kfree(lower_root_info);
+		lower_root_info = NULL;
 	}
 
 out_free:
@@ -694,9 +694,9 @@ out_free:
 	sb->s_fs_info = NULL;
 
 out:
-	if (hidden_root_info && !IS_ERR(hidden_root_info)) {
-		kfree(hidden_root_info->lower_paths);
-		kfree(hidden_root_info);
+	if (lower_root_info && !IS_ERR(lower_root_info)) {
+		kfree(lower_root_info->lower_paths);
+		kfree(lower_root_info);
 	}
 	return err;
 }

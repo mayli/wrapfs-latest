@@ -26,9 +26,9 @@
 int create_whiteout(struct dentry *dentry, int start)
 {
 	int bstart, bend, bindex;
-	struct dentry *hidden_dir_dentry;
-	struct dentry *hidden_dentry;
-	struct dentry *hidden_wh_dentry;
+	struct dentry *lower_dir_dentry;
+	struct dentry *lower_dentry;
+	struct dentry *lower_wh_dentry;
 	char *name = NULL;
 	int err = -EINVAL;
 
@@ -45,51 +45,51 @@ int create_whiteout(struct dentry *dentry, int start)
 	}
 
 	for (bindex = start; bindex >= 0; bindex--) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
 
-		if (!hidden_dentry) {
+		if (!lower_dentry) {
 			/*
-			 * if hidden dentry is not present, create the
-			 * entire hidden dentry directory structure and go
+			 * if lower dentry is not present, create the
+			 * entire lower dentry directory structure and go
 			 * ahead.  Since we want to just create whiteout, we
 			 * only want the parent dentry, and hence get rid of
 			 * this dentry.
 			 */
-			hidden_dentry = create_parents(dentry->d_inode,
-						       dentry,
-						       dentry->d_name.name,
-						       bindex);
-			if (!hidden_dentry || IS_ERR(hidden_dentry)) {
+			lower_dentry = create_parents(dentry->d_inode,
+						      dentry,
+						      dentry->d_name.name,
+						      bindex);
+			if (!lower_dentry || IS_ERR(lower_dentry)) {
 				printk(KERN_DEBUG "unionfs: create_parents "
 				       "failed for bindex = %d\n", bindex);
 				continue;
 			}
 		}
 
-		hidden_wh_dentry =
-			lookup_one_len(name, hidden_dentry->d_parent,
+		lower_wh_dentry =
+			lookup_one_len(name, lower_dentry->d_parent,
 				       dentry->d_name.len + UNIONFS_WHLEN);
-		if (IS_ERR(hidden_wh_dentry))
+		if (IS_ERR(lower_wh_dentry))
 			continue;
 
 		/*
 		 * The whiteout already exists. This used to be impossible,
 		 * but now is possible because of opaqueness.
 		 */
-		if (hidden_wh_dentry->d_inode) {
-			dput(hidden_wh_dentry);
+		if (lower_wh_dentry->d_inode) {
+			dput(lower_wh_dentry);
 			err = 0;
 			goto out;
 		}
 
-		hidden_dir_dentry = lock_parent(hidden_wh_dentry);
+		lower_dir_dentry = lock_parent(lower_wh_dentry);
 		if (!(err = is_robranch_super(dentry->d_sb, bindex)))
-			err = vfs_create(hidden_dir_dentry->d_inode,
-					 hidden_wh_dentry,
+			err = vfs_create(lower_dir_dentry->d_inode,
+					 lower_wh_dentry,
 					 ~current->fs->umask & S_IRWXUGO,
 					 NULL);
-		unlock_dir(hidden_dir_dentry);
-		dput(hidden_wh_dentry);
+		unlock_dir(lower_dir_dentry);
+		dput(lower_wh_dentry);
 
 		if (!err || !IS_COPYUP_ERR(err))
 			break;
@@ -108,24 +108,24 @@ out:
  * This is a helper function for rename, which ends up with hosed over
  * dentries when it needs to revert.
  */
-int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
+int unionfs_refresh_lower_dentry(struct dentry *dentry, int bindex)
 {
-	struct dentry *hidden_dentry;
-	struct dentry *hidden_parent;
+	struct dentry *lower_dentry;
+	struct dentry *lower_parent;
 	int err = 0;
 
 	verify_locked(dentry);
 
 	unionfs_lock_dentry(dentry->d_parent);
-	hidden_parent = unionfs_lower_dentry_idx(dentry->d_parent, bindex);
+	lower_parent = unionfs_lower_dentry_idx(dentry->d_parent, bindex);
 	unionfs_unlock_dentry(dentry->d_parent);
 
-	BUG_ON(!S_ISDIR(hidden_parent->d_inode->i_mode));
+	BUG_ON(!S_ISDIR(lower_parent->d_inode->i_mode));
 
-	hidden_dentry = lookup_one_len(dentry->d_name.name, hidden_parent,
-				       dentry->d_name.len);
-	if (IS_ERR(hidden_dentry)) {
-		err = PTR_ERR(hidden_dentry);
+	lower_dentry = lookup_one_len(dentry->d_name.name, lower_parent,
+				      dentry->d_name.len);
+	if (IS_ERR(lower_dentry)) {
+		err = PTR_ERR(lower_dentry);
 		goto out;
 	}
 
@@ -133,13 +133,13 @@ int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex)
 	iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
 	unionfs_set_lower_inode_idx(dentry->d_inode, bindex, NULL);
 
-	if (!hidden_dentry->d_inode) {
-		dput(hidden_dentry);
+	if (!lower_dentry->d_inode) {
+		dput(lower_dentry);
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 	} else {
-		unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
+		unionfs_set_lower_dentry_idx(dentry, bindex, lower_dentry);
 		unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
-					    igrab(hidden_dentry->d_inode));
+					    igrab(lower_dentry->d_inode));
 	}
 
 out:
@@ -149,16 +149,16 @@ out:
 int make_dir_opaque(struct dentry *dentry, int bindex)
 {
 	int err = 0;
-	struct dentry *hidden_dentry, *diropq;
-	struct inode *hidden_dir;
+	struct dentry *lower_dentry, *diropq;
+	struct inode *lower_dir;
 
-	hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-	hidden_dir = hidden_dentry->d_inode;
+	lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+	lower_dir = lower_dentry->d_inode;
 	BUG_ON(!S_ISDIR(dentry->d_inode->i_mode) ||
-	       !S_ISDIR(hidden_dir->i_mode));
+	       !S_ISDIR(lower_dir->i_mode));
 
-	mutex_lock(&hidden_dir->i_mutex);
-	diropq = lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
+	mutex_lock(&lower_dir->i_mutex);
+	diropq = lookup_one_len(UNIONFS_DIR_OPAQUE, lower_dentry,
 				sizeof(UNIONFS_DIR_OPAQUE) - 1);
 	if (IS_ERR(diropq)) {
 		err = PTR_ERR(diropq);
@@ -166,14 +166,14 @@ int make_dir_opaque(struct dentry *dentry, int bindex)
 	}
 
 	if (!diropq->d_inode)
-		err = vfs_create(hidden_dir, diropq, S_IRUGO, NULL);
+		err = vfs_create(lower_dir, diropq, S_IRUGO, NULL);
 	if (!err)
 		set_dbopaque(dentry, bindex);
 
 	dput(diropq);
 
 out:
-	mutex_unlock(&hidden_dir->i_mutex);
+	mutex_unlock(&lower_dir->i_mutex);
 	return err;
 }
 
@@ -186,7 +186,7 @@ int unionfs_get_nlinks(struct inode *inode)
 	int sum_nlinks = 0;
 	int dirs = 0;
 	int bindex;
-	struct inode *hidden_inode;
+	struct inode *lower_inode;
 
 	/* don't bother to do all the work since we're unlinked */
 	if (inode->i_nlink == 0)
@@ -196,16 +196,16 @@ int unionfs_get_nlinks(struct inode *inode)
 		return unionfs_lower_inode(inode)->i_nlink;
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
-		hidden_inode = unionfs_lower_inode_idx(inode, bindex);
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
 
 		/* ignore files */
-		if (!hidden_inode || !S_ISDIR(hidden_inode->i_mode))
+		if (!lower_inode || !S_ISDIR(lower_inode->i_mode))
 			continue;
 
-		BUG_ON(hidden_inode->i_nlink < 0);
+		BUG_ON(lower_inode->i_nlink < 0);
 
 		/* A deleted directory. */
-		if (hidden_inode->i_nlink == 0)
+		if (lower_inode->i_nlink == 0)
 			continue;
 		dirs++;
 
@@ -215,10 +215,10 @@ int unionfs_get_nlinks(struct inode *inode)
 		 * Some filesystems don't properly set the number of links
 		 * on empty directories
 		 */
-		if (hidden_inode->i_nlink == 1)
+		if (lower_inode->i_nlink == 1)
 			sum_nlinks += 2;
 		else
-			sum_nlinks += (hidden_inode->i_nlink - 2);
+			sum_nlinks += (lower_inode->i_nlink - 2);
 	}
 
 	return (!dirs ? 0 : sum_nlinks + 2);

@@ -64,7 +64,7 @@ void unionfs_destroy_filldir_cache(void)
 #define MINHASHSIZE 1
 static int guesstimate_hash_size(struct inode *inode)
 {
-	struct inode *hidden_inode;
+	struct inode *lower_inode;
 	int bindex;
 	int hashsize = MINHASHSIZE;
 
@@ -72,13 +72,13 @@ static int guesstimate_hash_size(struct inode *inode)
 		return UNIONFS_I(inode)->hashsize;
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
-		if (!(hidden_inode = unionfs_lower_inode_idx(inode, bindex)))
+		if (!(lower_inode = unionfs_lower_inode_idx(inode, bindex)))
 			continue;
 
-		if (hidden_inode->i_size == DENTPAGE)
+		if (lower_inode->i_size == DENTPAGE)
 			hashsize += DENTPERONEPAGE;
 		else
-			hashsize += (hidden_inode->i_size / DENTPAGE) *
+			hashsize += (lower_inode->i_size / DENTPAGE) *
 				DENTPERPAGE;
 	}
 

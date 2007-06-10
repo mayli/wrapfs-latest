@@ -33,13 +33,13 @@ static int copyup_deleted_file(struct file *file, struct dentry *dentry,
 	char name[nlen + 1];
 	int err;
 	struct dentry *tmp_dentry = NULL;
-	struct dentry *hidden_dentry;
-	struct dentry *hidden_dir_dentry = NULL;
+	struct dentry *lower_dentry;
+	struct dentry *lower_dir_dentry = NULL;
 
-	hidden_dentry = unionfs_lower_dentry_idx(dentry, bstart);
+	lower_dentry = unionfs_lower_dentry_idx(dentry, bstart);
 
 	sprintf(name, ".unionfs%*.*lx",
-		i_inosize, i_inosize, hidden_dentry->d_inode->i_ino);
+		i_inosize, i_inosize, lower_dentry->d_inode->i_ino);
 
 	/*
 	 * Loop, looking for an unused temp name to copyup to.
@@ -62,7 +62,7 @@ retry:
 		printk(KERN_DEBUG "unionfs: trying to rename %s to %s\n",
 		       dentry->d_name.name, name);
 
-		tmp_dentry = lookup_one_len(name, hidden_dentry->d_parent,
+		tmp_dentry = lookup_one_len(name, lower_dentry->d_parent,
 					    nlen);
 		if (IS_ERR(tmp_dentry)) {
 			err = PTR_ERR(tmp_dentry);
@@ -81,15 +81,15 @@ retry:
 	}
 
 	/* bring it to the same state as an unlinked file */
-	hidden_dentry = unionfs_lower_dentry_idx(dentry, dbstart(dentry));
+	lower_dentry = unionfs_lower_dentry_idx(dentry, dbstart(dentry));
 	if (!unionfs_lower_inode_idx(dentry->d_inode, bindex)) {
-		atomic_inc(&hidden_dentry->d_inode->i_count);
+		atomic_inc(&lower_dentry->d_inode->i_count);
 		unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
-					    hidden_dentry->d_inode);
+					    lower_dentry->d_inode);
 	}
-	hidden_dir_dentry = lock_parent(hidden_dentry);
-	err = vfs_unlink(hidden_dir_dentry->d_inode, hidden_dentry);
-	unlock_dir(hidden_dir_dentry);
+	lower_dir_dentry = lock_parent(lower_dentry);
+	err = vfs_unlink(lower_dir_dentry->d_inode, lower_dentry);
+	unlock_dir(lower_dir_dentry);
 
 out:
 	if (!err)
@@ -157,8 +157,8 @@ static void cleanup_file(struct file *file)
 static int open_all_files(struct file *file)
 {
 	int bindex, bstart, bend, err = 0;
-	struct file *hidden_file;
-	struct dentry *hidden_dentry;
+	struct file *lower_file;
+	struct dentry *lower_dentry;
 	struct dentry *dentry = file->f_dentry;
 	struct super_block *sb = dentry->d_sb;
 
@@ -166,25 +166,25 @@ static int open_all_files(struct file *file)
 	bend = dbend(dentry);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry)
 			continue;
 
-		dget(hidden_dentry);
+		dget(lower_dentry);
 		unionfs_mntget(dentry, bindex);
 		unionfs_read_lock(sb);
 		branchget(sb, bindex);
 		unionfs_read_unlock(sb);
 
-		hidden_file =
-			dentry_open(hidden_dentry,
+		lower_file =
+			dentry_open(lower_dentry,
 				    unionfs_lower_mnt_idx(dentry, bindex),
 				    file->f_flags);
-		if (IS_ERR(hidden_file)) {
-			err = PTR_ERR(hidden_file);
+		if (IS_ERR(lower_file)) {
+			err = PTR_ERR(lower_file);
 			goto out;
 		} else
-			unionfs_set_lower_file_idx(file, bindex, hidden_file);
+			unionfs_set_lower_file_idx(file, bindex, lower_file);
 	}
 out:
 	return err;
@@ -194,8 +194,8 @@ out:
 static int open_highest_file(struct file *file, int willwrite)
 {
 	int bindex, bstart, bend, err = 0;
-	struct file *hidden_file;
-	struct dentry *hidden_dentry;
+	struct file *lower_file;
+	struct dentry *lower_dentry;
 	struct dentry *dentry = file->f_dentry;
 	struct inode *parent_inode = dentry->d_parent->d_inode;
 	struct super_block *sb = dentry->d_sb;
@@ -204,7 +204,7 @@ static int open_highest_file(struct file *file, int willwrite)
 	bstart = dbstart(dentry);
 	bend = dbend(dentry);
 
-	hidden_dentry = unionfs_lower_dentry(dentry);
+	lower_dentry = unionfs_lower_dentry(dentry);
 	if (willwrite && IS_WRITE_FLAG(file->f_flags) && is_robranch(dentry)) {
 		for (bindex = bstart - 1; bindex >= 0; bindex--) {
 			err = copyup_file(parent_inode, file, bstart, bindex,
@@ -218,23 +218,23 @@ static int open_highest_file(struct file *file, int willwrite)
 		goto out;
 	}
 
-	dget(hidden_dentry);
+	dget(lower_dentry);
 	unionfs_mntget(dentry, bstart);
 	unionfs_read_lock(sb);
 	branchget(sb, bstart);
 	unionfs_read_unlock(sb);
-	hidden_file = dentry_open(hidden_dentry,
-				  unionfs_lower_mnt_idx(dentry, bstart),
-				  file->f_flags);
-	if (IS_ERR(hidden_file)) {
-		err = PTR_ERR(hidden_file);
+	lower_file = dentry_open(lower_dentry,
+				 unionfs_lower_mnt_idx(dentry, bstart),
+				 file->f_flags);
+	if (IS_ERR(lower_file)) {
+		err = PTR_ERR(lower_file);
 		goto out;
 	}
-	unionfs_set_lower_file(file, hidden_file);
+	unionfs_set_lower_file(file, lower_file);
 	/* Fix up the position. */
-	hidden_file->f_pos = file->f_pos;
+	lower_file->f_pos = file->f_pos;
 
-	memcpy(&hidden_file->f_ra, &file->f_ra, sizeof(struct file_ra_state));
+	memcpy(&lower_file->f_ra, &file->f_ra, sizeof(struct file_ra_state));
 out:
 	return err;
 }
@@ -402,29 +402,29 @@ out_nofree:
 /* unionfs_open helper function: open a directory */
 static int __open_dir(struct inode *inode, struct file *file)
 {
-	struct dentry *hidden_dentry;
-	struct file *hidden_file;
+	struct dentry *lower_dentry;
+	struct file *lower_file;
 	int bindex, bstart, bend;
 
 	bstart = fbstart(file) = dbstart(file->f_dentry);
 	bend = fbend(file) = dbend(file->f_dentry);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry =
+		lower_dentry =
 			unionfs_lower_dentry_idx(file->f_dentry, bindex);
-		if (!hidden_dentry)
+		if (!lower_dentry)
 			continue;
 
-		dget(hidden_dentry);
+		dget(lower_dentry);
 		unionfs_mntget(file->f_dentry, bindex);
-		hidden_file = dentry_open(hidden_dentry,
-					  unionfs_lower_mnt_idx(file->f_dentry,
-								bindex),
-					  file->f_flags);
-		if (IS_ERR(hidden_file))
-			return PTR_ERR(hidden_file);
+		lower_file = dentry_open(lower_dentry,
+					 unionfs_lower_mnt_idx(file->f_dentry,
+							       bindex),
+					 file->f_flags);
+		if (IS_ERR(lower_file))
+			return PTR_ERR(lower_file);
 
-		unionfs_set_lower_file_idx(file, bindex, hidden_file);
+		unionfs_set_lower_file_idx(file, bindex, lower_file);
 
 		/*
 		 * The branchget goes after the open, because otherwise
@@ -441,27 +441,27 @@ static int __open_dir(struct inode *inode, struct file *file)
 /* unionfs_open helper function: open a file */
 static int __open_file(struct inode *inode, struct file *file)
 {
-	struct dentry *hidden_dentry;
-	struct file *hidden_file;
-	int hidden_flags;
+	struct dentry *lower_dentry;
+	struct file *lower_file;
+	int lower_flags;
 	int bindex, bstart, bend;
 
-	hidden_dentry = unionfs_lower_dentry(file->f_dentry);
-	hidden_flags = file->f_flags;
+	lower_dentry = unionfs_lower_dentry(file->f_dentry);
+	lower_flags = file->f_flags;
 
 	bstart = fbstart(file) = dbstart(file->f_dentry);
 	bend = fbend(file) = dbend(file->f_dentry);
 
 	/*
-	 * check for the permission for hidden file.  If the error is
+	 * check for the permission for lower file.  If the error is
 	 * COPYUP_ERR, copyup the file.
 	 */
-	if (hidden_dentry->d_inode && is_robranch(file->f_dentry)) {
+	if (lower_dentry->d_inode && is_robranch(file->f_dentry)) {
 		/*
 		 * if the open will change the file, copy it up otherwise
 		 * defer it.
 		 */
-		if (hidden_flags & O_TRUNC) {
+		if (lower_flags & O_TRUNC) {
 			int size = 0;
 			int err = -EROFS;
 
@@ -475,24 +475,24 @@ static int __open_file(struct inode *inode, struct file *file)
 			}
 			return err;
 		} else
-			hidden_flags &= ~(OPEN_WRITE_FLAGS);
+			lower_flags &= ~(OPEN_WRITE_FLAGS);
 	}
 
-	dget(hidden_dentry);
+	dget(lower_dentry);
 
 	/*
 	 * dentry_open will decrement mnt refcnt if err.
 	 * otherwise fput() will do an mntput() for us upon file close.
 	 */
 	unionfs_mntget(file->f_dentry, bstart);
-	hidden_file =
-		dentry_open(hidden_dentry,
+	lower_file =
+		dentry_open(lower_dentry,
 			    unionfs_lower_mnt_idx(file->f_dentry, bstart),
-			    hidden_flags);
-	if (IS_ERR(hidden_file))
-		return PTR_ERR(hidden_file);
+			    lower_flags);
+	if (IS_ERR(lower_file))
+		return PTR_ERR(lower_file);
 
-	unionfs_set_lower_file(file, hidden_file);
+	unionfs_set_lower_file(file, lower_file);
 	unionfs_read_lock(inode->i_sb);
 	branchget(inode->i_sb, bstart);
 	unionfs_read_unlock(inode->i_sb);
@@ -503,7 +503,7 @@ static int __open_file(struct inode *inode, struct file *file)
 int unionfs_open(struct inode *inode, struct file *file)
 {
 	int err = 0;
-	struct file *hidden_file = NULL;
+	struct file *lower_file = NULL;
 	struct dentry *dentry = NULL;
 	int bindex = 0, bstart = 0, bend = 0;
 	int size;
@@ -544,7 +544,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 
 	/*
 	 * open all directories and make the unionfs file struct point to
-	 * these hidden file structs
+	 * these lower file structs
 	 */
 	if (S_ISDIR(inode->i_mode))
 		err = __open_dir(inode, file);	/* open a dir */
@@ -555,15 +555,15 @@ int unionfs_open(struct inode *inode, struct file *file)
 	if (err) {
 		atomic_dec(&UNIONFS_I(dentry->d_inode)->totalopens);
 		for (bindex = bstart; bindex <= bend; bindex++) {
-			hidden_file = unionfs_lower_file_idx(file, bindex);
-			if (!hidden_file)
+			lower_file = unionfs_lower_file_idx(file, bindex);
+			if (!lower_file)
 				continue;
 
 			unionfs_read_lock(file->f_dentry->d_sb);
 			branchput(file->f_dentry->d_sb, bindex);
 			unionfs_read_unlock(file->f_dentry->d_sb);
-			/* fput calls dput for hidden_dentry */
-			fput(hidden_file);
+			/* fput calls dput for lower_dentry */
+			fput(lower_file);
 		}
 	}
 
@@ -585,7 +585,7 @@ out_nofree:
 /* release all lower object references & free the file info structure */
 int unionfs_file_release(struct inode *inode, struct file *file)
 {
-	struct file *hidden_file = NULL;
+	struct file *lower_file = NULL;
 	struct unionfs_file_info *fileinfo;
 	struct unionfs_inode_info *inodeinfo;
 	struct super_block *sb = inode->i_sb;
@@ -605,16 +605,16 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	BUG_ON(file->f_dentry->d_inode != inode);
 	inodeinfo = UNIONFS_I(inode);
 
-	/* fput all the hidden files */
+	/* fput all the lower files */
 	fgen = atomic_read(&fileinfo->generation);
 	bstart = fbstart(file);
 	bend = fbend(file);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_file = unionfs_lower_file_idx(file, bindex);
+		lower_file = unionfs_lower_file_idx(file, bindex);
 
-		if (hidden_file) {
-			fput(hidden_file);
+		if (lower_file) {
+			fput(lower_file);
 			unionfs_read_lock(sb);
 			branchput(sb, bindex);
 			unionfs_read_unlock(sb);
@@ -648,24 +648,24 @@ out:
 /* pass the ioctl to the lower fs */
 static long do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	struct file *hidden_file;
+	struct file *lower_file;
 	int err;
 
-	hidden_file = unionfs_lower_file(file);
+	lower_file = unionfs_lower_file(file);
 
-	err = security_file_ioctl(hidden_file, cmd, arg);
+	err = security_file_ioctl(lower_file, cmd, arg);
 	if (err)
 		goto out;
 
 	err = -ENOTTY;
-	if (!hidden_file || !hidden_file->f_op)
+	if (!lower_file || !lower_file->f_op)
 		goto out;
-	if (hidden_file->f_op->unlocked_ioctl) {
-		err = hidden_file->f_op->unlocked_ioctl(hidden_file, cmd, arg);
-	} else if (hidden_file->f_op->ioctl) {
+	if (lower_file->f_op->unlocked_ioctl) {
+		err = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
+	} else if (lower_file->f_op->ioctl) {
 		lock_kernel();
-		err = hidden_file->f_op->ioctl(hidden_file->f_dentry->d_inode,
-					       hidden_file, cmd, arg);
+		err = lower_file->f_op->ioctl(lower_file->f_dentry->d_inode,
+					      lower_file, cmd, arg);
 		unlock_kernel();
 	}
 
@@ -686,7 +686,7 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	fd_set branchlist;
 	int bstart = 0, bend = 0, bindex = 0;
 	int orig_bstart, orig_bend;
-	struct dentry *dentry, *hidden_dentry;
+	struct dentry *dentry, *lower_dentry;
 	struct vfsmount *mnt;
 
 	dentry = file->f_dentry;
@@ -701,14 +701,14 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	FD_ZERO(&branchlist);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry)
 			continue;
-		if (hidden_dentry->d_inode)
+		if (lower_dentry->d_inode)
 			FD_SET(bindex, &branchlist);
 		/* purge any lower objects after partial_lookup */
 		if (bindex < orig_bstart || bindex > orig_bend) {
-			dput(hidden_dentry);
+			dput(lower_dentry);
 			unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 			iput(unionfs_lower_inode_idx(dentry->d_inode, bindex));
 			unionfs_set_lower_inode_idx(dentry->d_inode, bindex,
@@ -772,7 +772,7 @@ out:
 int unionfs_flush(struct file *file, fl_owner_t id)
 {
 	int err = 0;
-	struct file *hidden_file = NULL;
+	struct file *lower_file = NULL;
 	struct dentry *dentry = file->f_dentry;
 	int bindex, bstart, bend;
 
@@ -790,11 +790,11 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	bstart = fbstart(file);
 	bend = fbend(file);
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_file = unionfs_lower_file_idx(file, bindex);
+		lower_file = unionfs_lower_file_idx(file, bindex);
 
-		if (hidden_file && hidden_file->f_op &&
-		    hidden_file->f_op->flush) {
-			err = hidden_file->f_op->flush(hidden_file, id);
+		if (lower_file && lower_file->f_op &&
+		    lower_file->f_op->flush) {
+			err = lower_file->f_op->flush(lower_file, id);
 			if (err)
 				goto out_lock;
 

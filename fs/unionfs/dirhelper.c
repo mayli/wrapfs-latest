@@ -21,25 +21,25 @@
 /*
  * Delete all of the whiteouts in a given directory for rmdir.
  *
- * hidden directory inode should be locked
+ * lower directory inode should be locked
  */
 int do_delete_whiteouts(struct dentry *dentry, int bindex,
 			struct unionfs_dir_state *namelist)
 {
 	int err = 0;
-	struct dentry *hidden_dir_dentry = NULL;
-	struct dentry *hidden_dentry;
+	struct dentry *lower_dir_dentry = NULL;
+	struct dentry *lower_dentry;
 	char *name = NULL, *p;
-	struct inode *hidden_dir;
+	struct inode *lower_dir;
 	int i;
 	struct list_head *pos;
 	struct filldir_node *cursor;
 
-	/* Find out hidden parent dentry */
-	hidden_dir_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-	BUG_ON(!S_ISDIR(hidden_dir_dentry->d_inode->i_mode));
-	hidden_dir = hidden_dir_dentry->d_inode;
-	BUG_ON(!S_ISDIR(hidden_dir->i_mode));
+	/* Find out lower parent dentry */
+	lower_dir_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+	BUG_ON(!S_ISDIR(lower_dir_dentry->d_inode->i_mode));
+	lower_dir = lower_dir_dentry->d_inode;
+	BUG_ON(!S_ISDIR(lower_dir->i_mode));
 
 	err = -ENOMEM;
 	name = __getname();
@@ -61,17 +61,17 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 				continue;
 
 			strcpy(p, cursor->name);
-			hidden_dentry =
-				lookup_one_len(name, hidden_dir_dentry,
+			lower_dentry =
+				lookup_one_len(name, lower_dir_dentry,
 					       cursor->namelen +
 					       UNIONFS_WHLEN);
-			if (IS_ERR(hidden_dentry)) {
-				err = PTR_ERR(hidden_dentry);
+			if (IS_ERR(lower_dentry)) {
+				err = PTR_ERR(lower_dentry);
 				break;
 			}
-			if (hidden_dentry->d_inode)
-				err = vfs_unlink(hidden_dir, hidden_dentry);
-			dput(hidden_dentry);
+			if (lower_dentry->d_inode)
+				err = vfs_unlink(lower_dir, lower_dentry);
+			dput(lower_dentry);
 			if (err)
 				break;
 		}
@@ -80,7 +80,7 @@ int do_delete_whiteouts(struct dentry *dentry, int bindex,
 	__putname(name);
 
 	/* After all of the removals, we should copy the attributes once. */
-	fsstack_copy_attr_times(dentry->d_inode, hidden_dir_dentry->d_inode);
+	fsstack_copy_attr_times(dentry->d_inode, lower_dir_dentry->d_inode);
 
 out:
 	return err;
@@ -92,8 +92,8 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 {
 	int err;
 	struct super_block *sb;
-	struct dentry *hidden_dir_dentry;
-	struct inode *hidden_dir;
+	struct dentry *lower_dir_dentry;
+	struct inode *lower_dir;
 	struct sioq_args args;
 
 	sb = dentry->d_sb;
@@ -106,13 +106,13 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 	if (err)
 		goto out;
 
-	hidden_dir_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-	BUG_ON(!S_ISDIR(hidden_dir_dentry->d_inode->i_mode));
-	hidden_dir = hidden_dir_dentry->d_inode;
-	BUG_ON(!S_ISDIR(hidden_dir->i_mode));
+	lower_dir_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+	BUG_ON(!S_ISDIR(lower_dir_dentry->d_inode->i_mode));
+	lower_dir = lower_dir_dentry->d_inode;
+	BUG_ON(!S_ISDIR(lower_dir->i_mode));
 
-	mutex_lock(&hidden_dir->i_mutex);
-	if (!permission(hidden_dir, MAY_WRITE | MAY_EXEC, NULL))
+	mutex_lock(&lower_dir->i_mutex);
+	if (!permission(lower_dir, MAY_WRITE | MAY_EXEC, NULL))
 		err = do_delete_whiteouts(dentry, bindex, namelist);
 	else {
 		args.deletewh.namelist = namelist;
@@ -121,7 +121,7 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 		run_sioq(__delete_whiteouts, &args);
 		err = args.err;
 	}
-	mutex_unlock(&hidden_dir->i_mutex);
+	mutex_unlock(&lower_dir->i_mutex);
 
 out:
 	unionfs_read_unlock(sb);
@@ -185,9 +185,9 @@ out:
 int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 {
 	int err = 0;
-	struct dentry *hidden_dentry = NULL;
+	struct dentry *lower_dentry = NULL;
 	struct super_block *sb;
-	struct file *hidden_file;
+	struct file *lower_file;
 	struct unionfs_rdutil_callback *buf = NULL;
 	int bindex, bstart, bend, bopaque;
 
@@ -219,28 +219,28 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 		goto out;
 	}
 
-	/* Process the hidden directories with rdutil_callback as a filldir. */
+	/* Process the lower directories with rdutil_callback as a filldir. */
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry)
 			continue;
-		if (!hidden_dentry->d_inode)
+		if (!lower_dentry->d_inode)
 			continue;
-		if (!S_ISDIR(hidden_dentry->d_inode->i_mode))
+		if (!S_ISDIR(lower_dentry->d_inode->i_mode))
 			continue;
 
-		dget(hidden_dentry);
+		dget(lower_dentry);
 		unionfs_mntget(dentry, bindex);
 		unionfs_read_lock(sb);
 		branchget(sb, bindex);
 		unionfs_read_unlock(sb);
-		hidden_file =
-			dentry_open(hidden_dentry,
+		lower_file =
+			dentry_open(lower_dentry,
 				    unionfs_lower_mnt_idx(dentry, bindex),
 				    O_RDONLY);
-		if (IS_ERR(hidden_file)) {
-			err = PTR_ERR(hidden_file);
-			dput(hidden_dentry);
+		if (IS_ERR(lower_file)) {
+			err = PTR_ERR(lower_file);
+			dput(lower_dentry);
 			unionfs_read_lock(sb);
 			branchput(sb, bindex);
 			unionfs_read_unlock(sb);
@@ -250,14 +250,14 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 		do {
 			buf->filldir_called = 0;
 			buf->rdstate->bindex = bindex;
-			err = vfs_readdir(hidden_file,
+			err = vfs_readdir(lower_file,
 					  readdir_util_callback, buf);
 			if (buf->err)
 				err = buf->err;
 		} while ((err >= 0) && buf->filldir_called);
 
-		/* fput calls dput for hidden_dentry */
-		fput(hidden_file);
+		/* fput calls dput for lower_dentry */
+		fput(lower_file);
 		unionfs_read_lock(sb);
 		branchput(sb, bindex);
 		unionfs_read_unlock(sb);

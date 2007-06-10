@@ -33,39 +33,39 @@ static int is_validname(const char *name)
 static noinline int is_opaque_dir(struct dentry *dentry, int bindex)
 {
 	int err = 0;
-	struct dentry *hidden_dentry;
-	struct dentry *wh_hidden_dentry;
-	struct inode *hidden_inode;
+	struct dentry *lower_dentry;
+	struct dentry *wh_lower_dentry;
+	struct inode *lower_inode;
 	struct sioq_args args;
 
-	hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-	hidden_inode = hidden_dentry->d_inode;
+	lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+	lower_inode = lower_dentry->d_inode;
 
-	BUG_ON(!S_ISDIR(hidden_inode->i_mode));
+	BUG_ON(!S_ISDIR(lower_inode->i_mode));
 
-	mutex_lock(&hidden_inode->i_mutex);
+	mutex_lock(&lower_inode->i_mutex);
 
-	if (!permission(hidden_inode, MAY_EXEC, NULL))
-		wh_hidden_dentry =
-			lookup_one_len(UNIONFS_DIR_OPAQUE, hidden_dentry,
+	if (!permission(lower_inode, MAY_EXEC, NULL))
+		wh_lower_dentry =
+			lookup_one_len(UNIONFS_DIR_OPAQUE, lower_dentry,
 				       sizeof(UNIONFS_DIR_OPAQUE) - 1);
 	else {
-		args.is_opaque.dentry = hidden_dentry;
+		args.is_opaque.dentry = lower_dentry;
 		run_sioq(__is_opaque_dir, &args);
-		wh_hidden_dentry = args.ret;
+		wh_lower_dentry = args.ret;
 	}
 
-	mutex_unlock(&hidden_inode->i_mutex);
+	mutex_unlock(&lower_inode->i_mutex);
 
-	if (IS_ERR(wh_hidden_dentry)) {
-		err = PTR_ERR(wh_hidden_dentry);
+	if (IS_ERR(wh_lower_dentry)) {
+		err = PTR_ERR(wh_lower_dentry);
 		goto out;
 	}
 
-	/* This is an opaque dir iff wh_hidden_dentry is positive */
-	err = !!wh_hidden_dentry->d_inode;
+	/* This is an opaque dir iff wh_lower_dentry is positive */
+	err = !!wh_lower_dentry->d_inode;
 
-	dput(wh_hidden_dentry);
+	dput(wh_lower_dentry);
 out:
 	return err;
 }
@@ -80,17 +80,17 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 				      struct nameidata *nd, int lookupmode)
 {
 	int err = 0;
-	struct dentry *hidden_dentry = NULL;
-	struct dentry *wh_hidden_dentry = NULL;
-	struct dentry *hidden_dir_dentry = NULL;
+	struct dentry *lower_dentry = NULL;
+	struct dentry *wh_lower_dentry = NULL;
+	struct dentry *lower_dir_dentry = NULL;
 	struct dentry *parent_dentry = NULL;
 	struct dentry *d_interposed = NULL;
 	int bindex, bstart, bend, bopaque;
 	int dentry_count = 0;	/* Number of positive dentries. */
 	int first_dentry_offset = -1; /* -1 is uninitialized */
 	struct dentry *first_dentry = NULL;
-	struct dentry *first_hidden_dentry = NULL;
-	struct vfsmount *first_hidden_mnt = NULL;
+	struct dentry *first_lower_dentry = NULL;
+	struct vfsmount *first_lower_mnt = NULL;
 	int locked_parent = 0;
 	int locked_child = 0;
 	int allocated_new_info = 0;
@@ -157,20 +157,20 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 	}
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (lookupmode == INTERPOSE_PARTIAL && hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (lookupmode == INTERPOSE_PARTIAL && lower_dentry)
 			continue;
-		BUG_ON(hidden_dentry != NULL);
+		BUG_ON(lower_dentry != NULL);
 
-		hidden_dir_dentry =
+		lower_dir_dentry =
 			unionfs_lower_dentry_idx(parent_dentry, bindex);
 
-		/* if the parent hidden dentry does not exist skip this */
-		if (!(hidden_dir_dentry && hidden_dir_dentry->d_inode))
+		/* if the parent lower dentry does not exist skip this */
+		if (!(lower_dir_dentry && lower_dir_dentry->d_inode))
 			continue;
 
 		/* also skip it if the parent isn't a directory. */
-		if (!S_ISDIR(hidden_dir_dentry->d_inode->i_mode))
+		if (!S_ISDIR(lower_dir_dentry->d_inode->i_mode))
 			continue;
 
 		/* Reuse the whiteout name because its value doesn't change. */
@@ -183,47 +183,47 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		}
 
 		/* check if whiteout exists in this branch: lookup .wh.foo */
-		wh_hidden_dentry = lookup_one_len(whname, hidden_dir_dentry,
-						  namelen + UNIONFS_WHLEN);
-		if (IS_ERR(wh_hidden_dentry)) {
-			dput(first_hidden_dentry);
+		wh_lower_dentry = lookup_one_len(whname, lower_dir_dentry,
+						 namelen + UNIONFS_WHLEN);
+		if (IS_ERR(wh_lower_dentry)) {
+			dput(first_lower_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);
-			err = PTR_ERR(wh_hidden_dentry);
+			err = PTR_ERR(wh_lower_dentry);
 			goto out_free;
 		}
 
-		if (wh_hidden_dentry->d_inode) {
+		if (wh_lower_dentry->d_inode) {
 			/* We found a whiteout so lets give up. */
-			if (S_ISREG(wh_hidden_dentry->d_inode->i_mode)) {
+			if (S_ISREG(wh_lower_dentry->d_inode->i_mode)) {
 				set_dbend(dentry, bindex);
 				set_dbopaque(dentry, bindex);
-				dput(wh_hidden_dentry);
+				dput(wh_lower_dentry);
 				break;
 			}
 			err = -EIO;
 			printk(KERN_NOTICE "unionfs: EIO: invalid whiteout "
 			       "entry type %d.\n",
-			       wh_hidden_dentry->d_inode->i_mode);
-			dput(wh_hidden_dentry);
-			dput(first_hidden_dentry);
+			       wh_lower_dentry->d_inode->i_mode);
+			dput(wh_lower_dentry);
+			dput(first_lower_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);
 			goto out_free;
 		}
 
-		dput(wh_hidden_dentry);
-		wh_hidden_dentry = NULL;
+		dput(wh_lower_dentry);
+		wh_lower_dentry = NULL;
 
 		/* Now do regular lookup; lookup foo */
 		nd->dentry = unionfs_lower_dentry_idx(dentry, bindex);
 		/* FIXME: fix following line for mount point crossing */
 		nd->mnt = unionfs_lower_mnt_idx(parent_dentry, bindex);
 
-		hidden_dentry = lookup_one_len_nd(name, hidden_dir_dentry,
-						  namelen, nd);
-		if (IS_ERR(hidden_dentry)) {
-			dput(first_hidden_dentry);
+		lower_dentry = lookup_one_len_nd(name, lower_dir_dentry,
+						 namelen, nd);
+		if (IS_ERR(lower_dentry)) {
+			dput(first_lower_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);
-			err = PTR_ERR(hidden_dentry);
+			err = PTR_ERR(lower_dentry);
 			goto out_free;
 		}
 
@@ -231,19 +231,19 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		 * Store the first negative dentry specially, because if they
 		 * are all negative we need this for future creates.
 		 */
-		if (!hidden_dentry->d_inode) {
-			if (!first_hidden_dentry && (dbstart(dentry) == -1)) {
-				first_hidden_dentry = hidden_dentry;
+		if (!lower_dentry->d_inode) {
+			if (!first_lower_dentry && (dbstart(dentry) == -1)) {
+				first_lower_dentry = lower_dentry;
 				/*
 				 * FIXME: following line needs to be changed
 				 * to allow mount-point crossing
 				 */
 				first_dentry = parent_dentry;
-				first_hidden_mnt =
+				first_lower_mnt =
 					unionfs_mntget(parent_dentry, bindex);
 				first_dentry_offset = bindex;
 			} else
-				dput(hidden_dentry);
+				dput(lower_dentry);
 
 			continue;
 		}
@@ -254,7 +254,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		/* store underlying dentry */
 		if (dbstart(dentry) == -1)
 			set_dbstart(dentry, bindex);
-		unionfs_set_lower_dentry_idx(dentry, bindex, hidden_dentry);
+		unionfs_set_lower_dentry_idx(dentry, bindex, lower_dentry);
 		/*
 		 * FIXME: the following line needs to get fixed to allow
 		 * mount-point crossing
@@ -266,10 +266,10 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 
 		/* update parent directory's atime with the bindex */
 		fsstack_copy_attr_atime(parent_dentry->d_inode,
-					hidden_dir_dentry->d_inode);
+					lower_dir_dentry->d_inode);
 
 		/* We terminate file lookups here. */
-		if (!S_ISDIR(hidden_dentry->d_inode->i_mode)) {
+		if (!S_ISDIR(lower_dentry->d_inode->i_mode)) {
 			if (lookupmode == INTERPOSE_PARTIAL)
 				continue;
 			if (dentry_count == 1)
@@ -282,7 +282,7 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 
 		opaque = is_opaque_dir(dentry, bindex);
 		if (opaque < 0) {
-			dput(first_hidden_dentry);
+			dput(first_lower_dentry);
 			unionfs_mntput(first_dentry, first_dentry_offset);
 			err = opaque;
 			goto out_free;
@@ -314,12 +314,12 @@ out_negative:
 		/* FIXME: fix following line for mount point crossing */
 		nd->mnt = unionfs_lower_mnt_idx(parent_dentry, bindex);
 
-		first_hidden_dentry =
-			lookup_one_len_nd(name, hidden_dir_dentry,
+		first_lower_dentry =
+			lookup_one_len_nd(name, lower_dir_dentry,
 					  namelen, nd);
 		first_dentry_offset = bindex;
-		if (IS_ERR(first_hidden_dentry)) {
-			err = PTR_ERR(first_hidden_dentry);
+		if (IS_ERR(first_lower_dentry)) {
+			err = PTR_ERR(first_lower_dentry);
 			goto out;
 		}
 
@@ -328,13 +328,13 @@ out_negative:
 		 * mount-point crossing
 		 */
 		first_dentry = dentry;
-		first_hidden_mnt = unionfs_mntget(dentry->d_sb->s_root,
-						  bindex);
+		first_lower_mnt = unionfs_mntget(dentry->d_sb->s_root,
+						 bindex);
 	}
 	unionfs_set_lower_dentry_idx(dentry, first_dentry_offset,
-				     first_hidden_dentry);
+				     first_lower_dentry);
 	unionfs_set_lower_mnt_idx(dentry, first_dentry_offset,
-				  first_hidden_mnt);
+				  first_lower_mnt);
 	set_dbstart(dentry, first_dentry_offset);
 	set_dbend(dentry, first_dentry_offset);
 
@@ -352,7 +352,7 @@ out_positive:
 	 * If we're holding onto the first negative dentry & corresponding
 	 * vfsmount - throw it out.
 	 */
-	dput(first_hidden_dentry);
+	dput(first_lower_dentry);
 	unionfs_mntput(first_dentry, first_dentry_offset);
 
 	/* Partial lookups need to re-interpose, or throw away older negs. */
@@ -529,17 +529,17 @@ void update_bstart(struct dentry *dentry)
 	int bindex;
 	int bstart = dbstart(dentry);
 	int bend = dbend(dentry);
-	struct dentry *hidden_dentry;
+	struct dentry *lower_dentry;
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry)
 			continue;
-		if (hidden_dentry->d_inode) {
+		if (lower_dentry->d_inode) {
 			set_dbstart(dentry, bindex);
 			break;
 		}
-		dput(hidden_dentry);
+		dput(lower_dentry);
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 	}
 }

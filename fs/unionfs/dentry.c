@@ -29,7 +29,7 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 				      struct nameidata *nd)
 {
 	int valid = 1;		/* default is valid (1); invalid is 0. */
-	struct dentry *hidden_dentry;
+	struct dentry *lower_dentry;
 	int bindex, bstart, bend;
 	int sbgen, dgen;
 	int positive = 0;
@@ -77,12 +77,12 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 		bstart = dbstart(dentry);
 		bend = dbend(dentry);
 		if (bstart >= 0) {
-			struct dentry *hidden_dentry;
+			struct dentry *lower_dentry;
 			for (bindex = bstart; bindex <= bend; bindex++) {
-				hidden_dentry =
+				lower_dentry =
 					unionfs_lower_dentry_idx(dentry,
 								 bindex);
-				dput(hidden_dentry);
+				dput(lower_dentry);
 			}
 		}
 		set_dbstart(dentry, -1);
@@ -105,14 +105,14 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 			bstart = ibstart(dentry->d_inode);
 			bend = ibend(dentry->d_inode);
 			if (bstart >= 0) {
-				struct inode *hidden_inode;
+				struct inode *lower_inode;
 				for (bindex = bstart; bindex <= bend;
 				     bindex++) {
-					hidden_inode =
+					lower_inode =
 						unionfs_lower_inode_idx(
 							dentry->d_inode,
 							bindex);
-					iput(hidden_inode);
+					iput(lower_inode);
 				}
 			}
 			kfree(UNIONFS_I(dentry->d_inode)->lower_inodes);
@@ -152,12 +152,12 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 	bend = dbend(dentry);
 	BUG_ON(bstart == -1);
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_dentry = unionfs_lower_dentry_idx(dentry, bindex);
-		if (!hidden_dentry || !hidden_dentry->d_op
-		    || !hidden_dentry->d_op->d_revalidate)
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		if (!lower_dentry || !lower_dentry->d_op
+		    || !lower_dentry->d_op->d_revalidate)
 			continue;
-		if (!hidden_dentry->d_op->d_revalidate(hidden_dentry,
-						       &lowernd))
+		if (!lower_dentry->d_op->d_revalidate(lower_dentry,
+						      &lowernd))
 			valid = 0;
 	}
 
@@ -314,13 +314,13 @@ static void unionfs_d_release(struct dentry *dentry)
 		goto out;
 	} else if (dbstart(dentry) < 0) {
 		/* this is due to a failed lookup */
-		printk(KERN_DEBUG "unionfs: dentry without hidden "
+		printk(KERN_DEBUG "unionfs: dentry without lower "
 		       "dentries: %.*s",
 		       dentry->d_name.len, dentry->d_name.name);
 		goto out_free;
 	}
 
-	/* Release all the hidden dentries */
+	/* Release all the lower dentries */
 	bstart = dbstart(dentry);
 	bend = dbend(dentry);
 	for (bindex = bstart; bindex <= bend; bindex++) {

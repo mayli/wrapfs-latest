@@ -17,13 +17,13 @@
  */
 
 /* it's always useful to know what part of the code called us */
-#define PRINT_CALLER()				\
-do {						\
-  if (!printed_caller) {			\
-    printk("PC:%s:%s:%d\n",fname,fxn,line);	\
-    printed_caller = 1;				\
-  }						\
- } while (0)
+#define PRINT_CALLER()						\
+	do {							\
+		if (!printed_caller) {				\
+			printk("PC:%s:%s:%d\n",fname,fxn,line);	\
+			printed_caller = 1;			\
+		}						\
+	} while (0)
 
 /*
  * __unionfs_check_{inode,dentry,file} perform exhaustive sanity checking on

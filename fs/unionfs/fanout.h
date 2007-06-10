@@ -127,14 +127,14 @@ static inline void unionfs_set_lower_inode(struct inode *i, struct inode *val)
 
 /* Superblock to lower superblock. */
 static inline struct super_block *unionfs_lower_super(
-					const struct super_block *sb)
+	const struct super_block *sb)
 {
 	return UNIONFS_SB(sb)->data[sbstart(sb)].sb;
 }
 
 static inline struct super_block *unionfs_lower_super_idx(
-					const struct super_block *sb,
-					int index)
+	const struct super_block *sb,
+	int index)
 {
 	return UNIONFS_SB(sb)->data[index].sb;
 }
@@ -216,8 +216,8 @@ static inline void unionfs_set_lower_dentry_idx(struct dentry *dent, int index,
 }
 
 static inline struct dentry *unionfs_lower_dentry_idx(
-				const struct dentry *dent,
-				int index)
+	const struct dentry *dent,
+	int index)
 {
 	return UNIONFS_D(dent)->lower_paths[index].dentry;
 }
@@ -234,8 +234,8 @@ static inline void unionfs_set_lower_mnt_idx(struct dentry *dent, int index,
 }
 
 static inline struct vfsmount *unionfs_lower_mnt_idx(
-					const struct dentry *dent,
-					int index)
+	const struct dentry *dent,
+	int index)
 {
 	return UNIONFS_D(dent)->lower_paths[index].mnt;
 }

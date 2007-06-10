@@ -191,7 +191,7 @@ static noinline int do_remount_mode_option(char *optarg, int cur_branches,
 	err = path_lookup(optarg, LOOKUP_FOLLOW, &nd);
 	if (err) {
 		printk(KERN_WARNING "unionfs: error accessing "
-		       "hidden directory \"%s\" (error %d)\n",
+		       "lower directory \"%s\" (error %d)\n",
 		       optarg, err);
 		goto out;
 	}
@@ -234,7 +234,7 @@ static noinline int do_remount_del_option(char *optarg, int cur_branches,
 	err = path_lookup(optarg, LOOKUP_FOLLOW, &nd);
 	if (err) {
 		printk(KERN_WARNING "unionfs: error accessing "
-		       "hidden directory \"%s\" (error %d)\n",
+		       "lower directory \"%s\" (error %d)\n",
 		       optarg, err);
 		goto out;
 	}
@@ -318,7 +318,7 @@ static noinline int do_remount_add_option(char *optarg, int cur_branches,
 	err = path_lookup(optarg, LOOKUP_FOLLOW, &nd);
 	if (err) {
 		printk(KERN_WARNING "unionfs: error accessing "
-		       "hidden directory \"%s\" (error %d)\n",
+		       "lower directory \"%s\" (error %d)\n",
 		       optarg, err);
 		goto out;
 	}
@@ -354,7 +354,7 @@ found_insertion_point:
 	err = path_lookup(new_branch, LOOKUP_FOLLOW, &nd);
 	if (err) {
 		printk(KERN_WARNING "unionfs: error accessing "
-		       "hidden directory \"%s\" (error %d)\n",
+		       "lower directory \"%s\" (error %d)\n",
 		       new_branch, err);
 		goto out;
 	}
@@ -366,7 +366,7 @@ found_insertion_point:
 	 * code base supports that correctly.
 	 */
 	if ((err = check_branch(&nd))) {
-		printk(KERN_WARNING "unionfs: hidden directory "
+		printk(KERN_WARNING "unionfs: lower directory "
 		       "\"%s\" is not a valid branch\n", optarg);
 		path_release(&nd);
 		goto out;
@@ -513,7 +513,7 @@ static int unionfs_remount_fs(struct super_block *sb, int *flags,
 	 * and then free the temps (done near the end of this function).
 	 */
 	max_branches = cur_branches + add_branches;
-	/* allocate space for new pointers to hidden dentry */
+	/* allocate space for new pointers to lower dentry */
 	tmp_data = kcalloc(max_branches,
 			   sizeof(struct unionfs_data), GFP_KERNEL);
 	if (!tmp_data) {
@@ -654,7 +654,7 @@ out_no_change:
 		goto out_release;
 	}
 
-	/* (re)allocate space for new pointers to hidden dentry */
+	/* (re)allocate space for new pointers to lower dentry */
 	size = new_branches * sizeof(struct unionfs_data);
 	new_data = krealloc(tmp_data, size, GFP_KERNEL);
 	if (!new_data) {
@@ -796,7 +796,7 @@ out_error:
 static void unionfs_clear_inode(struct inode *inode)
 {
 	int bindex, bstart, bend;
-	struct inode *hidden_inode;
+	struct inode *lower_inode;
 	struct list_head *pos, *n;
 	struct unionfs_dir_state *rdstate;
 
@@ -807,17 +807,17 @@ static void unionfs_clear_inode(struct inode *inode)
 	}
 
 	/*
-	 * Decrement a reference to a hidden_inode, which was incremented
+	 * Decrement a reference to a lower_inode, which was incremented
 	 * by our read_inode when it was created initially.
 	 */
 	bstart = ibstart(inode);
 	bend = ibend(inode);
 	if (bstart >= 0) {
 		for (bindex = bstart; bindex <= bend; bindex++) {
-			hidden_inode = unionfs_lower_inode_idx(inode, bindex);
-			if (!hidden_inode)
+			lower_inode = unionfs_lower_inode_idx(inode, bindex);
+			if (!lower_inode)
 				continue;
-			iput(hidden_inode);
+			iput(lower_inode);
 		}
 	}
 
@@ -903,8 +903,8 @@ static int unionfs_write_inode(struct inode *inode, int sync)
  */
 static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 {
-	struct super_block *sb, *hidden_sb;
-	struct vfsmount *hidden_mnt;
+	struct super_block *sb, *lower_sb;
+	struct vfsmount *lower_mnt;
 	int bindex, bstart, bend;
 
 	if (!(flags & MNT_FORCE))
@@ -919,14 +919,14 @@ static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 	bstart = sbstart(sb);
 	bend = sbend(sb);
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		hidden_mnt = unionfs_lower_mnt_idx(sb->s_root, bindex);
+		lower_mnt = unionfs_lower_mnt_idx(sb->s_root, bindex);
 		unionfs_read_lock(sb);
-		hidden_sb = unionfs_lower_super_idx(sb, bindex);
+		lower_sb = unionfs_lower_super_idx(sb, bindex);
 		unionfs_read_unlock(sb);
 
-		if (hidden_mnt && hidden_sb && hidden_sb->s_op &&
-		    hidden_sb->s_op->umount_begin)
-			hidden_sb->s_op->umount_begin(hidden_mnt, flags);
+		if (lower_mnt && lower_sb && lower_sb->s_op &&
+		    lower_sb->s_op->umount_begin)
+			lower_sb->s_op->umount_begin(lower_mnt, flags);
 	}
 }
 

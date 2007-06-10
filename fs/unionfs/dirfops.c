@@ -90,7 +90,7 @@ out:
 static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 {
 	int err = 0;
-	struct file *hidden_file = NULL;
+	struct file *lower_file = NULL;
 	struct inode *inode = NULL;
 	struct unionfs_getdents_callback buf;
 	struct unionfs_dir_state *uds;
@@ -122,8 +122,8 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	bend = fbend(file);
 
 	while (uds->bindex <= bend) {
-		hidden_file = unionfs_lower_file_idx(file, uds->bindex);
-		if (!hidden_file) {
+		lower_file = unionfs_lower_file_idx(file, uds->bindex);
+		if (!lower_file) {
 			uds->bindex++;
 			uds->dirpos = 0;
 			continue;
@@ -139,15 +139,15 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		buf.sb = inode->i_sb;
 
 		/* Read starting from where we last left off. */
-		offset = vfs_llseek(hidden_file, uds->dirpos, SEEK_SET);
+		offset = vfs_llseek(lower_file, uds->dirpos, SEEK_SET);
 		if (offset < 0) {
 			err = offset;
 			goto out;
 		}
-		err = vfs_readdir(hidden_file, unionfs_filldir, &buf);
+		err = vfs_readdir(lower_file, unionfs_filldir, &buf);
 
 		/* Save the position for when we continue. */
-		offset = vfs_llseek(hidden_file, 0, SEEK_CUR);
+		offset = vfs_llseek(lower_file, 0, SEEK_CUR);
 		if (offset < 0) {
 			err = offset;
 			goto out;
@@ -155,7 +155,7 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		uds->dirpos = offset;
 
 		/* Copy the atime. */
-		fsstack_copy_attr_atime(inode, hidden_file->f_dentry->d_inode);
+		fsstack_copy_attr_atime(inode, lower_file->f_dentry->d_inode);
 
 		if (err < 0)
 			goto out;

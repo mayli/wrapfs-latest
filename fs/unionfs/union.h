@@ -97,7 +97,7 @@ struct unionfs_inode_info {
 	int hashsize;
 	int cookie;
 
-	/* The hidden inodes */
+	/* The lower inodes */
 	struct inode **lower_inodes;
 	/* to keep track of reads/writes for unlinks before closes */
 	atomic_t totalopens;
@@ -274,7 +274,7 @@ extern void unionfs_inherit_mnt(struct dentry *dentry);
 extern void unionfs_purge_extras(struct dentry *dentry);
 
 extern int remove_whiteouts(struct dentry *dentry,
-			    struct dentry *hidden_dentry, int bindex);
+			    struct dentry *lower_dentry, int bindex);
 
 extern int do_delete_whiteouts(struct dentry *dentry, int bindex,
 			       struct unionfs_dir_state *namelist);
@@ -288,8 +288,8 @@ extern int check_empty(struct dentry *dentry,
 extern int delete_whiteouts(struct dentry *dentry, int bindex,
 			    struct unionfs_dir_state *namelist);
 
-/* Re-lookup a hidden dentry. */
-extern int unionfs_refresh_hidden_dentry(struct dentry *dentry, int bindex);
+/* Re-lookup a lower dentry. */
+extern int unionfs_refresh_lower_dentry(struct dentry *dentry, int bindex);
 
 extern void unionfs_reinterpose(struct dentry *this_dentry);
 extern struct super_block *unionfs_duplicate_super(struct super_block *sb);
@@ -525,13 +525,13 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 /* useful for tracking code reachability */
 #define UDBG printk("DBG:%s:%s:%d\n",__FILE__,__FUNCTION__,__LINE__)
 
-#define unionfs_check_inode(i)	__unionfs_check_inode((i),\
+#define unionfs_check_inode(i)	__unionfs_check_inode((i),	\
 	__FILE__,__FUNCTION__,__LINE__)
-#define unionfs_check_dentry(d)	__unionfs_check_dentry((d),\
+#define unionfs_check_dentry(d)	__unionfs_check_dentry((d),	\
 	__FILE__,__FUNCTION__,__LINE__)
-#define unionfs_check_file(f)	__unionfs_check_file((f),\
+#define unionfs_check_file(f)	__unionfs_check_file((f),	\
 	__FILE__,__FUNCTION__,__LINE__)
-#define show_branch_counts(sb)	__show_branch_counts((sb),\
+#define show_branch_counts(sb)	__show_branch_counts((sb),	\
 	__FILE__,__FUNCTION__,__LINE__)
 extern void __unionfs_check_inode(const struct inode *inode, const char *fname,
 				  const char *fxn, int line);
