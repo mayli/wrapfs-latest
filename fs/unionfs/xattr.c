@@ -59,7 +59,7 @@ ssize_t unionfs_getxattr(struct dentry *dentry, const char *name, void *value,
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -86,7 +86,7 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -113,7 +113,7 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -140,7 +140,7 @@ ssize_t unionfs_listxattr(struct dentry *dentry, char *list, size_t size)
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}

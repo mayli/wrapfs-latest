@@ -403,12 +403,12 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 
 	unionfs_double_lock_dentry(old_dentry, new_dentry);
 
-	if (!__unionfs_d_revalidate_chain(old_dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(old_dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
 	if (!d_deleted(new_dentry) && new_dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(new_dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(new_dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -495,6 +495,11 @@ out:
 			}
 
 		}
+		/* if all of this renaming succeeded, update our times */
+		unionfs_copy_attr_times(old_dir);
+		unionfs_copy_attr_times(new_dir);
+		unionfs_copy_attr_times(old_dentry->d_inode);
+		unionfs_copy_attr_times(new_dentry->d_inode);
 		unionfs_check_inode(old_dir);
 		unionfs_check_inode(new_dir);
 		unionfs_check_dentry(old_dentry);

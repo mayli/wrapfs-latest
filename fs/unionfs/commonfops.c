@@ -323,7 +323,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	 * but not unhashed dentries.
 	 */
 	if (!d_deleted(dentry) &&
-	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(dentry, NULL, willwrite)) {
 		err = -ESTALE;
 		goto out_nofree;
 	}
@@ -578,7 +578,10 @@ out:
 out_nofree:
 	unionfs_read_unlock(inode->i_sb);
 	unionfs_check_inode(inode);
-	unionfs_check_file(file);
+	if (!err) {
+		unionfs_check_file(file);
+		unionfs_check_dentry(file->f_dentry->d_parent);
+	}
 	return err;
 }
 
@@ -592,7 +595,6 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	int bindex, bstart, bend;
 	int fgen, err = 0;
 
-	unionfs_check_file(file);
 	unionfs_read_lock(sb);
 	/*
 	 * Yes, we have to revalidate this file even if it's being released.
@@ -601,6 +603,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 	 */
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
+	unionfs_check_file(file);
 	fileinfo = UNIONFS_F(file);
 	BUG_ON(file->f_dentry->d_inode != inode);
 	inodeinfo = UNIONFS_I(inode);
@@ -776,7 +779,7 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 	struct dentry *dentry = file->f_dentry;
 	int bindex, bstart, bend;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(dentry->d_sb);
 
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
@@ -808,10 +811,15 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 
 	}
 
+	/* on success, update our times */
+	unionfs_copy_attr_times(dentry->d_inode);
+	/* parent time could have changed too (async) */
+	unionfs_copy_attr_times(dentry->d_parent->d_inode);
+
 out_lock:
 	unionfs_unlock_dentry(dentry);
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(dentry->d_sb);
 	unionfs_check_file(file);
 	return err;
 }

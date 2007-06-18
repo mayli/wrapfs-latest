@@ -117,13 +117,13 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct super_block *sb;
 	struct dentry *lower_dentry;
 
-	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
+	unionfs_check_dentry(dentry);
 
 	sb = dentry->d_sb;
 

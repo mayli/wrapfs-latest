@@ -127,7 +127,7 @@ fill_i_info:
 				   lower_inode->i_rdev);
 
 	/* all well, copy inode attributes */
-	fsstack_copy_attr_all(inode, lower_inode, unionfs_get_nlinks);
+	unionfs_copy_attr_all(inode, lower_inode);
 	fsstack_copy_inode_size(inode, lower_inode);
 
 	if (spliced)

@@ -172,9 +172,8 @@ static int __unionfs_d_revalidate_one(struct dentry *dentry,
 		 * caller (__unionfs_d_revalidate_chain) by calling
 		 * purge_inode_data.
 		 */
-		fsstack_copy_attr_all(dentry->d_inode,
-				      unionfs_lower_inode(dentry->d_inode),
-				      unionfs_get_nlinks);
+		unionfs_copy_attr_all(dentry->d_inode,
+				      unionfs_lower_inode(dentry->d_inode));
 		fsstack_copy_inode_size(dentry->d_inode,
 					unionfs_lower_inode(dentry->d_inode));
 	}
@@ -409,9 +408,8 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	int err;
 
-	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
-	err = __unionfs_d_revalidate_chain(dentry, nd);
+	err = __unionfs_d_revalidate_chain(dentry, nd, 0);
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 

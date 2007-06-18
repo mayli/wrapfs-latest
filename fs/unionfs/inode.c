@@ -44,13 +44,13 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	unionfs_lock_dentry(dentry);
 
 	unionfs_lock_dentry(dentry->d_parent);
-	valid = __unionfs_d_revalidate_chain(dentry->d_parent, nd);
+	valid = __unionfs_d_revalidate_chain(dentry->d_parent, nd, 0);
 	unionfs_unlock_dentry(dentry->d_parent);
 	if (!valid) {
 		err = -ESTALE;	/* same as what real_lookup does */
 		goto out;
 	}
-	valid = __unionfs_d_revalidate_chain(dentry, nd);
+	valid = __unionfs_d_revalidate_chain(dentry, nd, 0);
 	/*
 	 * It's only a bug if this dentry was not negative and couldn't be
 	 * revalidated (shouldn't happen).
@@ -216,9 +216,7 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 			err = PTR_ERR(unionfs_interpose(dentry,
 							parent->i_sb, 0));
 			if (!err) {
-				fsstack_copy_attr_times(parent,
-							lower_parent_dentry->
-							d_inode);
+				unionfs_copy_attr_times(parent);
 				fsstack_copy_inode_size(parent,
 							lower_parent_dentry->
 							d_inode);
@@ -240,7 +238,8 @@ out:
 	unionfs_read_unlock(dentry->d_sb);
 
 	unionfs_check_inode(parent);
-	unionfs_check_dentry(dentry->d_parent);
+	if (!err)
+		unionfs_check_dentry(dentry->d_parent);
 	unionfs_check_dentry(dentry);
 	return err;
 }
@@ -275,10 +274,13 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 	if (!IS_ERR(ret)) {
 		if (ret)
 			dentry = ret;
+		/* parent times may have changed */
+		unionfs_copy_attr_times(dentry->d_parent->d_inode);
 	}
 
 	unionfs_check_inode(parent);
 	unionfs_check_dentry(dentry);
+	unionfs_check_dentry(dentry->d_parent);
 	return ret;
 }
 
@@ -294,12 +296,12 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 
 	unionfs_double_lock_dentry(new_dentry, old_dentry);
 
-	if (!__unionfs_d_revalidate_chain(old_dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(old_dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
 	if (new_dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(new_dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(new_dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -402,12 +404,13 @@ check_link:
 	/* Its a hard link, so use the same inode */
 	new_dentry->d_inode = igrab(old_dentry->d_inode);
 	d_instantiate(new_dentry, new_dentry->d_inode);
-	fsstack_copy_attr_all(dir, lower_new_dentry->d_parent->d_inode,
-			      unionfs_get_nlinks);
+	unionfs_copy_attr_all(dir, lower_new_dentry->d_parent->d_inode);
 	fsstack_copy_inode_size(dir, lower_new_dentry->d_parent->d_inode);
 
 	/* propagate number of hard-links */
 	old_dentry->d_inode->i_nlink = unionfs_get_nlinks(old_dentry->d_inode);
+	/* new dentry's ctime may have changed due to hard-link counts */
+	unionfs_copy_attr_times(new_dentry->d_inode);
 
 out:
 	if (!new_dentry->d_inode)
@@ -440,7 +443,7 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -598,7 +601,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -699,8 +702,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 		 */
 		err = PTR_ERR(unionfs_interpose(dentry, parent->i_sb, 0));
 		if (!err) {
-			fsstack_copy_attr_times(parent,
-						lower_parent_dentry->d_inode);
+			unionfs_copy_attr_times(parent);
 			fsstack_copy_inode_size(parent,
 						lower_parent_dentry->d_inode);
 
@@ -725,6 +727,8 @@ out:
 
 	kfree(name);
 
+	if (!err)
+		unionfs_copy_attr_times(dentry->d_inode);
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_inode(parent);
 	unionfs_check_dentry(dentry);
@@ -744,7 +748,7 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(dentry, NULL)) {
+	    !__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -865,7 +869,7 @@ static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -900,7 +904,7 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(dentry, nd)) {
+	    !__unionfs_d_revalidate_chain(dentry, nd, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -936,7 +940,7 @@ static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 			     void *cookie)
 {
 	unionfs_lock_dentry(dentry);
-	if (!__unionfs_d_revalidate_chain(dentry, nd))
+	if (!__unionfs_d_revalidate_chain(dentry, nd, 0))
 		printk("unionfs: put_link failed to revalidate dentry\n");
 	unionfs_unlock_dentry(dentry);
 
@@ -1077,6 +1081,8 @@ static int unionfs_permission(struct inode *inode, int mask,
 			break;
 		}
 	}
+	/* sync times which may have changed (asynchronously) below */
+	unionfs_copy_attr_times(inode);
 
 out:
 	if (!list_empty(&UNIONFS_SB(inode->i_sb)->rwsem.wait_list))
@@ -1097,7 +1103,7 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
@@ -1160,12 +1166,15 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	}
 
 	/* get the size from the first lower inode */
-	lower_inode = unionfs_lower_inode(dentry->d_inode);
-	fsstack_copy_attr_all(inode, lower_inode, unionfs_get_nlinks);
+	lower_inode = unionfs_lower_inode(inode);
+	unionfs_copy_attr_all(inode, lower_inode);
 	fsstack_copy_inode_size(inode, lower_inode);
+	/* if setattr succeeded, then parent dir may have changed */
+	unionfs_copy_attr_times(dentry->d_parent->d_inode);
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_check_dentry(dentry->d_parent);
 	return err;
 }
 

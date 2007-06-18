@@ -41,6 +41,9 @@ static int unionfs_unlink_whiteout(struct inode *dir, struct dentry *dentry)
 	dget(lower_dentry);
 	if (!(err = is_robranch_super(dentry->d_sb, bindex)))
 		err = vfs_unlink(lower_dir_dentry->d_inode, lower_dentry);
+	/* if vfs_unlink succeeded, update our inode's times */
+	if (!err)
+		unionfs_copy_attr_times(dentry->d_inode);
 	dput(lower_dentry);
 	fsstack_copy_attr_times(dir, lower_dir_dentry->d_inode);
 	unlock_dir(lower_dir_dentry);
@@ -73,24 +76,32 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 
-	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
+	unionfs_check_dentry(dentry);
 
 	err = unionfs_unlink_whiteout(dir, dentry);
 	/* call d_drop so the system "forgets" about us */
 	if (!err) {
 		if (!S_ISDIR(dentry->d_inode->i_mode))
 			unionfs_purge_extras(dentry);
-		unionfs_check_dentry(dentry);
 		d_drop(dentry);
+		/*
+		 * if unlink/whiteout succeeded, parent dir mtime has
+		 * changed
+		 */
+		unionfs_copy_attr_times(dir);
 	}
 
 out:
+	if (!err) {
+		unionfs_check_dentry(dentry);
+		unionfs_check_inode(dir);
+	}
 	unionfs_unlock_dentry(dentry);
 	return err;
 }
@@ -132,13 +143,13 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int err = 0;
 	struct unionfs_dir_state *namelist = NULL;
 
-	unionfs_check_dentry(dentry);
 	unionfs_lock_dentry(dentry);
 
-	if (!__unionfs_d_revalidate_chain(dentry, NULL)) {
+	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
 		err = -ESTALE;
 		goto out;
 	}
+	unionfs_check_dentry(dentry);
 
 	/* check if this unionfs directory is empty or not */
 	err = check_empty(dentry, &namelist);

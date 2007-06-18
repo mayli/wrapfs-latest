@@ -497,6 +497,8 @@ out_free:
 		}
 	}
 	unionfs_inherit_mnt(dentry);
+	/* sync inode times from copied-up inode to our inode */
+	unionfs_copy_attr_times(dentry->d_inode);
 	unionfs_check_inode(dir);
 	unionfs_check_dentry(dentry);
 out:
@@ -789,6 +791,12 @@ begin:
 
 	__set_inode(child_dentry, lower_dentry, bindex);
 	__set_dentry(child_dentry, lower_dentry, bindex);
+	/*
+	 * update times of this dentry, but also the parent, because if
+	 * we changed, the parent may have changed too.
+	 */
+	unionfs_copy_attr_times(parent_dentry->d_inode);
+	unionfs_copy_attr_times(child_dentry->d_inode);
 
 	parent_dentry = child_dentry;
 	child_dentry = path[--count];
