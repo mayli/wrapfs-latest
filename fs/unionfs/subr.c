@@ -181,7 +181,7 @@ out:
  * returns the sum of the n_link values of all the underlying inodes of the
  * passed inode
  */
-int unionfs_get_nlinks(struct inode *inode)
+int unionfs_get_nlinks(const struct inode *inode)
 {
 	int sum_nlinks = 0;
 	int dirs = 0;

@@ -177,6 +177,9 @@ struct unionfs_dir_state {
 	struct list_head list[0];
 };
 
+/* externs needed for fanout.h or sioq.h */
+extern int unionfs_get_nlinks(const struct inode *inode);
+
 /* include miscellaneous macros */
 #include "fanout.h"
 #include "sioq.h"
@@ -278,8 +281,6 @@ extern int remove_whiteouts(struct dentry *dentry,
 
 extern int do_delete_whiteouts(struct dentry *dentry, int bindex,
 			       struct unionfs_dir_state *namelist);
-
-extern int unionfs_get_nlinks(struct inode *inode);
 
 /* Is this directory empty: 0 if it is empty, -ENOTEMPTY if not. */
 extern int check_empty(struct dentry *dentry,
