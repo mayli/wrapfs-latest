@@ -285,17 +285,19 @@ void __unionfs_check_dentry(const struct dentry *dentry,
 	 * and inode.
 	 */
 	if (S_ISDIR(inode->i_mode))
-		for (bindex = dstart+1; bindex < dend-1; bindex++) {
+		for (bindex = dstart+1; bindex < dend; bindex++) {
 			lower_inode = unionfs_lower_inode_idx(inode, bindex);
 			lower_dentry = unionfs_lower_dentry_idx(dentry,
 								bindex);
 			lower_mnt = unionfs_lower_mnt_idx(dentry, bindex);
 			if (!((lower_inode && lower_dentry && lower_mnt) ||
-			      (!lower_inode && !lower_dentry && !lower_mnt)))
+			      (!lower_inode && !lower_dentry && !lower_mnt))) {
+				PRINT_CALLER();
 				printk(" Cx: lmnt/ldentry/linode=%p:%p:%p "
 				       "bindex=%d dstart/end=%d:%d\n",
 				       lower_mnt, lower_dentry, lower_inode,
 				       bindex, dstart, dend);
+			}
 		}
 }
 
