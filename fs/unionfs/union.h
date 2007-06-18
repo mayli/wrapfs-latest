@@ -533,6 +533,11 @@ static inline void unionfs_mntput(struct dentry *dentry, int bindex)
 	__FILE__,__FUNCTION__,__LINE__)
 #define show_branch_counts(sb)	__show_branch_counts((sb),	\
 	__FILE__,__FUNCTION__,__LINE__)
+#define show_inode_times(i)	__show_inode_times((i),		\
+	__FILE__,__FUNCTION__,__LINE__)
+#define show_dinode_times(d)	__show_dinode_times((d),	\
+	__FILE__,__FUNCTION__,__LINE__)
+
 extern void __unionfs_check_inode(const struct inode *inode, const char *fname,
 				  const char *fxn, int line);
 extern void __unionfs_check_dentry(const struct dentry *dentry,
@@ -542,6 +547,10 @@ extern void __unionfs_check_file(const struct file *file,
 				 const char *fname, const char *fxn, int line);
 extern void __show_branch_counts(const struct super_block *sb,
 				 const char *file, const char *fxn, int line);
+extern void __show_inode_times(const struct inode *inode,
+			       const char *file, const char *fxn, int line);
+extern void __show_dinode_times(const struct dentry *dentry,
+				const char *file, const char *fxn, int line);
 
 #else /* not UNIONFS_DEBUG */
 
@@ -550,6 +559,8 @@ extern void __show_branch_counts(const struct super_block *sb,
 #define unionfs_check_dentry(d)
 #define unionfs_check_file(f)
 #define show_branch_counts(sb)
+#define show_inode_times(i)
+#define show_dinode_times(d)
 
 #endif /* not UNIONFS_DEBUG */
 

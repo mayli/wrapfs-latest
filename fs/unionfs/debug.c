@@ -299,6 +299,26 @@ void __unionfs_check_dentry(const struct dentry *dentry,
 				       bindex, dstart, dend);
 			}
 		}
+	/* check if lower inode is newer than upper one (it shouldn't) */
+	if (is_newer_lower(dentry)) {
+		PRINT_CALLER();
+		for (bindex=ibstart(inode); bindex <= ibend(inode); bindex++) {
+			lower_inode = unionfs_lower_inode_idx(inode, bindex);
+			if (!lower_inode)
+				continue;
+			printk(" CI8: bindex=%d mtime/lmtime=%lu.%lu/%lu.%lu "
+			       "ctime/lctime=%lu.%lu/%lu.%lu\n",
+			       bindex,
+			       inode->i_mtime.tv_sec,
+			       inode->i_mtime.tv_nsec,
+			       lower_inode->i_mtime.tv_sec,
+			       lower_inode->i_mtime.tv_nsec,
+			       inode->i_ctime.tv_sec,
+			       inode->i_ctime.tv_nsec,
+			       lower_inode->i_ctime.tv_sec,
+			       lower_inode->i_ctime.tv_nsec);
+		}
+	}
 }
 
 void __unionfs_check_file(const struct file *file,
@@ -400,4 +420,51 @@ void __show_branch_counts(const struct super_block *sb,
 		printk("%d:", (mnt ? atomic_read(&mnt->mnt_count) : -99));
 	}
 	printk("%s:%s:%d\n",file,fxn,line);
+}
+
+void __show_inode_times(const struct inode *inode,
+			const char *file, const char *fxn, int line)
+{
+	struct inode *lower_inode;
+	int bindex;
+
+	for (bindex=ibstart(inode); bindex <= ibend(inode); bindex++) {
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
+		if (!lower_inode)
+			continue;
+		printk("IT(%lu:%d): ", inode->i_ino, bindex);
+		printk("%s:%s:%d ",file,fxn,line);
+		printk("um=%lu/%lu lm=%lu/%lu ",
+		       inode->i_mtime.tv_sec, inode->i_mtime.tv_nsec,
+		       lower_inode->i_mtime.tv_sec,
+		       lower_inode->i_mtime.tv_nsec);
+		printk("uc=%lu/%lu lc=%lu/%lu\n",
+		       inode->i_ctime.tv_sec, inode->i_ctime.tv_nsec,
+		       lower_inode->i_ctime.tv_sec,
+		       lower_inode->i_ctime.tv_nsec);
+	}
+}
+
+void __show_dinode_times(const struct dentry *dentry,
+			const char *file, const char *fxn, int line)
+{
+	struct inode *inode = dentry->d_inode;
+	struct inode *lower_inode;
+	int bindex;
+
+	for (bindex=ibstart(inode); bindex <= ibend(inode); bindex++) {
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
+		if (!lower_inode)
+			continue;
+		printk("DT(%s:%lu:%d): ", dentry->d_name.name, inode->i_ino, bindex);
+		printk("%s:%s:%d ",file,fxn,line);
+		printk("um=%lu/%lu lm=%lu/%lu ",
+		       inode->i_mtime.tv_sec, inode->i_mtime.tv_nsec,
+		       lower_inode->i_mtime.tv_sec,
+		       lower_inode->i_mtime.tv_nsec);
+		printk("uc=%lu/%lu lc=%lu/%lu\n",
+		       inode->i_ctime.tv_sec, inode->i_ctime.tv_nsec,
+		       lower_inode->i_ctime.tv_sec,
+		       lower_inode->i_ctime.tv_nsec);
+	}
 }
