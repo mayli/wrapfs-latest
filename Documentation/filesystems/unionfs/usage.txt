@@ -86,5 +86,12 @@ command:
 
 # mount -t unionfs -o remount,incgen none MOUNTPOINT
 
+Note that the older way of incrementing the generation number using an
+ioctl, is no longer supported in Unionfs 2.0.  Ioctls in general are not
+encouraged.  Plus, an ioctl is per-file concept, whereas the generation
+number is a per-file-system concept.  Worse, such an ioctl requires an open
+file, which then has to be invalidated by the very nature of the generation
+number increase (read: the old generation increase ioctl was pretty racy).
+
 
 For more information, see <http://unionfs.filesystems.org/>.
