@@ -187,14 +187,11 @@ out:
  * Determine if the lower inode objects have changed from below the unionfs
  * inode.  Return 1 if changed, 0 otherwise.
  */
-static int is_newer_lower(struct dentry *dentry)
+int is_newer_lower(const struct dentry *dentry)
 {
 	int bindex;
 	struct inode *inode = dentry->d_inode;
 	struct inode *lower_inode;
-
-	if (IS_ROOT(dentry))	/* XXX: root dentry can never be invalid?! */
-		return 0;
 
 	if (!inode)
 		return 0;
@@ -210,16 +207,18 @@ static int is_newer_lower(struct dentry *dentry)
 		 */
 		if (timespec_compare(&inode->i_mtime,
 				     &lower_inode->i_mtime) < 0) {
-			printk("unionfs: resyncing with lower inode "
-			       "(new mtime, name=%s)\n",
+			printk("unionfs: new lower inode mtime "
+			       "(bindex=%d, name=%s)\n", bindex,
 			       dentry->d_name.name);
+			show_dinode_times(dentry);
 			return 1; /* mtime changed! */
 		}
 		if (timespec_compare(&inode->i_ctime,
 				     &lower_inode->i_ctime) < 0) {
-			printk("unionfs: resyncing with lower inode "
-			       "(new ctime, name=%s)\n",
+			printk("unionfs: new lower inode ctime "
+			       "(bindex=%d, name=%s)\n", bindex,
 			       dentry->d_name.name);
+			show_dinode_times(dentry);
 			return 1; /* ctime changed! */
 		}
 	}
@@ -231,25 +230,23 @@ static int is_newer_lower(struct dentry *dentry)
  * when the lower inode has changed, and we have to force processes to get
  * the new data.
  *
- * XXX: this function "works" in that as long as a user process will have
- * caused unionfs to be called, directly or indirectly, even to just do
- * ->d_revalidate, then we will have purged the current unionfs data and the
+ * XXX: Our implementation works in that as long as a user process will have
+ * caused Unionfs to be called, directly or indirectly, even to just do
+ * ->d_revalidate; then we will have purged the current Unionfs data and the
  * process will see the new data.  For example, a process that continually
  * re-reads the same file's data will see the NEW data as soon as the lower
- * file had changed, upon the next read(2) syscall.  However, this doesn't
- * work when the process re-reads the file's data via mmap: once we respond
- * to ->readpage(s), then the kernel maps the page into the process's
- * address space and there doesn't appear to be a way to force the kernel to
- * invalidate those pages/mappings, and force the process to re-issue
- * ->readpage.  If there's a way to invalidate active mappings and force a
- * ->readpage, let us know please (invalidate_inode_pages2 doesn't do the
- * trick).
+ * file had changed, upon the next read(2) syscall (even if the file is
+ * still open!)  However, this doesn't work when the process re-reads the
+ * open file's data via mmap(2) (unless the user unmaps/closes the file and
+ * remaps/reopens it).  Once we respond to ->readpage(s), then the kernel
+ * maps the page into the process's address space and there doesn't appear
+ * to be a way to force the kernel to invalidate those pages/mappings, and
+ * force the process to re-issue ->readpage.  If there's a way to invalidate
+ * active mappings and force a ->readpage, let us know please
+ * (invalidate_inode_pages2 doesn't do the trick).
  */
 static inline void purge_inode_data(struct dentry *dentry)
 {
-	/* reset generation number to zero, guaranteed to be "old" */
-	atomic_set(&UNIONFS_D(dentry)->generation, 0);
-
 	/* remove all non-private mappings */
 	unmap_mapping_range(dentry->d_inode->i_mapping, 0, 0, 0);
 
@@ -260,8 +257,16 @@ static inline void purge_inode_data(struct dentry *dentry)
 /*
  * Revalidate a parent chain of dentries, then the actual node.
  * Assumes that dentry is locked, but will lock all parents if/when needed.
+ *
+ * If 'willwrite' is 1, and the lower inode times are not in sync, then
+ * *don't* purge_inode_data, as it could deadlock if ->write calls us and we
+ * try to truncate a locked page.  Besides, if unionfs is about to write
+ * data to a file, then there's the data unionfs is about to write is more
+ * authoritative than what's below, therefore we can safely overwrite the
+ * lower inode times and data.
  */
-int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
+int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd,
+				 int willwrite)
 {
 	int valid = 0;		/* default is invalid (0); valid is 1. */
 	struct dentry **chain = NULL; /* chain of dentries to reval */
@@ -275,11 +280,26 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 	chain_len = 0;
 	sbgen = atomic_read(&UNIONFS_SB(dentry->d_sb)->generation);
 	dtmp = dentry->d_parent;
-	if (dtmp->d_inode && is_newer_lower(dtmp)) {
-		dgen = 0;
+	dgen = atomic_read(&UNIONFS_D(dtmp)->generation);
+	/* XXX: should we check if is_newer_lower all the way up? */
+	if (is_newer_lower(dtmp)) {
+		/*
+		 * Special case: the root dentry's generation number must
+		 * always be valid, but its lower inode times don't have to
+		 * be, so sync up the times only.
+		 */
+		if (IS_ROOT(dtmp))
+			unionfs_copy_attr_times(dtmp->d_inode);
+		else {
+			/*
+			 * reset generation number to zero, guaranteed to be
+			 * "old"
+			 */
+			dgen = 0;
+			atomic_set(&UNIONFS_D(dtmp)->generation, dgen);
+		}
 		purge_inode_data(dtmp);
-	} else
-		dgen = atomic_read(&UNIONFS_D(dtmp)->generation);
+	}
 	while (sbgen != dgen) {
 		/* The root entry should always be valid */
 		BUG_ON(IS_ROOT(dtmp));
@@ -341,11 +361,22 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd)
 out_this:
 	/* finally, lock this dentry and revalidate it */
 	verify_locked(dentry);
-	if (dentry->d_inode && is_newer_lower(dentry)) {
-		dgen = 0;
-		purge_inode_data(dentry);
-	} else
-		dgen = atomic_read(&UNIONFS_D(dentry)->generation);
+	dgen = atomic_read(&UNIONFS_D(dentry)->generation);
+	if (is_newer_lower(dentry)) {
+		/* root dentry special case as aforementioned */
+		if (IS_ROOT(dentry))
+			unionfs_copy_attr_times(dentry->d_inode);
+		else {
+			/*
+			 * reset generation number to zero, guaranteed to be
+			 * "old"
+			 */
+			dgen = 0;
+			atomic_set(&UNIONFS_D(dentry)->generation, dgen);
+		}
+		if (!willwrite)
+			purge_inode_data(dentry);
+	}
 	valid = __unionfs_d_revalidate_one(dentry, nd);
 
 	/*

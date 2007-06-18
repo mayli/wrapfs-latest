@@ -314,7 +314,8 @@ extern int unionfs_unlink(struct inode *dir, struct dentry *dentry);
 extern int unionfs_rmdir(struct inode *dir, struct dentry *dentry);
 
 extern int __unionfs_d_revalidate_chain(struct dentry *dentry,
-					struct nameidata *nd);
+					struct nameidata *nd, int willwrite);
+extern int is_newer_lower(const struct dentry *dentry);
 
 /* The values for unionfs_interpose's flag. */
 #define INTERPOSE_DEFAULT	0
