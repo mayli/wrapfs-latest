@@ -18,7 +18,13 @@
 #ifndef _FANOUT_H_
 #define _FANOUT_H_
 
-/* Inode to private data */
+/*
+ * Inode to private data
+ *
+ * Since we use containers and the struct inode is _inside_ the
+ * unionfs_inode_info structure, UNIONFS_I will always (given a non-NULL
+ * inode pointer), return a valid non-NULL pointer.
+ */
 static inline struct unionfs_inode_info *UNIONFS_I(const struct inode *inode)
 {
 	return container_of(inode, struct unionfs_inode_info, vfs_inode);

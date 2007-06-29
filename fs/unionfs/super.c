@@ -30,11 +30,7 @@ static void unionfs_read_inode(struct inode *inode)
 	int size;
 	struct unionfs_inode_info *info = UNIONFS_I(inode);
 
-	if (!info) {
-		printk(KERN_ERR "unionfs: no kernel memory when allocating "
-		       "inode private data!\n");
-		BUG();
-	}
+	unionfs_read_lock(inode->i_sb);
 
 	memset(info, 0, offsetof(struct unionfs_inode_info, vfs_inode));
 	info->bstart = -1;
@@ -59,6 +55,8 @@ static void unionfs_read_inode(struct inode *inode)
 	inode->i_fop = &unionfs_main_fops;
 
 	inode->i_mapping->a_ops = &unionfs_aops;
+
+	unionfs_read_unlock(inode->i_sb);
 }
 
 /*
