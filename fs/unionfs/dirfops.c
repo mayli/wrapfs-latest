@@ -97,7 +97,8 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	int bend;
 	loff_t offset;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
+
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
@@ -179,7 +180,7 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		file->f_pos = rdstate2offset(uds);
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	return err;
 }
 
@@ -198,7 +199,8 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 	struct unionfs_dir_state *rdstate;
 	loff_t err;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
+
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
@@ -255,7 +257,7 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 	}
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	return err;
 }
 

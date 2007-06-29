@@ -76,6 +76,7 @@ int unionfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	int err = 0;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -103,6 +104,7 @@ out:
 		unionfs_check_inode(dir);
 	}
 	unionfs_unlock_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 
@@ -143,6 +145,7 @@ int unionfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int err = 0;
 	struct unionfs_dir_state *namelist = NULL;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -184,5 +187,6 @@ out:
 		free_rdstate(namelist);
 
 	unionfs_unlock_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }

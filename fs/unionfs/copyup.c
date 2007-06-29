@@ -193,9 +193,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 
 	/* open old file */
 	unionfs_mntget(dentry, old_bindex);
-	unionfs_read_lock(sb);
 	branchget(sb, old_bindex);
-	unionfs_read_unlock(sb);
 	/* dentry_open calls dput and mntput if it returns an error */
 	input_file = dentry_open(old_lower_dentry,
 				 unionfs_lower_mnt_idx(dentry, old_bindex),
@@ -213,9 +211,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 	/* open new file */
 	dget(new_lower_dentry);
 	output_mnt = unionfs_mntget(sb->s_root, new_bindex);
-	unionfs_read_lock(sb);
 	branchget(sb, new_bindex);
-	unionfs_read_unlock(sb);
 	output_file = dentry_open(new_lower_dentry, output_mnt,
 				  O_WRONLY | O_LARGEFILE);
 	if (IS_ERR(output_file)) {
@@ -290,17 +286,13 @@ out_close_out:
 	fput(output_file);
 
 out_close_in2:
-	unionfs_read_lock(sb);
 	branchput(sb, new_bindex);
-	unionfs_read_unlock(sb);
 
 out_close_in:
 	fput(input_file);
 
 out:
-	unionfs_read_lock(sb);
 	branchput(sb, old_bindex);
-	unionfs_read_unlock(sb);
 
 	return err;
 }
@@ -453,9 +445,7 @@ out_unlink:
 		/* need to close the file */
 
 		fput(*copyup_file);
-		unionfs_read_lock(sb);
 		branchput(sb, new_bindex);
-		unionfs_read_unlock(sb);
 	}
 
 	/*

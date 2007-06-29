@@ -97,7 +97,6 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 	struct sioq_args args;
 
 	sb = dentry->d_sb;
-	unionfs_read_lock(sb);
 
 	BUG_ON(!S_ISDIR(dentry->d_inode->i_mode));
 	BUG_ON(bindex < dbstart(dentry));
@@ -124,7 +123,6 @@ int delete_whiteouts(struct dentry *dentry, int bindex,
 	mutex_unlock(&lower_dir->i_mutex);
 
 out:
-	unionfs_read_unlock(sb);
 	return err;
 }
 
@@ -193,7 +191,6 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 
 	sb = dentry->d_sb;
 
-	unionfs_read_lock(sb);
 
 	BUG_ON(!S_ISDIR(dentry->d_inode->i_mode));
 
@@ -231,9 +228,7 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 
 		dget(lower_dentry);
 		unionfs_mntget(dentry, bindex);
-		unionfs_read_lock(sb);
 		branchget(sb, bindex);
-		unionfs_read_unlock(sb);
 		lower_file =
 			dentry_open(lower_dentry,
 				    unionfs_lower_mnt_idx(dentry, bindex),
@@ -241,9 +236,7 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 		if (IS_ERR(lower_file)) {
 			err = PTR_ERR(lower_file);
 			dput(lower_dentry);
-			unionfs_read_lock(sb);
 			branchput(sb, bindex);
-			unionfs_read_unlock(sb);
 			goto out;
 		}
 
@@ -258,9 +251,7 @@ int check_empty(struct dentry *dentry, struct unionfs_dir_state **namelist)
 
 		/* fput calls dput for lower_dentry */
 		fput(lower_file);
-		unionfs_read_lock(sb);
 		branchput(sb, bindex);
-		unionfs_read_unlock(sb);
 
 		if (err < 0)
 			goto out;
@@ -275,7 +266,6 @@ out:
 		kfree(buf);
 	}
 
-	unionfs_read_unlock(sb);
 
 	return err;
 }

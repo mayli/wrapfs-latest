@@ -127,10 +127,8 @@ static void cleanup_file(struct file *file)
 				printk(KERN_ERR "unionfs: no superblock for "
 				       "file %p\n", file);
 			else {
-				unionfs_read_lock(sb);
 				/* decrement count of open files */
 				branchput(sb, i);
-				unionfs_read_unlock(sb);
 				/*
 				 * fput will perform an mntput for us on the
 				 * correct branch.  Although we're using the
@@ -172,9 +170,7 @@ static int open_all_files(struct file *file)
 
 		dget(lower_dentry);
 		unionfs_mntget(dentry, bindex);
-		unionfs_read_lock(sb);
 		branchget(sb, bindex);
-		unionfs_read_unlock(sb);
 
 		lower_file =
 			dentry_open(lower_dentry,
@@ -220,9 +216,7 @@ static int open_highest_file(struct file *file, int willwrite)
 
 	dget(lower_dentry);
 	unionfs_mntget(dentry, bstart);
-	unionfs_read_lock(sb);
 	branchget(sb, bstart);
-	unionfs_read_unlock(sb);
 	lower_file = dentry_open(lower_dentry,
 				 unionfs_lower_mnt_idx(dentry, bstart),
 				 file->f_flags);
@@ -270,9 +264,7 @@ static int do_delayed_copyup(struct file *file)
 	bend = fbend(file);
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		if (unionfs_lower_file_idx(file, bindex)) {
-			unionfs_read_lock(dentry->d_sb);
 			branchput(dentry->d_sb, bindex);
-			unionfs_read_unlock(dentry->d_sb);
 			fput(unionfs_lower_file_idx(file, bindex));
 			unionfs_set_lower_file_idx(file, bindex, NULL);
 		}
@@ -430,9 +422,7 @@ static int __open_dir(struct inode *inode, struct file *file)
 		 * The branchget goes after the open, because otherwise
 		 * we would miss the reference on release.
 		 */
-		unionfs_read_lock(inode->i_sb);
 		branchget(inode->i_sb, bindex);
-		unionfs_read_unlock(inode->i_sb);
 	}
 
 	return 0;
@@ -493,9 +483,7 @@ static int __open_file(struct inode *inode, struct file *file)
 		return PTR_ERR(lower_file);
 
 	unionfs_set_lower_file(file, lower_file);
-	unionfs_read_lock(inode->i_sb);
 	branchget(inode->i_sb, bstart);
-	unionfs_read_unlock(inode->i_sb);
 
 	return 0;
 }
@@ -509,6 +497,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 	int size;
 
 	unionfs_read_lock(inode->i_sb);
+
 	file->private_data =
 		kzalloc(sizeof(struct unionfs_file_info), GFP_KERNEL);
 	if (!UNIONFS_F(file)) {
@@ -559,9 +548,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 			if (!lower_file)
 				continue;
 
-			unionfs_read_lock(file->f_dentry->d_sb);
 			branchput(file->f_dentry->d_sb, bindex);
-			unionfs_read_unlock(file->f_dentry->d_sb);
 			/* fput calls dput for lower_dentry */
 			fput(lower_file);
 		}
@@ -585,7 +572,11 @@ out_nofree:
 	return err;
 }
 
-/* release all lower object references & free the file info structure */
+/*
+ * release all lower object references & free the file info structure
+ *
+ * No need to grab sb info's rwsem.
+ */
 int unionfs_file_release(struct inode *inode, struct file *file)
 {
 	struct file *lower_file = NULL;
@@ -618,9 +609,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 
 		if (lower_file) {
 			fput(lower_file);
-			unionfs_read_lock(sb);
 			branchput(sb, bindex);
-			unionfs_read_unlock(sb);
 		}
 	}
 	kfree(fileinfo->lower_files);
@@ -742,7 +731,8 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long err;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
+
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 
@@ -767,7 +757,7 @@ long unionfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	unionfs_check_file(file);
 	return err;
 }
@@ -776,7 +766,7 @@ int unionfs_flush(struct file *file, fl_owner_t id)
 {
 	int err = 0;
 	struct file *lower_file = NULL;
-	struct dentry *dentry = file->f_dentry;
+	struct dentry *dentry = file->f_path.dentry;
 	int bindex, bstart, bend;
 
 	unionfs_read_lock(dentry->d_sb);

@@ -65,6 +65,8 @@ static void unionfs_read_inode(struct inode *inode)
  * else that's needed, and the other is fine.  This way we truncate the inode
  * size (and its pages) and then clear our own inode, which will do an iput
  * on our and the lower inode.
+ *
+ * No need to lock sb info's rwsem.
  */
 static void unionfs_delete_inode(struct inode *inode)
 {
@@ -76,7 +78,11 @@ static void unionfs_delete_inode(struct inode *inode)
 	clear_inode(inode);
 }
 
-/* final actions when unmounting a file system */
+/*
+ * final actions when unmounting a file system
+ *
+ * No need to lock rwsem.
+ */
 static void unionfs_put_super(struct super_block *sb)
 {
 	int bindex, bstart, bend;
@@ -115,6 +121,9 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct super_block *sb;
 	struct dentry *lower_dentry;
 
+	sb = dentry->d_sb;
+
+	unionfs_read_lock(sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -123,11 +132,7 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	}
 	unionfs_check_dentry(dentry);
 
-	sb = dentry->d_sb;
-
-	unionfs_read_lock(sb);
 	lower_dentry = unionfs_lower_dentry(sb->s_root);
-	unionfs_read_unlock(sb);
 	err = vfs_statfs(lower_dentry, buf);
 
 	/* set return buf to our f/s to avoid confusing user-level utils */
@@ -150,6 +155,7 @@ static int unionfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(sb);
 	return err;
 }
 
@@ -790,6 +796,8 @@ out_error:
  * and the inode is not hashed anywhere.  Used to clear anything
  * that needs to be, before the inode is completely destroyed and put
  * on the inode free list.
+ *
+ * No need to lock sb info's rwsem.
  */
 static void unionfs_clear_inode(struct inode *inode)
 {
@@ -874,6 +882,8 @@ void unionfs_destroy_inode_cache(void)
 /*
  * Called when we have a dirty inode, right here we only throw out
  * parts of our readdir list that are too old.
+ *
+ * No need to grab sb info's rwsem.
  */
 static int unionfs_write_inode(struct inode *inode, int sync)
 {
@@ -914,18 +924,20 @@ static void unionfs_umount_begin(struct vfsmount *mnt, int flags)
 
 	sb = mnt->mnt_sb;
 
+	unionfs_read_lock(sb);
+
 	bstart = sbstart(sb);
 	bend = sbend(sb);
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		lower_mnt = unionfs_lower_mnt_idx(sb->s_root, bindex);
-		unionfs_read_lock(sb);
 		lower_sb = unionfs_lower_super_idx(sb, bindex);
-		unionfs_read_unlock(sb);
 
 		if (lower_mnt && lower_sb && lower_sb->s_op &&
 		    lower_sb->s_op->umount_begin)
 			lower_sb->s_op->umount_begin(lower_mnt, flags);
 	}
+
+	unionfs_read_unlock(sb);
 }
 
 static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
@@ -936,6 +948,8 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 	char *path;
 	int bindex, bstart, bend;
 	int perms;
+
+	unionfs_read_lock(sb);
 
 	unionfs_lock_dentry(sb->s_root);
 
@@ -958,9 +972,7 @@ static int unionfs_show_options(struct seq_file *m, struct vfsmount *mnt)
 			goto out;
 		}
 
-		unionfs_read_lock(sb);
 		perms = branchperms(sb, bindex);
-		unionfs_read_unlock(sb);
 
 		seq_printf(m, "%s=%s", path,
 			   perms & MAY_WRITE ? "rw" : "ro");
@@ -972,6 +984,8 @@ out:
 	free_page((unsigned long) tmp_page);
 
 	unionfs_unlock_dentry(sb->s_root);
+
+	unionfs_read_unlock(sb);
 
 	return ret;
 }

@@ -271,7 +271,13 @@ int parse_branch_mode(const char *name)
 	return perms;
 }
 
-/* parse the dirs= mount argument */
+/* 
+ * parse the dirs= mount argument
+ *
+ * We don't need to lock the superblock private data's rwsem, as we get
+ * called only by unionfs_read_super - it is still a long time before anyone
+ * can even get a reference to us.
+ */
 static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 			     *lower_root_info, char *options)
 {
@@ -357,11 +363,9 @@ static int parse_dirs_option(struct super_block *sb, struct unionfs_dentry_info
 		lower_root_info->lower_paths[bindex].dentry = nd.dentry;
 		lower_root_info->lower_paths[bindex].mnt = nd.mnt;
 
-		unionfs_write_lock(sb);
 		set_branchperms(sb, bindex, perms);
 		set_branch_count(sb, bindex, 0);
 		new_branch_id(sb, bindex);
-		unionfs_write_unlock(sb);
 
 		if (lower_root_info->bstart < 0)
 			lower_root_info->bstart = bindex;
@@ -561,6 +565,10 @@ static struct dentry *unionfs_d_alloc_root(struct super_block *sb)
 	return ret;
 }
 
+/*
+ * There is no need to lock the unionfs_super_info's rwsem as there is no
+ * way anyone can have a reference to the superblock at this point in time.
+ */
 static int unionfs_read_super(struct super_block *sb, void *raw_data,
 			      int silent)
 {
@@ -607,19 +615,12 @@ static int unionfs_read_super(struct super_block *sb, void *raw_data,
 	BUG_ON(bstart != 0);
 	sbend(sb) = bend = lower_root_info->bend;
 	for (bindex = bstart; bindex <= bend; bindex++) {
-		struct dentry *d;
-
-		d = lower_root_info->lower_paths[bindex].dentry;
-
-		unionfs_write_lock(sb);
+		struct dentry *d = lower_root_info->lower_paths[bindex].dentry;
 		unionfs_set_lower_super_idx(sb, bindex, d->d_sb);
-		unionfs_write_unlock(sb);
 	}
 
 	/* max Bytes is the maximum bytes from highest priority branch */
-	unionfs_read_lock(sb);
 	sb->s_maxbytes = unionfs_lower_super_idx(sb, 0)->s_maxbytes;
-	unionfs_read_unlock(sb);
 
 	sb->s_op = &unionfs_sops;
 

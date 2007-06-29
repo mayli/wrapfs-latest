@@ -23,7 +23,7 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 {
 	int err;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 	unionfs_check_file(file);
@@ -35,7 +35,7 @@ static ssize_t unionfs_read(struct file *file, char __user *buf,
 			    unionfs_lower_dentry(file->f_path.dentry));
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	unionfs_check_file(file);
 	return err;
 }
@@ -46,7 +46,7 @@ static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
 	int err = 0;
 	struct file *file = iocb->ki_filp;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 	unionfs_check_file(file);
@@ -61,7 +61,7 @@ static ssize_t unionfs_aio_read(struct kiocb *iocb, const struct iovec *iov,
 			    unionfs_lower_dentry(file->f_path.dentry));
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	unionfs_check_file(file);
 	return err;
 }
@@ -71,7 +71,7 @@ static ssize_t unionfs_write(struct file *file, const char __user *buf,
 {
 	int err = 0;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 	unionfs_check_file(file);
@@ -84,7 +84,7 @@ static ssize_t unionfs_write(struct file *file, const char __user *buf,
 	}
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	return err;
 }
 
@@ -100,7 +100,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	int willwrite;
 	struct file *lower_file;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 
 	/* This might be deferred to mmap's writepage */
 	willwrite = ((vma->vm_flags | VM_SHARED | VM_WRITE) == vma->vm_flags);
@@ -130,7 +130,7 @@ static int unionfs_mmap(struct file *file, struct vm_area_struct *vma)
 	}
 
 out:
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	if (!err) {
 		/* copyup could cause parent dir times to change */
 		unionfs_copy_attr_times(file->f_dentry->d_parent->d_inode);

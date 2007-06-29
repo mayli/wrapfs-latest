@@ -134,7 +134,16 @@ struct unionfs_sb_info {
 	int bend;
 
 	atomic_t generation;
-	struct rw_semaphore rwsem; /* protects access to data+id fields */
+
+	/*
+	 * This rwsem is used to make sure that a branch management
+	 * operation...
+	 *   1) will not begin before all currently in-flight operations
+	 *      complete
+	 *   2) any new operations do not execute until the currently
+	 *      running branch management operation completes
+	 */
+	struct rw_semaphore rwsem;
 	int high_branch_id;	/* last unique branch ID given */
 	struct unionfs_data *data;
 };
@@ -376,9 +385,7 @@ static inline int is_robranch_super(const struct super_block *sb, int index)
 {
 	int ret;
 
-	unionfs_read_lock(sb);
   	ret = (!(branchperms(sb, index) & MAY_WRITE)) ? -EROFS : 0;
-	unionfs_read_unlock(sb);
 	return ret;
 }
 
@@ -389,11 +396,9 @@ static inline int is_robranch_idx(const struct dentry *dentry, int index)
 
 	BUG_ON(index < 0);
 
-	unionfs_read_lock(dentry->d_sb);
 	if ((!(branchperms(dentry->d_sb, index) & MAY_WRITE)) ||
 	    IS_RDONLY(unionfs_lower_dentry_idx(dentry, index)->d_inode))
 		err = -EROFS;
-	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 

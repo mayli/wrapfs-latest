@@ -408,10 +408,14 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	int err;
 
+	unionfs_read_lock(dentry->d_sb);
+
 	unionfs_lock_dentry(dentry);
 	err = __unionfs_d_revalidate_chain(dentry, nd, 0);
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+
+	unionfs_read_unlock(dentry->d_sb);
 
 	return err;
 }
@@ -423,6 +427,8 @@ static int unionfs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 static void unionfs_d_release(struct dentry *dentry)
 {
 	int bindex, bstart, bend;
+
+	unionfs_read_lock(dentry->d_sb);
 
 	unionfs_check_dentry(dentry);
 	/* this could be a negative dentry, so check first */
@@ -459,6 +465,7 @@ out_free:
 	free_dentry_private_data(dentry);
 
 out:
+	unionfs_read_unlock(dentry->d_sb);
 	return;
 }
 

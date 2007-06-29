@@ -57,6 +57,7 @@ ssize_t unionfs_getxattr(struct dentry *dentry, const char *name, void *value,
 	struct dentry *lower_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -71,6 +72,7 @@ ssize_t unionfs_getxattr(struct dentry *dentry, const char *name, void *value,
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 
@@ -84,6 +86,7 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 	struct dentry *lower_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -99,6 +102,7 @@ int unionfs_setxattr(struct dentry *dentry, const char *name,
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 
@@ -111,6 +115,7 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 	struct dentry *lower_dentry = NULL;
 	int err = -EOPNOTSUPP;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -125,6 +130,7 @@ int unionfs_removexattr(struct dentry *dentry, const char *name)
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }
 
@@ -138,6 +144,7 @@ ssize_t unionfs_listxattr(struct dentry *dentry, char *list, size_t size)
 	int err = -EOPNOTSUPP;
 	char *encoded_list = NULL;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -153,5 +160,6 @@ ssize_t unionfs_listxattr(struct dentry *dentry, char *list, size_t size)
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
 	return err;
 }

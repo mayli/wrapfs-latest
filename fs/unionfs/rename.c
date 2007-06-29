@@ -401,6 +401,7 @@ int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	int err = 0;
 	struct dentry *wh_dentry;
 
+	unionfs_read_lock(old_dentry->d_sb);
 	unionfs_double_lock_dentry(old_dentry, new_dentry);
 
 	if (!__unionfs_d_revalidate_chain(old_dentry, NULL, 0)) {
@@ -508,5 +509,6 @@ out:
 
 	unionfs_unlock_dentry(new_dentry);
 	unionfs_unlock_dentry(old_dentry);
+	unionfs_read_unlock(old_dentry->d_sb);
 	return err;
 }

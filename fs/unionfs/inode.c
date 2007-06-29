@@ -30,16 +30,6 @@ static int unionfs_create(struct inode *parent, struct dentry *dentry,
 	char *name = NULL;
 	int valid = 0;
 
-	/*
-	 * We have to read-lock the superblock rwsem, and we have to
-	 * revalidate the parent dentry and this one.  A branch-management
-	 * operation could have taken place, mid-way through a VFS operation
-	 * that eventually reaches here.  So we have to ensure consistency,
-	 * just as we do with the file operations.
-	 *
-	 * XXX: we may need to do this for all other inode ops that take a
-	 * dentry.
-	 */
 	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
@@ -244,6 +234,11 @@ out:
 	return err;
 }
 
+/*
+ * unionfs_lookup is the only special function which takes a dentry, yet we
+ * do NOT want to call __unionfs_d_revalidate_chain because by definition,
+ * we don't have a valid dentry here yet.
+ */
 static struct dentry *unionfs_lookup(struct inode *parent,
 				     struct dentry *dentry,
 				     struct nameidata *nd)
@@ -251,11 +246,7 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 	struct path path_save;
 	struct dentry *ret;
 
-	/*
-	 * lookup is the only special function which takes a dentry, yet we
-	 * do NOT want to call __unionfs_d_revalidate_chain because by
-	 * definition, we don't have a valid dentry here yet.
-	 */
+	unionfs_read_lock(dentry->d_sb);
 
 	/* save the dentry & vfsmnt from namei */
 	if (nd) {
@@ -281,6 +272,8 @@ static struct dentry *unionfs_lookup(struct inode *parent,
 	unionfs_check_inode(parent);
 	unionfs_check_dentry(dentry);
 	unionfs_check_dentry(dentry->d_parent);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return ret;
 }
 
@@ -294,6 +287,7 @@ static int unionfs_link(struct dentry *old_dentry, struct inode *dir,
 	struct dentry *whiteout_dentry;
 	char *name = NULL;
 
+	unionfs_read_lock(old_dentry->d_sb);
 	unionfs_double_lock_dentry(new_dentry, old_dentry);
 
 	if (!__unionfs_d_revalidate_chain(old_dentry, NULL, 0)) {
@@ -426,6 +420,8 @@ out:
 	unionfs_check_inode(dir);
 	unionfs_check_dentry(new_dentry);
 	unionfs_check_dentry(old_dentry);
+	unionfs_read_unlock(old_dentry->d_sb);
+
 	return err;
 }
 
@@ -440,6 +436,7 @@ static int unionfs_symlink(struct inode *dir, struct dentry *dentry,
 	int bindex = 0, bstart;
 	char *name = NULL;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
@@ -585,6 +582,8 @@ out:
 
 	unionfs_check_inode(dir);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return err;
 }
 
@@ -598,6 +597,7 @@ static int unionfs_mkdir(struct inode *parent, struct dentry *dentry, int mode)
 	int whiteout_unlinked = 0;
 	struct sioq_args args;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
@@ -732,6 +732,8 @@ out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_inode(parent);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return err;
 }
 
@@ -745,6 +747,7 @@ static int unionfs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	char *name = NULL;
 	int whiteout_unlinked = 0;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (dentry->d_inode &&
@@ -858,6 +861,8 @@ out:
 
 	unionfs_check_inode(dir);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return err;
 }
 
@@ -867,6 +872,7 @@ static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 	int err;
 	struct dentry *lower_dentry;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -891,23 +897,28 @@ static int unionfs_readlink(struct dentry *dentry, char __user *buf,
 out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return err;
 }
 
-/* We don't lock the dentry here, because readlink does the heavy lifting. */
+/*
+ * unionfs_follow_link takes a dentry, but it is simple.  It only needs to
+ * allocate some memory and then call our ->readlink method.  Our
+ * unionfs_readlink *does* lock our dentry and revalidate the dentry.
+ * Therefore, we do not have to lock our dentry here, to prevent a deadlock;
+ * nor do we need to revalidate it either.  It is safe to not lock our
+ * dentry here because unionfs_follow_link does not do anything (prior to
+ * calling ->readlink) which could become inconsistent due to branch
+ * management.
+ */
 static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 {
 	char *buf;
 	int len = PAGE_SIZE, err;
 	mm_segment_t old_fs;
 
-	unionfs_lock_dentry(dentry);
-
-	if (dentry->d_inode &&
-	    !__unionfs_d_revalidate_chain(dentry, nd, 0)) {
-		err = -ESTALE;
-		goto out;
-	}
+ 	unionfs_read_lock(dentry->d_sb);
 
 	/* This is freed by the put_link method assuming a successful call. */
 	buf = kmalloc(len, GFP_KERNEL);
@@ -931,14 +942,17 @@ static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	err = 0;
 
 out:
-	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
+ 	unionfs_read_unlock(dentry->d_sb);
 	return ERR_PTR(err);
 }
 
+/* FIXME: We may not have to lock here */
 static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 			     void *cookie)
 {
+	unionfs_read_lock(dentry->d_sb);
+
 	unionfs_lock_dentry(dentry);
 	if (!__unionfs_d_revalidate_chain(dentry, nd, 0))
 		printk("unionfs: put_link failed to revalidate dentry\n");
@@ -946,6 +960,7 @@ static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
 
 	unionfs_check_dentry(dentry);
 	kfree(nd_get_link(nd));
+	unionfs_read_unlock(dentry->d_sb);
 }
 
 /*
@@ -987,9 +1002,7 @@ static int inode_permission(struct inode *inode, int mask,
 		    (!strcmp("nfs", (inode)->i_sb->s_type->name)) &&
 		    (nd) && (nd->mnt) && (nd->mnt->mnt_sb)) {
 			int perms;
-			unionfs_read_lock(nd->mnt->mnt_sb);
 			perms = branchperms(nd->mnt->mnt_sb, bindex);
-			unionfs_read_unlock(nd->mnt->mnt_sb);
 			if (perms & MAY_NFSRO)
 				retval = generic_permission(inode, submask,
 							    NULL);
@@ -1101,6 +1114,7 @@ static int unionfs_setattr(struct dentry *dentry, struct iattr *ia)
 	int i;
 	int copyup = 0;
 
+	unionfs_read_lock(dentry->d_sb);
 	unionfs_lock_dentry(dentry);
 
 	if (!__unionfs_d_revalidate_chain(dentry, NULL, 0)) {
@@ -1175,6 +1189,8 @@ out:
 	unionfs_unlock_dentry(dentry);
 	unionfs_check_dentry(dentry);
 	unionfs_check_dentry(dentry->d_parent);
+	unionfs_read_unlock(dentry->d_sb);
+
 	return err;
 }
 
