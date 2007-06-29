@@ -111,11 +111,22 @@ struct dentry *unionfs_lookup_backend(struct dentry *dentry,
 		BUG_ON(UNIONFS_D(dentry) != NULL);
 		locked_child = 1;
 	}
-	if (lookupmode != INTERPOSE_PARTIAL) {
-		if ((err = new_dentry_private_data(dentry)))
-			goto out;
-		allocated_new_info = 1;
+
+	switch(lookupmode) {
+		case INTERPOSE_PARTIAL:
+			break;
+		case INTERPOSE_LOOKUP:
+			if ((err = new_dentry_private_data(dentry)))
+				goto out;
+			allocated_new_info = 1;
+			break;
+		default:
+			if ((err = realloc_dentry_private_data(dentry)))
+				goto out;
+			allocated_new_info = 1;
+			break;
 	}
+
 	/* must initialize dentry operations */
 	dentry->d_op = &unionfs_dops;
 
@@ -474,59 +485,68 @@ void free_dentry_private_data(struct unionfs_dentry_info *udi)
 	kmem_cache_free(unionfs_dentry_cachep, udi);
 }
 
-/*
- * Allocate new dentry private data, free old one if necessary.
- * On success, returns a dentry whose ->info node is locked already.
- *
- * Note: this function may get a dentry with an already existing *and*
- * locked info node!
- */
-int new_dentry_private_data(struct dentry *dentry)
+static inline int __realloc_dentry_private_data(struct dentry *dentry)
 {
-	int size;
 	struct unionfs_dentry_info *info = UNIONFS_D(dentry);
 	void *p;
-	int unlock_on_err = 0;
+	int size;
 
-	if (!info) {
-		dentry->d_fsdata = kmem_cache_alloc(unionfs_dentry_cachep,
-						    GFP_ATOMIC);
-		info = UNIONFS_D(dentry);
-		if (!info)
-			goto out;
-
-		mutex_init(&info->lock);
-		unionfs_lock_dentry(dentry);
-		unlock_on_err = 1;
-
-		info->lower_paths = NULL;
-	}
-
-
-	info->bstart = info->bend = info->bopaque = -1;
-	info->bcount = sbmax(dentry->d_sb);
-	atomic_set(&info->generation,
-		   atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
+	BUG_ON(!info);
 
 	size = sizeof(struct path) * sbmax(dentry->d_sb);
-
 	p = krealloc(info->lower_paths, size, GFP_ATOMIC);
 	if (!p)
-		goto out_free;
+		return -ENOMEM;
 
 	info->lower_paths = p;
+
+	info->bstart = -1;
+	info->bend = -1;
+	info->bopaque = -1;
+	info->bcount = sbmax(dentry->d_sb);
+	atomic_set(&info->generation,
+			atomic_read(&UNIONFS_SB(dentry->d_sb)->generation));
+
 	memset(info->lower_paths, 0, size);
 
 	return 0;
+}
 
-out_free:
-	kfree(info->lower_paths);
-	if (unlock_on_err)
-		unionfs_unlock_dentry(dentry);
+/* UNIONFS_D(dentry)->lock must be locked */
+int realloc_dentry_private_data(struct dentry *dentry)
+{
+	if (!__realloc_dentry_private_data(dentry))
+		return 0;
 
-out:
-	free_dentry_private_data(info);
+	kfree(UNIONFS_D(dentry)->lower_paths);
+	free_dentry_private_data(UNIONFS_D(dentry));
 	dentry->d_fsdata = NULL;
+	return -ENOMEM;
+}
+
+/* allocate new dentry private data */
+int new_dentry_private_data(struct dentry *dentry)
+{
+	struct unionfs_dentry_info *info = UNIONFS_D(dentry);
+
+	BUG_ON(info);
+
+	info = kmem_cache_alloc(unionfs_dentry_cachep, GFP_ATOMIC);
+	if (!info)
+		return -ENOMEM;
+
+	mutex_init(&info->lock);
+	mutex_lock(&info->lock);
+
+	info->lower_paths = NULL;
+
+	dentry->d_fsdata = info;
+
+	if (!__realloc_dentry_private_data(dentry))
+		return 0;
+
+	mutex_unlock(&info->lock);
+	free_dentry_private_data(dentry);
 	return -ENOMEM;
 }
 
