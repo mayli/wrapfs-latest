@@ -506,7 +506,7 @@ int copyup_named_file(struct inode *dir, struct file *file, char *name,
 	int err = 0;
 	struct file *output_file = NULL;
 
-	err = copyup_dentry(dir, file->f_dentry, bstart, new_bindex,
+	err = copyup_dentry(dir, file->f_path.dentry, bstart, new_bindex,
 			    name, strlen(name), &output_file, len);
 	if (!err) {
 		fbstart(file) = new_bindex;
@@ -525,7 +525,7 @@ int copyup_file(struct inode *dir, struct file *file, int bstart,
 {
 	int err = 0;
 	struct file *output_file = NULL;
-	struct dentry *dentry = file->f_dentry;
+	struct dentry *dentry = file->f_path.dentry;
 
 	err = copyup_dentry(dir, dentry, bstart, new_bindex,
 			    dentry->d_name.name, dentry->d_name.len,

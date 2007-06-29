@@ -333,7 +333,7 @@ void __unionfs_check_file(const struct file *file,
 	int printed_caller = 0;
 
 	BUG_ON(!file);
-	dentry = file->f_dentry;
+	dentry = file->f_path.dentry;
 	sb = dentry->d_sb;
 	dstart = dbstart(dentry);
 	dend = dbend(dentry);

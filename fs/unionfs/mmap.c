@@ -121,7 +121,7 @@ static int unionfs_do_readpage(struct file *file, struct page *page)
 	struct page *lower_page;
 	char *lower_page_data;
 
-	dentry = file->f_dentry;
+	dentry = file->f_path.dentry;
 	if (UNIONFS_F(file) == NULL) {
 		err = -ENOENT;
 		goto out_err;
@@ -200,7 +200,7 @@ int unionfs_readpage(struct file *file, struct page *page)
 {
 	int err;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 	unionfs_check_file(file);
@@ -210,7 +210,7 @@ int unionfs_readpage(struct file *file, struct page *page)
 	if (!err) {
 		touch_atime(unionfs_lower_mnt(file->f_path.dentry),
 			    unionfs_lower_dentry(file->f_path.dentry));
-		unionfs_copy_attr_times(file->f_dentry->d_inode);
+		unionfs_copy_attr_times(file->f_path.dentry->d_inode);
 	}
 
 	/*
@@ -221,7 +221,7 @@ int unionfs_readpage(struct file *file, struct page *page)
 out:
 	unlock_page(page);
 	unionfs_check_file(file);
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 
 	return err;
 }
@@ -231,7 +231,7 @@ int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
 {
 	int err;
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	/*
 	 * This is the only place where we unconditionally copy the lower
 	 * attribute times before calling unionfs_file_revalidate.  The
@@ -243,10 +243,10 @@ int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
 	 * changed lower mtimes, and avoid an invariant violation warning,
 	 * is here, in ->prepare_write.
 	 */
-	unionfs_copy_attr_times(file->f_dentry->d_inode);
+	unionfs_copy_attr_times(file->f_path.dentry->d_inode);
 	err = unionfs_file_revalidate(file, 1);
 	unionfs_check_file(file);
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 
 	return err;
 }
@@ -264,7 +264,7 @@ int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
 
 	BUG_ON(file == NULL);
 
-	unionfs_read_lock(file->f_dentry->d_sb);
+	unionfs_read_lock(file->f_path.dentry->d_sb);
 	if ((err = unionfs_file_revalidate(file, 1)))
 		goto out;
 	unionfs_check_file(file);
@@ -312,7 +312,7 @@ out:
 	if (err < 0)
 		ClearPageUptodate(page);
 
-	unionfs_read_unlock(file->f_dentry->d_sb);
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	unionfs_check_file(file);
 	return err;		/* assume all is ok */
 }

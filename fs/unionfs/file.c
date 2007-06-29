@@ -79,7 +79,7 @@ static ssize_t unionfs_write(struct file *file, const char __user *buf,
 	err = do_sync_write(file, buf, count, ppos);
 	/* update our inode times upon a successful lower write */
 	if (err >= 0) {
-		unionfs_copy_attr_times(file->f_dentry->d_inode);
+		unionfs_copy_attr_times(file->f_path.dentry->d_inode);
 		unionfs_check_file(file);
 	}
 
@@ -133,9 +133,9 @@ out:
 	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	if (!err) {
 		/* copyup could cause parent dir times to change */
-		unionfs_copy_attr_times(file->f_dentry->d_parent->d_inode);
+		unionfs_copy_attr_times(file->f_path.dentry->d_parent->d_inode);
 		unionfs_check_file(file);
-		unionfs_check_dentry(file->f_dentry->d_parent);
+		unionfs_check_dentry(file->f_path.dentry->d_parent);
 	}
 	return err;
 }

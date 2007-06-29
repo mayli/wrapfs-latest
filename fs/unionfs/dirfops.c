@@ -102,7 +102,7 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	if ((err = unionfs_file_revalidate(file, 0)))
 		goto out;
 
-	inode = file->f_dentry->d_inode;
+	inode = file->f_path.dentry->d_inode;
 
 	uds = UNIONFS_F(file)->rdstate;
 	if (!uds) {
@@ -156,7 +156,7 @@ static int unionfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		uds->dirpos = offset;
 
 		/* Copy the atime. */
-		fsstack_copy_attr_atime(inode, lower_file->f_dentry->d_inode);
+		fsstack_copy_attr_atime(inode, lower_file->f_path.dentry->d_inode);
 
 		if (err < 0)
 			goto out;
@@ -239,7 +239,7 @@ static loff_t unionfs_dir_llseek(struct file *file, loff_t offset, int origin)
 				else
 					err = -EINVAL;
 			} else {
-				rdstate = find_rdstate(file->f_dentry->d_inode,
+				rdstate = find_rdstate(file->f_path.dentry->d_inode,
 						       offset);
 				if (rdstate) {
 					UNIONFS_F(file)->rdstate = rdstate;

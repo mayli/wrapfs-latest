@@ -73,7 +73,7 @@ retry:
 	dput(tmp_dentry);
 
 	err = copyup_named_file(dentry->d_parent->d_inode, file, name, bstart,
-				bindex, file->f_dentry->d_inode->i_size);
+				bindex, file->f_path.dentry->d_inode->i_size);
 	if (err) {
 		if (err == -EEXIST)
 			goto retry;
@@ -105,7 +105,7 @@ static void cleanup_file(struct file *file)
 {
 	int bindex, bstart, bend;
 	struct file **lf;
-	struct super_block *sb = file->f_dentry->d_sb;
+	struct super_block *sb = file->f_path.dentry->d_sb;
 
 	lf = UNIONFS_F(file)->lower_files;
 	bstart = fbstart(file);
@@ -157,7 +157,7 @@ static int open_all_files(struct file *file)
 	int bindex, bstart, bend, err = 0;
 	struct file *lower_file;
 	struct dentry *lower_dentry;
-	struct dentry *dentry = file->f_dentry;
+	struct dentry *dentry = file->f_path.dentry;
 	struct super_block *sb = dentry->d_sb;
 
 	bstart = dbstart(dentry);
@@ -192,7 +192,7 @@ static int open_highest_file(struct file *file, int willwrite)
 	int bindex, bstart, bend, err = 0;
 	struct file *lower_file;
 	struct dentry *lower_dentry;
-	struct dentry *dentry = file->f_dentry;
+	struct dentry *dentry = file->f_path.dentry;
 	struct inode *parent_inode = dentry->d_parent->d_inode;
 	struct super_block *sb = dentry->d_sb;
 	size_t inode_size = dentry->d_inode->i_size;
@@ -237,7 +237,7 @@ out:
 static int do_delayed_copyup(struct file *file)
 {
 	int bindex, bstart, bend, err = 0;
-	struct dentry *dentry = file->f_dentry;
+	struct dentry *dentry = file->f_path.dentry;
 	struct inode *parent_inode = dentry->d_parent->d_inode;
 	loff_t inode_size = dentry->d_inode->i_size;
 
@@ -306,7 +306,7 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	int size;
 	int err = 0;
 
-	dentry = file->f_dentry;
+	dentry = file->f_path.dentry;
 	unionfs_lock_dentry(dentry);
 	sb = dentry->d_sb;
 
@@ -398,19 +398,19 @@ static int __open_dir(struct inode *inode, struct file *file)
 	struct file *lower_file;
 	int bindex, bstart, bend;
 
-	bstart = fbstart(file) = dbstart(file->f_dentry);
-	bend = fbend(file) = dbend(file->f_dentry);
+	bstart = fbstart(file) = dbstart(file->f_path.dentry);
+	bend = fbend(file) = dbend(file->f_path.dentry);
 
 	for (bindex = bstart; bindex <= bend; bindex++) {
 		lower_dentry =
-			unionfs_lower_dentry_idx(file->f_dentry, bindex);
+			unionfs_lower_dentry_idx(file->f_path.dentry, bindex);
 		if (!lower_dentry)
 			continue;
 
 		dget(lower_dentry);
-		unionfs_mntget(file->f_dentry, bindex);
+		unionfs_mntget(file->f_path.dentry, bindex);
 		lower_file = dentry_open(lower_dentry,
-					 unionfs_lower_mnt_idx(file->f_dentry,
+					 unionfs_lower_mnt_idx(file->f_path.dentry,
 							       bindex),
 					 file->f_flags);
 		if (IS_ERR(lower_file))
@@ -436,17 +436,17 @@ static int __open_file(struct inode *inode, struct file *file)
 	int lower_flags;
 	int bindex, bstart, bend;
 
-	lower_dentry = unionfs_lower_dentry(file->f_dentry);
+	lower_dentry = unionfs_lower_dentry(file->f_path.dentry);
 	lower_flags = file->f_flags;
 
-	bstart = fbstart(file) = dbstart(file->f_dentry);
-	bend = fbend(file) = dbend(file->f_dentry);
+	bstart = fbstart(file) = dbstart(file->f_path.dentry);
+	bend = fbend(file) = dbend(file->f_path.dentry);
 
 	/*
 	 * check for the permission for lower file.  If the error is
 	 * COPYUP_ERR, copyup the file.
 	 */
-	if (lower_dentry->d_inode && is_robranch(file->f_dentry)) {
+	if (lower_dentry->d_inode && is_robranch(file->f_path.dentry)) {
 		/*
 		 * if the open will change the file, copy it up otherwise
 		 * defer it.
@@ -458,7 +458,7 @@ static int __open_file(struct inode *inode, struct file *file)
 			/* copyup the file */
 			for (bindex = bstart - 1; bindex >= 0; bindex--) {
 				err = copyup_file(
-					file->f_dentry->d_parent->d_inode,
+					file->f_path.dentry->d_parent->d_inode,
 					file, bstart, bindex, size);
 				if (!err)
 					break;
@@ -474,10 +474,10 @@ static int __open_file(struct inode *inode, struct file *file)
 	 * dentry_open will decrement mnt refcnt if err.
 	 * otherwise fput() will do an mntput() for us upon file close.
 	 */
-	unionfs_mntget(file->f_dentry, bstart);
+	unionfs_mntget(file->f_path.dentry, bstart);
 	lower_file =
 		dentry_open(lower_dentry,
-			    unionfs_lower_mnt_idx(file->f_dentry, bstart),
+			    unionfs_lower_mnt_idx(file->f_path.dentry, bstart),
 			    lower_flags);
 	if (IS_ERR(lower_file))
 		return PTR_ERR(lower_file);
@@ -522,7 +522,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 		goto out;
 	}
 
-	dentry = file->f_dentry;
+	dentry = file->f_path.dentry;
 	unionfs_lock_dentry(dentry);
 
 	bstart = fbstart(file) = dbstart(dentry);
@@ -548,7 +548,7 @@ int unionfs_open(struct inode *inode, struct file *file)
 			if (!lower_file)
 				continue;
 
-			branchput(file->f_dentry->d_sb, bindex);
+			branchput(file->f_path.dentry->d_sb, bindex);
 			/* fput calls dput for lower_dentry */
 			fput(lower_file);
 		}
@@ -567,7 +567,7 @@ out_nofree:
 	unionfs_check_inode(inode);
 	if (!err) {
 		unionfs_check_file(file);
-		unionfs_check_dentry(file->f_dentry->d_parent);
+		unionfs_check_dentry(file->f_path.dentry->d_parent);
 	}
 	return err;
 }
@@ -596,7 +596,7 @@ int unionfs_file_release(struct inode *inode, struct file *file)
 		goto out;
 	unionfs_check_file(file);
 	fileinfo = UNIONFS_F(file);
-	BUG_ON(file->f_dentry->d_inode != inode);
+	BUG_ON(file->f_path.dentry->d_inode != inode);
 	inodeinfo = UNIONFS_I(inode);
 
 	/* fput all the lower files */
@@ -656,7 +656,7 @@ static long do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		err = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
 	} else if (lower_file->f_op->ioctl) {
 		lock_kernel();
-		err = lower_file->f_op->ioctl(lower_file->f_dentry->d_inode,
+		err = lower_file->f_op->ioctl(lower_file->f_path.dentry->d_inode,
 					      lower_file, cmd, arg);
 		unlock_kernel();
 	}
@@ -681,7 +681,7 @@ static int unionfs_ioctl_queryfile(struct file *file, unsigned int cmd,
 	struct dentry *dentry, *lower_dentry;
 	struct vfsmount *mnt;
 
-	dentry = file->f_dentry;
+	dentry = file->f_path.dentry;
 	unionfs_lock_dentry(dentry);
 	orig_bstart = dbstart(dentry);
 	orig_bend = dbend(dentry);

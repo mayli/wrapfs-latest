@@ -91,7 +91,7 @@ int init_rdstate(struct file *file)
 	       (sizeof(unsigned int) + sizeof(unsigned int)));
 	BUG_ON(UNIONFS_F(file)->rdstate != NULL);
 
-	UNIONFS_F(file)->rdstate = alloc_rdstate(file->f_dentry->d_inode,
+	UNIONFS_F(file)->rdstate = alloc_rdstate(file->f_path.dentry->d_inode,
 						 fbstart(file));
 
 	return (UNIONFS_F(file)->rdstate ? 0 : -ENOMEM);
