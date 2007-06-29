@@ -908,9 +908,9 @@ out:
  * unionfs_readlink *does* lock our dentry and revalidate the dentry.
  * Therefore, we do not have to lock our dentry here, to prevent a deadlock;
  * nor do we need to revalidate it either.  It is safe to not lock our
- * dentry here because unionfs_follow_link does not do anything (prior to
- * calling ->readlink) which could become inconsistent due to branch
- * management.
+ * dentry here, nor revalidate it, because unionfs_follow_link does not do
+ * anything (prior to calling ->readlink) which could become inconsistent
+ * due to branch management.
  */
 static void *unionfs_follow_link(struct dentry *dentry, struct nameidata *nd)
 {
