@@ -52,7 +52,7 @@
  * such day as Linux can better support address_space_ops in a stackable
  * fashion.
  */
-int unionfs_writepage(struct page *page, struct writeback_control *wbc)
+static int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 {
 	int err = -EIO;
 	struct inode *inode;
@@ -181,7 +181,7 @@ out:
 	return err;
 }
 
-int unionfs_readpage(struct file *file, struct page *page)
+static int unionfs_readpage(struct file *file, struct page *page)
 {
 	int err;
 
@@ -211,8 +211,8 @@ out:
 	return err;
 }
 
-int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
-			  unsigned to)
+static int unionfs_prepare_write(struct file *file, struct page *page,
+				 unsigned from, unsigned to)
 {
 	int err;
 
@@ -236,8 +236,8 @@ int unionfs_prepare_write(struct file *file, struct page *page, unsigned from,
 	return err;
 }
 
-int unionfs_commit_write(struct file *file, struct page *page, unsigned from,
-			 unsigned to)
+static int unionfs_commit_write(struct file *file, struct page *page,
+				unsigned from, unsigned to)
 {
 	int err = -ENOMEM;
 	struct inode *inode, *lower_inode;
@@ -302,7 +302,7 @@ out:
 	return err;		/* assume all is ok */
 }
 
-void unionfs_sync_page(struct page *page)
+static void unionfs_sync_page(struct page *page)
 {
 	struct inode *inode;
 	struct inode *lower_inode;

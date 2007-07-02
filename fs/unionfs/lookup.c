@@ -18,6 +18,8 @@
 
 #include "union.h"
 
+static int realloc_dentry_private_data(struct dentry *dentry);
+
 /* is the filename valid == !(whiteout for a file or opaque dir marker) */
 static int is_validname(const char *name)
 {
@@ -514,7 +516,7 @@ static inline int __realloc_dentry_private_data(struct dentry *dentry)
 }
 
 /* UNIONFS_D(dentry)->lock must be locked */
-int realloc_dentry_private_data(struct dentry *dentry)
+static int realloc_dentry_private_data(struct dentry *dentry)
 {
 	if (!__realloc_dentry_private_data(dentry))
 		return 0;

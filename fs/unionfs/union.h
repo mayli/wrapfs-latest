@@ -248,7 +248,6 @@ static inline void unionfs_double_lock_dentry(struct dentry *d1,
 	unionfs_lock_dentry(d2);
 }
 
-extern int realloc_dentry_private_data(struct dentry *dentry);
 extern int new_dentry_private_data(struct dentry *dentry);
 extern void free_dentry_private_data(struct dentry *dentry);
 extern void update_bstart(struct dentry *dentry);
