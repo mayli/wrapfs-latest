@@ -385,7 +385,7 @@ int copyup_dentry(struct inode *dir, struct dentry *dentry, int bstart,
 			(char __user *)symbuf,
 			PATH_MAX);
 		set_fs(oldfs);
-		if (err) {
+		if (err < 0) {
 			__clear(dentry, old_lower_dentry,
 				old_bstart, old_bend,
 				new_lower_dentry, new_bindex);
@@ -466,7 +466,8 @@ out_free:
 	 * functions we call above which operate on regular files.
 	 */
 	if (old_lower_dentry && old_lower_dentry->d_inode &&
-	    S_ISDIR(old_lower_dentry->d_inode->i_mode))
+	    (S_ISDIR(old_lower_dentry->d_inode->i_mode) ||
+	     S_ISLNK(old_lower_dentry->d_inode->i_mode)))
 		dput(old_lower_dentry);
 	kfree(symbuf);
 
