@@ -230,14 +230,15 @@ static int do_unionfs_rename(struct inode *old_dir,
 					    old_dentry->d_name.name,
 					    old_dentry->d_name.len,
 					    NULL, old_dentry->d_inode->i_size);
-			if (!err) {
-				dput(wh_old);
-				bwh_old = bindex;
-				err = __unionfs_rename(old_dir, old_dentry,
-						       new_dir, new_dentry,
-						       bindex, &wh_old);
-				break;
-			}
+			/* if copyup failed, try next branch to the left */
+			if (err)
+				continue;
+			dput(wh_old);
+			bwh_old = bindex;
+			err = __unionfs_rename(old_dir, old_dentry,
+					       new_dir, new_dentry,
+					       bindex, &wh_old);
+			break;
 		}
 	}
 
@@ -255,7 +256,13 @@ static int do_unionfs_rename(struct inode *old_dir,
 	 */
 	if ((old_bstart != old_bend) || (do_copyup != -1)) {
 		struct dentry *lower_parent;
-		BUG_ON(!wh_old || wh_old->d_inode || bwh_old < 0);
+		if (!wh_old || wh_old->d_inode || bwh_old < 0) {
+			printk(KERN_ERR "unionfs: rename error "
+			       "(wh_old=%p/%p bwh_old=%d)\n", wh_old,
+			       (wh_old ? wh_old->d_inode : NULL), bwh_old);
+			err = -EIO;
+			goto out;
+		}
 		lower_parent = lock_parent(wh_old);
 		local_err = vfs_create(lower_parent->d_inode, wh_old, S_IRUGO,
 				       NULL);
