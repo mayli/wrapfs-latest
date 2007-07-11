@@ -153,5 +153,5 @@ struct file_operations unionfs_main_fops = {
 	.flush		= unionfs_flush,
 	.release	= unionfs_file_release,
 	.fsync		= file_fsync,
-	.sendfile	= generic_file_sendfile,
+	.splice_read	= generic_file_splice_read,
 };
