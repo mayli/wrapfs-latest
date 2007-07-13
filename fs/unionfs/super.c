@@ -691,7 +691,7 @@ out_no_change:
 	 */
 
 	/*
-	 * No we call drop_pagecache_sb() to invalidate all pages in this
+	 * Now we call drop_pagecache_sb() to invalidate all pages in this
 	 * super.  This function calls invalidate_inode_pages(mapping),
 	 * which calls invalidate_mapping_pages(): the latter, however, will
 	 * not invalidate pages which are dirty, locked, under writeback, or
