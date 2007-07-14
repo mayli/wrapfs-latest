@@ -230,7 +230,7 @@ static int __copyup_reg_data(struct dentry *dentry,
 	output_mnt = unionfs_mntget(sb->s_root, new_bindex);
 	branchget(sb, new_bindex);
 	output_file = dentry_open(new_lower_dentry, output_mnt,
-				  O_WRONLY | O_LARGEFILE);
+				  O_RDWR | O_LARGEFILE);
 	if (IS_ERR(output_file)) {
 		err = PTR_ERR(output_file);
 		goto out_close_in2;
