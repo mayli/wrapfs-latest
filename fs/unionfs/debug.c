@@ -416,7 +416,10 @@ void __show_branch_counts(const struct super_block *sb,
 
 	printk("BC:");
 	for (i=0; i<sbmax(sb); i++) {
-		mnt = UNIONFS_D(sb->s_root)->lower_paths[i].mnt;
+		if (sb->s_root)
+			mnt = UNIONFS_D(sb->s_root)->lower_paths[i].mnt;
+		else
+			mnt = NULL;
 		printk("%d:", (mnt ? atomic_read(&mnt->mnt_count) : -99));
 	}
 	printk("%s:%s:%d\n",file,fxn,line);
