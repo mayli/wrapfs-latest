@@ -764,6 +764,8 @@ out_no_change:
 	atomic_set(&UNIONFS_I(sb->s_root->d_inode)->generation, i);
 	if (!(*flags & MS_SILENT))
 		printk("unionfs: new generation number %d\n", i);
+	/* finally, update the root dentry's times */
+	unionfs_copy_attr_times(sb->s_root->d_inode);
 	err = 0;		/* reset to success */
 
 	/*
