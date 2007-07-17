@@ -368,7 +368,8 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			err = open_highest_file(file, willwrite);
 			if (err)
 				goto out;
-			new_brid = UNIONFS_F(file)->saved_branch_ids[fbstart(file)];
+			new_brid = UNIONFS_F(file)->
+			  saved_branch_ids[fbstart(file)];
 			if (new_brid != orig_brid) {
 				/*
 				 * If we re-opened the file on a different
