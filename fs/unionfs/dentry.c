@@ -331,8 +331,8 @@ int __unionfs_d_revalidate_chain(struct dentry *dentry, struct nameidata *nd,
 	}
 
 	/*
-	 * call __unionfs_d_revalidate() on each dentry, but in parent to
-	 * child order.
+	 * call __unionfs_d_revalidate_one() on each dentry, but in parent
+	 * to child order.
 	 */
 	for (i=0; i<chain_len; i++) {
 		unionfs_lock_dentry(chain[i]);
