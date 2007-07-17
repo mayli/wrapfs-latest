@@ -216,7 +216,6 @@ static int open_highest_file(struct file *file, int willwrite)
 
 	dget(lower_dentry);
 	unionfs_mntget(dentry, bstart);
-	branchget(sb, bstart);
 	lower_file = dentry_open(lower_dentry,
 				 unionfs_lower_mnt_idx(dentry, bstart),
 				 file->f_flags);
@@ -224,6 +223,7 @@ static int open_highest_file(struct file *file, int willwrite)
 		err = PTR_ERR(lower_file);
 		goto out;
 	}
+	branchget(sb, bstart);
 	unionfs_set_lower_file(file, lower_file);
 	/* Fix up the position. */
 	lower_file->f_pos = file->f_pos;
