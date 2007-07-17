@@ -740,7 +740,7 @@ out_no_change:
 	for (i=dbstart(sb->s_root); i<=dbend(sb->s_root); i++) {
 		struct dentry *lower_dentry =
 			unionfs_lower_dentry_idx(sb->s_root, i);
-		atomic_inc(&lower_dentry->d_inode->i_count);
+		igrab(lower_dentry->d_inode);
 		new_lower_inodes[i] = lower_dentry->d_inode;
 	}
 	/* 2. release reference on all older lower inodes */
