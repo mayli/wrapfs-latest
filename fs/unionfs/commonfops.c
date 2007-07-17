@@ -334,6 +334,9 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	 */
 	if (!d_deleted(dentry) &&
 	    (sbgen > fgen || dbstart(dentry) != fbstart(file))) {
+		int orig_brid =	/* save orig branch ID */
+			UNIONFS_F(file)->saved_branch_ids[fbstart(file)];
+
 		/* First we throw out the existing files. */
 		cleanup_file(file);
 
@@ -360,10 +363,23 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 			if (err)
 				goto out;
 		} else {
+			int new_brid;
 			/* We only open the highest priority branch. */
 			err = open_highest_file(file, willwrite);
 			if (err)
 				goto out;
+			new_brid = UNIONFS_F(file)->saved_branch_ids[fbstart(file)];
+			if (new_brid != orig_brid) {
+				/*
+				 * If we re-opened the file on a different
+				 * branch than the original one, then update
+				 * the mnt counts of the old and new
+				 * branches accordingly.
+				 */
+				unionfs_mntget(dentry, bstart);	/* new branch */
+				unionfs_mntput(sb->s_root, /* orig branch */
+					       branch_id_to_idx(sb, orig_brid));
+			}
 		}
 		atomic_set(&UNIONFS_F(file)->generation,
 			   atomic_read(&UNIONFS_I(dentry->d_inode)->
