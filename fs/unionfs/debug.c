@@ -468,3 +468,24 @@ void __show_dinode_times(const struct dentry *dentry,
 		       lower_inode->i_ctime.tv_nsec);
 	}
 }
+
+void __show_inode_counts(const struct inode *inode,
+			const char *file, const char *fxn, int line)
+{
+	struct inode *lower_inode;
+	int bindex;
+
+	if (!inode) {
+		printk("SiC: Null inode\n");
+		return;
+	}
+	for (bindex=sbstart(inode->i_sb); bindex <= sbend(inode->i_sb); bindex++) {
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
+		if (!lower_inode)
+			continue;
+		printk("SIC(%lu:%d:%d): ", inode->i_ino, bindex,
+		       atomic_read(&(inode)->i_count));
+		printk("lc=%d ", atomic_read(&(lower_inode)->i_count));
+		printk("%s:%s:%d\n",file,fxn,line);
+	}
+}
