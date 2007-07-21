@@ -370,11 +370,12 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 				goto out;
 			new_brid = UNIONFS_F(file)->
 			  saved_branch_ids[fbstart(file)];
-			if (new_brid != orig_brid) {
+			if (new_brid != orig_brid && sbgen > fgen) {
 				/*
 				 * If we re-opened the file on a different
-				 * branch than the original one, then update
-				 * the mnt counts of the old and new
+				 * branch than the original one, and this
+				 * was due to a new branch inserted, then
+				 * update the mnt counts of the old and new
 				 * branches accordingly.
 				 */
 				unionfs_mntget(dentry, bstart);	/* new branch */
