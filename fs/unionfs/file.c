@@ -179,6 +179,8 @@ int unionfs_fsync(struct file *file, struct dentry *dentry, int datasync)
 			goto out;
 	}
 
+	unionfs_copy_attr_times(inode);
+
 out:
 	unionfs_read_unlock(file->f_path.dentry->d_sb);
 	unionfs_check_file(file);
@@ -221,6 +223,8 @@ int unionfs_fasync(int fd, struct file *file, int flag)
 		if (err)
 			goto out;
 	}
+
+	unionfs_copy_attr_times(inode);
 
 out:
 	unionfs_read_unlock(file->f_path.dentry->d_sb);
