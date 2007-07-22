@@ -44,7 +44,7 @@ To upgrade a union from read-only to read-write:
 
 To delete a branch /foo, regardless where it is in the current union:
 
-# mount -t unionfs -o del=/foo none MOUNTPOINT
+# mount -t unionfs -o remount,del=/foo none MOUNTPOINT
 
 To insert (add) a branch /foo before /bar:
 
