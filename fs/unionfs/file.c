@@ -140,6 +140,94 @@ out:
 	return err;
 }
 
+int unionfs_fsync(struct file *file, struct dentry *dentry, int datasync)
+{
+	int bindex, bstart, bend;
+	struct file *lower_file;
+	struct dentry *lower_dentry;
+	struct inode *lower_inode, *inode;
+	int err = -EINVAL;
+
+	unionfs_read_lock(file->f_path.dentry->d_sb);
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
+	unionfs_check_file(file);
+
+	bstart = fbstart(file);
+	bend = fbend(file);
+	if (bstart < 0 || bend < 0)
+		goto out;
+
+	inode = dentry->d_inode;
+	if (!inode) {
+		printk(KERN_ERR
+		       "unionfs: null lower inode in unionfs_fsync\n");
+		goto out;
+	}
+	for (bindex = bstart; bindex <= bend; bindex++) {
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
+		if (!lower_inode || !lower_inode->i_fop->fsync)
+			continue;
+		lower_file = unionfs_lower_file_idx(file, bindex);
+		lower_dentry = unionfs_lower_dentry_idx(dentry, bindex);
+		mutex_lock(&lower_inode->i_mutex);
+		err = lower_inode->i_fop->fsync(lower_file,
+						lower_dentry,
+						datasync);
+		mutex_unlock(&lower_inode->i_mutex);
+		if (err)
+			goto out;
+	}
+
+out:
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
+	unionfs_check_file(file);
+	return err;
+}
+
+int unionfs_fasync(int fd, struct file *file, int flag)
+{
+	int bindex, bstart, bend;
+	struct file *lower_file;
+	struct dentry *dentry;
+	struct inode *lower_inode, *inode;
+	int err = 0;
+
+	unionfs_read_lock(file->f_path.dentry->d_sb);
+	if ((err = unionfs_file_revalidate(file, 1)))
+		goto out;
+	unionfs_check_file(file);
+
+	bstart = fbstart(file);
+	bend = fbend(file);
+	if (bstart < 0 || bend < 0)
+		goto out;
+
+	dentry = file->f_path.dentry;
+	inode = dentry->d_inode;
+	if (!inode) {
+		printk(KERN_ERR
+		       "unionfs: null lower inode in unionfs_fasync\n");
+		goto out;
+	}
+	for (bindex = bstart; bindex <= bend; bindex++) {
+		lower_inode = unionfs_lower_inode_idx(inode, bindex);
+		if (!lower_inode || !lower_inode->i_fop->fasync)
+			continue;
+		lower_file = unionfs_lower_file_idx(file, bindex);
+		mutex_lock(&lower_inode->i_mutex);
+		err = lower_inode->i_fop->fasync(fd, lower_file, flag);
+		mutex_unlock(&lower_inode->i_mutex);
+		if (err)
+			goto out;
+	}
+
+out:
+	unionfs_read_unlock(file->f_path.dentry->d_sb);
+	unionfs_check_file(file);
+	return err;
+}
+
 struct file_operations unionfs_main_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= unionfs_read,
@@ -152,6 +240,7 @@ struct file_operations unionfs_main_fops = {
 	.open		= unionfs_open,
 	.flush		= unionfs_flush,
 	.release	= unionfs_file_release,
-	.fsync		= file_fsync,
+	.fsync		= unionfs_fsync,
+	.fasync		= unionfs_fasync,
 	.splice_read	= generic_file_splice_read,
 };

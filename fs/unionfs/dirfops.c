@@ -273,4 +273,6 @@ struct file_operations unionfs_dir_fops = {
 	.open		= unionfs_open,
 	.release	= unionfs_file_release,
 	.flush		= unionfs_flush,
+	.fsync		= unionfs_fsync,
+	.fasync		= unionfs_fasync,
 };

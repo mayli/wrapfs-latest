@@ -316,6 +316,9 @@ extern int unionfs_file_release(struct inode *inode, struct file *file);
 extern int unionfs_flush(struct file *file, fl_owner_t id);
 extern long unionfs_ioctl(struct file *file, unsigned int cmd,
 			  unsigned long arg);
+extern int unionfs_fsync(struct file *file, struct dentry *dentry,
+			 int datasync);
+extern int unionfs_fasync(int fd, struct file *file, int flag);
 
 /* Inode operations */
 extern int unionfs_rename(struct inode *old_dir, struct dentry *old_dentry,
