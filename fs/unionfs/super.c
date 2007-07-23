@@ -868,7 +868,7 @@ int unionfs_init_inode_cache(void)
 	unionfs_inode_cachep =
 		kmem_cache_create("unionfs_inode_cache",
 				  sizeof(struct unionfs_inode_info), 0,
-				  SLAB_RECLAIM_ACCOUNT, init_once, NULL);
+				  SLAB_RECLAIM_ACCOUNT, init_once);
 	if (!unionfs_inode_cachep)
 		err = -ENOMEM;
 	return err;
