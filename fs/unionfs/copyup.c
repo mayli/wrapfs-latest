@@ -177,19 +177,26 @@ static int __copyup_ndentry(struct dentry *old_lower_dentry,
 		run_sioq(__unionfs_mknod, &args);
 		err = args.err;
 	} else if (S_ISREG(old_mode)) {
+		struct nameidata *nd = alloc_lower_nd(LOOKUP_CREATE);
+		if (!nd) {
+			err = -ENOMEM;
+			goto out;
+		}
+		args.create.nd = nd;
 		args.create.parent = new_lower_parent_dentry->d_inode;
 		args.create.dentry = new_lower_dentry;
 		args.create.mode = old_mode;
-		args.create.nd = NULL;
 
 		run_sioq(__unionfs_create, &args);
 		err = args.err;
+		free_lower_nd(nd, err);
 	} else {
 		printk(KERN_ERR "unionfs: unknown inode type %d\n",
 		       old_mode);
 		BUG();
 	}
 
+out:
 	return err;
 }
 

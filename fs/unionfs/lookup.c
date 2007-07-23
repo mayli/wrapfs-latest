@@ -573,3 +573,65 @@ void update_bstart(struct dentry *dentry)
 		unionfs_set_lower_dentry_idx(dentry, bindex, NULL);
 	}
 }
+
+
+/*
+ * Allocate and fill in a nameidata structure (the intent part) we can pass
+ * to a lower file system.  Returns NULL on error (only -ENOMEM possible),
+ * or a valid allocated nameidata structure.  Inside that structure, this
+ * function may also return an allocated struct file (for open intents).
+ * The caller, when done with this nd, must kfree both the intent file and
+ * the entire nd.
+ */
+struct nameidata *alloc_lower_nd(unsigned int flags)
+{
+	struct nameidata *nd;
+#ifdef ALLOC_LOWER_ND_FILE
+	/*
+	 * XXX: one day we may need to have the lower return an open file
+	 * for us.  It is not needed in 2.6.23-rc1 for nfs2/nfs3, but may
+	 * very well be needed for nfs4.
+	 */
+	struct file *file;
+#endif /* ALLOC_LOWER_ND_FILE */
+
+	nd = kzalloc(sizeof(struct nameidata), GFP_KERNEL);
+	if (!nd)
+		goto out;
+
+	switch (flags) {
+	case LOOKUP_CREATE:
+		nd->flags = LOOKUP_CREATE;
+		nd->intent.open.flags = FMODE_READ | FMODE_WRITE | O_CREAT;
+#ifdef ALLOC_LOWER_ND_FILE
+		file = kzalloc(sizeof(struct file), GFP_KERNEL);
+		if (!file) {
+			kfree(nd);
+			nd = NULL;
+			goto out;
+		}
+		nd->intent.open.file = file;
+#endif /* ALLOC_LOWER_ND_FILE */
+		break;
+	default:
+		/*
+		 * We should never get here, for now.
+		 * We can add new cases here later on.
+		 */
+		BUG();
+		break;
+	}
+out:
+	return nd;
+}
+
+void free_lower_nd(struct nameidata *nd, int err)
+{
+	if (nd->intent.open.file) {
+		if (!err)
+			fput(nd->intent.open.file); /* XXX: open file not needed? */
+		kfree(nd->intent.open.file);
+	}
+	kfree(nd);
+}
+

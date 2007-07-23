@@ -252,6 +252,8 @@ extern int realloc_dentry_private_data(struct dentry *dentry);
 extern int new_dentry_private_data(struct dentry *dentry);
 extern void free_dentry_private_data(struct dentry *dentry);
 extern void update_bstart(struct dentry *dentry);
+extern struct nameidata *alloc_lower_nd(unsigned int flags);
+extern void free_lower_nd(struct nameidata *nd, int err);
 
 /*
  * EXTERNALS:
