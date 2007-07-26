@@ -22,8 +22,5 @@
 /* We don't support normal remount, but unionctl uses it. */
 # define UNIONFS_REMOUNT_MAGIC		0x4a5a4380
 
-/* should be at least LAST_USED_UNIONFS_PERMISSION<<1 */
-#define MAY_NFSRO			16
-
 #endif /* _LINUX_UNIONFS_H */
 

@@ -967,26 +967,32 @@ static void unionfs_put_link(struct dentry *dentry, struct nameidata *nd,
  * Basically copied from the kernel vfs permission(), but we've changed
  * the following:
  *   (1) the IS_RDONLY check is skipped, and
- *   (2) if you set the mount option `mode=nfsro', we assume that -EACCES
- *   means that the export is read-only and we should check standard Unix
- *   permissions.  This means that NFS ACL checks (or other advanced
- *   permission features) are bypassed. Note however, that we do call
- *   security_inode_permission, and therefore security inside SELinux, etc.
- *   are performed.
+ *   (2) We return 0 (success) if the non-leftmost branch is mounted
+ *       readonly, to allow copyup to work.
+ *   (3) we do call security_inode_permission, and therefore security inside
+ *       SELinux, etc. are performed.
  */
-static int inode_permission(struct inode *inode, int mask,
+static int inode_permission(struct super_block *sb, struct inode *inode, int mask,
 			    struct nameidata *nd, int bindex)
 {
 	int retval, submask;
 
 	if (mask & MAY_WRITE) {
+		umode_t mode = inode->i_mode;
 		/* The first branch is allowed to be really readonly. */
-		if (bindex == 0) {
-			umode_t mode = inode->i_mode;
-			if (IS_RDONLY(inode) &&
-			    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-				return -EROFS;
-		}
+		if (bindex == 0 &&
+		    IS_RDONLY(inode) &&
+		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+			return -EROFS;
+		/*
+		 * For all other branches than the first one, we ignore
+		 * EROFS or if the branch is mounted as readonly, to let
+		 * copyup take place.
+		 */
+		if (bindex > 0 &&
+		    is_robranch_super(sb, bindex) &&
+		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+			return 0;
 		/*
 		 * Nobody gets write access to an immutable file.
 		 */
@@ -996,18 +1002,9 @@ static int inode_permission(struct inode *inode, int mask,
 
 	/* Ordinary permission routines do not understand MAY_APPEND. */
 	submask = mask & ~MAY_APPEND;
-	if (inode->i_op && inode->i_op->permission) {
+	if (inode->i_op && inode->i_op->permission)
 		retval = inode->i_op->permission(inode, submask, nd);
-		if ((retval == -EACCES) && (submask & MAY_WRITE) &&
-		    (!strcmp("nfs", (inode)->i_sb->s_type->name)) &&
-		    (nd) && (nd->mnt) && (nd->mnt->mnt_sb)) {
-			int perms;
-			perms = branchperms(nd->mnt->mnt_sb, bindex);
-			if (perms & MAY_NFSRO)
-				retval = generic_permission(inode, submask,
-							    NULL);
-		}
-	} else
+	else
 		retval = generic_permission(inode, submask, NULL);
 
 	if (retval && retval != -EROFS)	/* ignore EROFS */
@@ -1065,7 +1062,7 @@ static int unionfs_permission(struct inode *inode, int mask,
 		 * We use our own special version of permission, such that
 		 * only the first branch returns -EROFS.
 		 */
-		err = inode_permission(lower_inode, mask, nd, bindex);
+		err = inode_permission(inode->i_sb, lower_inode, mask, nd, bindex);
 
 		/*
 		 * The permissions are an intersection of the overall directory
