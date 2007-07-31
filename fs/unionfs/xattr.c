@@ -28,23 +28,11 @@ void *unionfs_xattr_alloc(size_t size, size_t limit)
 
 	if (!size)		/* size request, no buffer is needed */
 		return NULL;
-	else if (size <= PAGE_SIZE)
-		ptr = kmalloc(size, GFP_KERNEL);
-	else
-		ptr = vmalloc(size);
+
+	ptr = kmalloc(size, GFP_KERNEL);
 	if (!ptr)
 		return ERR_PTR(-ENOMEM);
 	return ptr;
-}
-
-void unionfs_xattr_free(void *ptr, size_t size)
-{
-	if (!size)		/* size request, no buffer was needed */
-		return;
-	else if (size <= PAGE_SIZE)
-		kfree(ptr);
-	else
-		vfree(ptr);
 }
 
 /*

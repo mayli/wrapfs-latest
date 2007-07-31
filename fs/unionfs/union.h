@@ -344,7 +344,6 @@ extern struct dentry *unionfs_interpose(struct dentry *this_dentry,
 #ifdef CONFIG_UNION_FS_XATTR
 /* Extended attribute functions. */
 extern void *unionfs_xattr_alloc(size_t size, size_t limit);
-extern void unionfs_xattr_free(void *ptr, size_t size);
 
 extern ssize_t unionfs_getxattr(struct dentry *dentry, const char *name,
 				void *value, size_t size);

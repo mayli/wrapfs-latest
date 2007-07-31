@@ -34,25 +34,37 @@ static int copyup_xattrs(struct dentry *old_lower_dentry,
 	char *attr_value = NULL;
 	char *name_list_orig = NULL;
 
+	/* query the actual size of the xattr list */
 	list_size = vfs_listxattr(old_lower_dentry, NULL, 0);
-
 	if (list_size <= 0) {
 		err = list_size;
 		goto out;
 	}
 
+	/* allocate space for the actual list */
 	name_list = unionfs_xattr_alloc(list_size + 1, XATTR_LIST_MAX);
 	if (!name_list || IS_ERR(name_list)) {
 		err = PTR_ERR(name_list);
 		goto out;
 	}
+
+	name_list_orig = name_list; /* save for kfree at end */
+
+	/* now get the actual xattr list of the source file */
 	list_size = vfs_listxattr(old_lower_dentry, name_list, list_size);
+	if (list_size <= 0) {
+		err = list_size;
+		goto out;
+	}
+
+	/* allocate space to hold each xattr's value */
 	attr_value = unionfs_xattr_alloc(XATTR_SIZE_MAX, XATTR_SIZE_MAX);
 	if (!attr_value || IS_ERR(attr_value)) {
 		err = PTR_ERR(name_list);
 		goto out;
 	}
-	name_list_orig = name_list;
+
+	/* in a loop, get and set each xattr from src to dst file */
 	while (*name_list) {
 		ssize_t size;
 
@@ -65,7 +77,6 @@ static int copyup_xattrs(struct dentry *old_lower_dentry,
 			err = size;
 			goto out;
 		}
-
 		if (size > XATTR_SIZE_MAX) {
 			err = -E2BIG;
 			goto out;
@@ -73,20 +84,21 @@ static int copyup_xattrs(struct dentry *old_lower_dentry,
 		/* Don't lock here since vfs_setxattr does it for us. */
 		err = vfs_setxattr(new_lower_dentry, name_list, attr_value,
 				   size, 0);
-
 		if (err < 0)
 			goto out;
 		name_list += strlen(name_list) + 1;
 	}
 out:
-	name_list = name_list_orig;
-
-	if (name_list)
-		unionfs_xattr_free(name_list, list_size + 1);
+	if (name_list_orig)
+		kfree(name_list_orig);
 	if (attr_value)
-		unionfs_xattr_free(attr_value, XATTR_SIZE_MAX);
-	/* It is no big deal if this fails, we just roll with the punches. */
-	if (err == -ENOTSUPP || err == -EOPNOTSUPP)
+		kfree(attr_value);
+	/*
+	 * Ignore if xattr isn't supported.  Also ignore EPERM because that
+	 * requires CAP_SYS_ADMIN for security.* xattrs, but copyup happens
+	 * as normal users.
+	 */
+	if (err == -ENOTSUPP || err == -EOPNOTSUPP || err == -EPERM)
 		err = 0;
 	return err;
 }
