@@ -110,8 +110,9 @@ static int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 	err = lower_inode->i_mapping->a_ops->writepage(lower_page, wbc);
 	wbc->for_writepages = saved_for_writepages; /* restore value */
 
-	/* b/c find_lock_page locked it */
-	unlock_page(lower_page);
+	/* b/c find_lock_page locked it and ->writepage unlocks on success */
+	if (err)
+		unlock_page(lower_page);
 	/* b/c grab_cache_page increased refcnt */
 	page_cache_release(lower_page);
 
