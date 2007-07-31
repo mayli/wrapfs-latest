@@ -189,10 +189,15 @@ out:
 int is_newer_lower(const struct dentry *dentry)
 {
 	int bindex;
-	struct inode *inode = dentry->d_inode;
+	struct inode *inode;
 	struct inode *lower_inode;
 
-	if (!inode)
+	/* ignore if we're called on semi-initialized dentries/inodes */
+	if (!dentry || !UNIONFS_D(dentry))
+		return 0;
+	inode = dentry->d_inode;
+	if (!inode || !UNIONFS_I(inode) ||
+	    ibstart(inode) < 0 || ibend(inode) < 0)
 		return 0;
 
 	for (bindex = ibstart(inode); bindex <= ibend(inode); bindex++) {
