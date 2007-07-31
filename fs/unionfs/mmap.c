@@ -64,10 +64,31 @@ static int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 	inode = page->mapping->host;
 	lower_inode = unionfs_lower_inode(inode);
 
-	/* find lower page (returns a locked page) */
-	lower_page = grab_cache_page(lower_inode->i_mapping, page->index);
-	if (!lower_page)
+	/*
+	 * find lower page (returns a locked page)
+	 *
+	 * NOTE: we used to call grab_cache_page(), but that was unnecessary
+	 * as it would have tried to create a new lower page if it didn't
+	 * exist, leading to deadlocks (esp. under memory-pressure
+	 * conditions, when it is really a bad idea to *consume* more
+	 * memory).  Instead, we assume the lower page exists, and if we can
+	 * find it, then we ->writepage on it; if we can't find it, then it
+	 * couldn't have disappeared unless the kernel already flushed it,
+	 * in which case we're still OK.  This is especially correct if
+	 * wbc->sync_mode is WB_SYNC_NONE (as per
+	 * Documentation/filesystems/vfs.txt).  If we can't flush our page
+	 * because we can't find a lower page, then at least we re-mark our
+	 * page as dirty, and return AOP_WRITEPAGE_ACTIVATE as the VFS
+	 * expects us to.  (Note, if in the future it'd turn out that we
+	 * have to find a lower page no matter what, then we'd have to
+	 * resort to RAIF's page pointer flipping trick.)
+	 */
+	lower_page = find_lock_page(lower_inode->i_mapping, page->index);
+	if (!lower_page) {
+		err = AOP_WRITEPAGE_ACTIVATE;
+		set_page_dirty(page);
 		goto out;
+	}
 
 	/* get page address, and encode it */
 	kaddr = kmap(page);
@@ -85,9 +106,12 @@ static int unionfs_writepage(struct page *page, struct writeback_control *wbc)
 		wbc->for_writepages = 0;
 
 	/* call lower writepage (expects locked page) */
+	clear_page_dirty_for_io(lower_page); /* emulate VFS behavior */
 	err = lower_inode->i_mapping->a_ops->writepage(lower_page, wbc);
 	wbc->for_writepages = saved_for_writepages; /* restore value */
 
+	/* b/c find_lock_page locked it */
+	unlock_page(lower_page);
 	/* b/c grab_cache_page increased refcnt */
 	page_cache_release(lower_page);
 
