@@ -392,8 +392,8 @@ int unionfs_file_revalidate(struct file *file, int willwrite)
 	if (willwrite && IS_WRITE_FLAG(file->f_flags) &&
 	    !IS_WRITE_FLAG(unionfs_lower_file(file)->f_flags) &&
 	    is_robranch(dentry)) {
-		printk(KERN_DEBUG "unionfs: doing delayed copyup of a "
-		       "read-write file on a read-only branch\n");
+		printk(KERN_DEBUG "unionfs: do delay copyup of \"%s\"\n",
+		       dentry->d_name.name);
 		err = do_delayed_copyup(file);
 	}
 
