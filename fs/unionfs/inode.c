@@ -985,6 +985,11 @@ static int inode_permission(struct super_block *sb, struct inode *inode, int mas
 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
 			return -EROFS;
 		/*
+		 * Nobody gets write access to an immutable file.
+		 */
+		if (IS_IMMUTABLE(inode))
+			return -EACCES;
+		/*
 		 * For all other branches than the first one, we ignore
 		 * EROFS or if the branch is mounted as readonly, to let
 		 * copyup take place.
@@ -993,11 +998,6 @@ static int inode_permission(struct super_block *sb, struct inode *inode, int mas
 		    is_robranch_super(sb, bindex) &&
 		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
 			return 0;
-		/*
-		 * Nobody gets write access to an immutable file.
-		 */
-		if (IS_IMMUTABLE(inode))
-			return -EACCES;
 	}
 
 	/* Ordinary permission routines do not understand MAY_APPEND. */
