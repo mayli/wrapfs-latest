@@ -6015,6 +6015,14 @@ F:	include/linux/mfd/wm8400*
 F:	sound/soc/codecs/wm8350.*
 F:	sound/soc/codecs/wm8400.*
 
+WRAPFS
+P:	Erez Zadok
+M:	ezk@cs.sunysb.edu
+L:	wrapfs@filesystems.org
+W:	http://wrapfs.filesystems.org/
+T:	git git.kernel.org/pub/scm/linux/kernel/git/ezk/wrapfs.git
+S:	Maintained
+
 X.25 NETWORK LAYER
 M:	Andrew Hendry <andrew.hendry@gmail.com>
 L:	linux-x25@vger.kernel.org
