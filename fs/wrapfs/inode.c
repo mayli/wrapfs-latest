@@ -17,8 +17,7 @@ static int wrapfs_create(struct inode *dir, struct dentry *dentry,
 	int err = 0;
 	struct dentry *lower_dentry;
 	struct dentry *lower_parent_dentry = NULL;
-	struct nameidata lower_nd;
-	struct path lower_path;
+	struct path lower_path, saved_path;
 
 	wrapfs_get_lower_path(dentry, &lower_path);
 	lower_dentry = lower_path.dentry;
@@ -28,15 +27,13 @@ static int wrapfs_create(struct inode *dir, struct dentry *dentry,
 	if (err)
 		goto out_unlock;
 
-	err = init_lower_nd(&lower_nd, LOOKUP_CREATE);
-	if (err < 0)
-		goto out;
-	err = vfs_create(lower_parent_dentry->d_inode, lower_dentry, mode,
-			 &lower_nd);
-	release_lower_nd(&lower_nd, err);
+	pathcpy(&saved_path, &nd->path);
+	pathcpy(&nd->path, &lower_path);
+	err = vfs_create(lower_parent_dentry->d_inode, lower_dentry, mode, nd);
+	pathcpy(&nd->path, &saved_path);
 	if (err)
 		goto out;
-	/* XXX; should we pass lower_nd.path instead of lower_path? */
+
 	err = wrapfs_interpose(dentry, dir->i_sb, &lower_path);
 	if (err)
 		goto out;
