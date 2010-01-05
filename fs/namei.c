@@ -574,6 +574,7 @@ void release_open_intent(struct nameidata *nd)
 			fput(file);
 	}
 }
+EXPORT_SYMBOL_GPL(release_open_intent);
 
 static inline int d_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
